@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la \"c:\\\\xampp\\\\htdocs\\\\oab\\\\\" 2>&1)",
+      "Read(//c/xampp/htdocs/**)",
+      "Bash(dir \"c:\\\\xampp\\\\htdocs\\\\oab\\\\\" 2>&1 | head -20)",
+      "Bash(composer install *)",
+      "Read(//c/xampp/**)",
+      "Read(//c//**)",
+      "Read(//c/laragon/bin/php/php-8.3.30-Win32-vs16-x64/**)",
+      "PowerShell($env:Path = \"C:\\\\xampp\\\\php;\" + $env:Path; cd \"c:\\\\xampp\\\\htdocs\\\\mpg_academy\"; composer install --no-dev 2>&1)",
+      "Bash(Get-ChildItem -Path \"c:\\\\xampp\\\\htdocs\\\\mpg_academy\\\\pages\\\\assinaturas\" -Recurse -Force)"
+    ]
+  }
+}

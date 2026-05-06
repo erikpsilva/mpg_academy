@@ -1,0 +1,77 @@
+[05-May-2026 19:15:54 America/Sao_Paulo] PHP Fatal error:  Uncaught Error: Call to undefined function str_starts_with() in /home/mpgacademy/public_html/config/app.php:10
+Stack trace:
+#0 /home/mpgacademy/public_html/config/app.php(18): appHostName()
+#1 /home/mpgacademy/public_html/config/app.php(41): appIsLocal()
+#2 /home/mpgacademy/public_html/index.php(5): require_once('/home/mpgacadem...')
+#3 {main}
+  thrown in /home/mpgacademy/public_html/config/app.php on line 10
+[05-May-2026 19:16:00 America/Sao_Paulo] PHP Fatal error:  Uncaught Error: Call to undefined function str_starts_with() in /home/mpgacademy/public_html/config/app.php:10
+Stack trace:
+#0 /home/mpgacademy/public_html/config/app.php(18): appHostName()
+#1 /home/mpgacademy/public_html/config/app.php(41): appIsLocal()
+#2 /home/mpgacademy/public_html/index.php(5): require_once('/home/mpgacadem...')
+#3 {main}
+  thrown in /home/mpgacademy/public_html/config/app.php on line 10
+[05-May-2026 19:16:07 America/Sao_Paulo] PHP Fatal error:  Uncaught Error: Call to undefined function str_starts_with() in /home/mpgacademy/public_html/config/app.php:10
+Stack trace:
+#0 /home/mpgacademy/public_html/config/app.php(18): appHostName()
+#1 /home/mpgacademy/public_html/config/app.php(41): appIsLocal()
+#2 /home/mpgacademy/public_html/index.php(5): require_once('/home/mpgacadem...')
+#3 {main}
+  thrown in /home/mpgacademy/public_html/config/app.php on line 10
+[05-May-2026 19:16:26 America/Sao_Paulo] PHP Fatal error:  Uncaught Error: Call to undefined function str_starts_with() in /home/mpgacademy/public_html/config/app.php:10
+Stack trace:
+#0 /home/mpgacademy/public_html/config/app.php(18): appHostName()
+#1 /home/mpgacademy/public_html/config/app.php(41): appIsLocal()
+#2 /home/mpgacademy/public_html/index.php(5): require_once('/home/mpgacadem...')
+#3 {main}
+  thrown in /home/mpgacademy/public_html/config/app.php on line 10
+[05-May-2026 19:16:30 America/Sao_Paulo] PHP Fatal error:  Uncaught Error: Call to undefined function str_starts_with() in /home/mpgacademy/public_html/config/app.php:10
+Stack trace:
+#0 /home/mpgacademy/public_html/config/app.php(18): appHostName()
+#1 /home/mpgacademy/public_html/config/app.php(41): appIsLocal()
+#2 /home/mpgacademy/public_html/index.php(5): require_once('/home/mpgacadem...')
+#3 {main}
+  thrown in /home/mpgacademy/public_html/config/app.php on line 10
+[05-May-2026 19:16:41 America/Sao_Paulo] PHP Fatal error:  Uncaught Error: Call to undefined function str_starts_with() in /home/mpgacademy/public_html/config/app.php:10
+Stack trace:
+#0 /home/mpgacademy/public_html/config/app.php(18): appHostName()
+#1 /home/mpgacademy/public_html/config/app.php(41): appIsLocal()
+#2 /home/mpgacademy/public_html/index.php(5): require_once('/home/mpgacadem...')
+#3 {main}
+  thrown in /home/mpgacademy/public_html/config/app.php on line 10
+[05-May-2026 19:16:42 America/Sao_Paulo] PHP Fatal error:  Uncaught Error: Call to undefined function str_starts_with() in /home/mpgacademy/public_html/config/app.php:10
+Stack trace:
+#0 /home/mpgacademy/public_html/config/app.php(18): appHostName()
+#1 /home/mpgacademy/public_html/config/app.php(41): appIsLocal()
+#2 /home/mpgacademy/public_html/index.php(5): require_once('/home/mpgacadem...')
+#3 {main}
+  thrown in /home/mpgacademy/public_html/config/app.php on line 10
+[05-May-2026 19:17:11 America/Sao_Paulo] PHP Fatal error:  Uncaught Error: Call to undefined function str_starts_with() in /home/mpgacademy/public_html/config/app.php:10
+Stack trace:
+#0 /home/mpgacademy/public_html/config/app.php(18): appHostName()
+#1 /home/mpgacademy/public_html/config/app.php(41): appIsLocal()
+#2 /home/mpgacademy/public_html/index.php(5): require_once('/home/mpgacadem...')
+#3 {main}
+  thrown in /home/mpgacademy/public_html/config/app.php on line 10
+[05-May-2026 19:17:22 America/Sao_Paulo] PHP Fatal error:  Uncaught Error: Call to undefined function str_starts_with() in /home/mpgacademy/public_html/config/app.php:10
+Stack trace:
+#0 /home/mpgacademy/public_html/config/app.php(18): appHostName()
+#1 /home/mpgacademy/public_html/config/app.php(41): appIsLocal()
+#2 /home/mpgacademy/public_html/index.php(5): require_once('/home/mpgacadem...')
+#3 {main}
+  thrown in /home/mpgacademy/public_html/config/app.php on line 10
+[05-May-2026 19:17:30 America/Sao_Paulo] PHP Fatal error:  Uncaught Error: Call to undefined function str_starts_with() in /home/mpgacademy/public_html/config/app.php:10
+Stack trace:
+#0 /home/mpgacademy/public_html/config/app.php(18): appHostName()
+#1 /home/mpgacademy/public_html/config/app.php(41): appIsLocal()
+#2 /home/mpgacademy/public_html/index.php(5): require_once('/home/mpgacadem...')
+#3 {main}
+  thrown in /home/mpgacademy/public_html/config/app.php on line 10
+[05-May-2026 19:18:18 America/Sao_Paulo] PHP Fatal error:  Uncaught Error: Call to undefined function str_starts_with() in /home/mpgacademy/public_html/config/app.php:10
+Stack trace:
+#0 /home/mpgacademy/public_html/config/app.php(18): appHostName()
+#1 /home/mpgacademy/public_html/config/app.php(41): appIsLocal()
+#2 /home/mpgacademy/public_html/index.php(5): require_once('/home/mpgacadem...')
+#3 {main}
+  thrown in /home/mpgacademy/public_html/config/app.php on line 10

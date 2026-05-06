@@ -1,0 +1,345 @@
+.signatures {
+    min-height: 100vh;
+    background:
+        radial-gradient(circle at 84% 12%, rgba(255, 213, 0, 0.14), transparent 26%),
+        radial-gradient(circle at 8% 86%, rgba(255, 255, 255, 0.08), transparent 28%),
+        #030303;
+    color: @white;
+    overflow: hidden;
+
+    &::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background-image:
+            linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+        background-size: 72px 72px;
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    .container {
+        position: relative;
+        z-index: 1;
+    }
+}
+
+.signaturesHero {
+    padding: 36px 0 48px;
+
+    &__grid {
+        display: grid;
+        grid-template-columns: minmax(0, 0.94fr) minmax(320px, 0.68fr);
+        align-items: end;
+        gap: 40px;
+    }
+
+    &__content {
+        max-width: 760px;
+    }
+
+    &__title {
+        margin: 18px 0 18px;
+        color: @white;
+        font-size: 58px;
+        line-height: 1;
+        font-weight: 900;
+    }
+
+    &__text {
+        max-width: 560px;
+        margin: 0;
+        color: #d4d4d8;
+        font-size: 18px;
+        line-height: 1.65;
+    }
+}
+
+.signaturesHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding-bottom: 70px;
+
+    &__back {
+        min-height: 42px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 18px;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 999px;
+        color: @white;
+        font-size: 13px;
+        font-weight: 800;
+        text-transform: uppercase;
+        text-decoration: none;
+        .transition(0.25s all);
+
+        &:hover {
+            border-color: rgba(255, 213, 0, 0.48);
+            color: @yellow;
+            transform: translateY(-2px);
+        }
+    }
+}
+
+.signaturesBrand {
+    display: inline-flex;
+    align-items: center;
+    width: 240px;
+
+    &__logo {
+        display: block;
+        width: 100%;
+        height: auto;
+    }
+}
+
+.signaturesTag {
+    display: inline-flex;
+    align-items: center;
+    min-height: 38px;
+    padding: 0 18px;
+    border: 1px solid rgba(255, 213, 0, 0.36);
+    border-radius: 999px;
+    color: @yellow;
+    background: rgba(255, 213, 0, 0.08);
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.signaturesMenu {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+
+    &__item {
+        display: grid;
+        grid-template-columns: 52px minmax(0, 1fr);
+        align-items: center;
+        gap: 14px;
+        min-height: 78px;
+        padding: 13px 16px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 8px;
+        background: rgba(18, 18, 20, 0.92);
+        color: @white;
+        text-decoration: none;
+        .transition(0.25s all);
+
+        &:hover {
+            border-color: rgba(255, 213, 0, 0.46);
+            background: rgba(255, 213, 0, 0.08);
+            transform: translateY(-2px);
+        }
+    }
+
+    &__avatar {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 52px;
+        height: 52px;
+        border: 2px solid @yellow;
+        border-radius: 50%;
+        color: @yellow;
+        background: #141414;
+        font-size: 14px;
+        font-weight: 900;
+    }
+
+    &__content {
+        min-width: 0;
+
+        strong,
+        small {
+            display: block;
+        }
+
+        strong {
+            margin-bottom: 5px;
+            font-size: 16px;
+            font-weight: 900;
+        }
+
+        small {
+            color: #b8b8c0;
+            font-size: 12px;
+            line-height: 1.35;
+        }
+    }
+}
+
+.signaturesList {
+    padding: 24px 0 90px;
+
+    &__grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 22px;
+    }
+}
+
+.signatureCard {
+    display: grid;
+    grid-template-columns: minmax(240px, 0.42fr) minmax(0, 1fr);
+    gap: 20px;
+    min-width: 0;
+    padding: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.13);
+    border-radius: 8px;
+    background: rgba(18, 18, 20, 0.94);
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+
+    &__head {
+        display: grid;
+        grid-template-columns: 1fr;
+        align-items: start;
+        gap: 16px;
+    }
+
+    &__eyebrow {
+        display: block;
+        margin-bottom: 7px;
+        color: @yellow;
+        font-size: 11px;
+        font-weight: 900;
+        text-transform: uppercase;
+    }
+
+    &__title {
+        margin: 0 0 5px;
+        color: @white;
+        font-size: 24px;
+        line-height: 1.12;
+        font-weight: 900;
+    }
+
+    &__role {
+        margin: 0;
+        color: #c9c9d0;
+        font-size: 13px;
+        line-height: 1.45;
+    }
+
+    &__copy {
+        width: fit-content;
+        min-height: 40px;
+        padding: 0 16px;
+        border: 0;
+        border-radius: 8px;
+        background: @yellow;
+        color: @black;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 900;
+        text-transform: uppercase;
+        white-space: nowrap;
+        .transition(0.25s all);
+
+        &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(255, 213, 0, 0.22);
+        }
+
+        &.is-copied {
+            background: @white;
+        }
+    }
+
+    &__preview {
+        max-width: 100%;
+        overflow-x: auto;
+        padding: 18px;
+        border-radius: 8px;
+        background: @white;
+    }
+
+    &__source {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        opacity: 0;
+        pointer-events: none;
+    }
+}
+
+@media @tablet-large {
+    .signaturesHero {
+        &__grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .signaturesList {
+        &__grid {
+            grid-template-columns: 1fr;
+        }
+    }
+}
+
+@media @tablet-small {
+    .signaturesHero {
+        padding-top: 28px;
+
+        &__title {
+            font-size: 42px;
+        }
+
+        &__text {
+            font-size: 16px;
+        }
+    }
+
+    .signaturesHeader {
+        flex-direction: column;
+        align-items: center;
+        padding-bottom: 44px;
+    }
+
+    .signaturesBrand {
+        width: 210px;
+    }
+
+    .signatureCard {
+        grid-template-columns: 1fr;
+        padding: 16px;
+
+        &__head {
+            grid-template-columns: 1fr;
+        }
+
+        &__copy {
+            width: 100%;
+        }
+    }
+}
+
+@media @mobile-sm {
+    .signaturesHero {
+        &__title {
+            font-size: 34px;
+        }
+    }
+
+    .signaturesMenu {
+        &__item {
+            grid-template-columns: 46px minmax(0, 1fr);
+        }
+
+        &__avatar {
+            width: 46px;
+            height: 46px;
+        }
+    }
+
+    .signatureCard {
+        &__preview {
+            padding: 12px;
+        }
+    }
+}
