@@ -16,6 +16,13 @@
                 </a>
             </li>
 
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/interessados"
+                   class="sidebar__link <?= ($subRoute === 'interessados') ? 'sidebar__link--active' : '' ?>">
+                    Consultar Interessados
+                </a>
+            </li>
+
             <?php if ($_SESSION['usuario']['nivel_acesso'] === 'admin'): ?>
             <li class="sidebar__item">
                 <a href="<?= BASE_URL ?>/admin/cadastrarusuario"
