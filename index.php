@@ -4,6 +4,10 @@ define('ROOT', __DIR__);
 
 require_once ROOT . '/config/app.php';
 
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 // Captura a rota da URL (parâmetro 'url') e divide por "/"
 $route = explode("/", $_GET['url'] ?? 'inicio');
 

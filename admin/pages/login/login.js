@@ -60,6 +60,13 @@ const clearError = () => {
 $(document).ready(function () {
     clearError();
 
+    $('.adminLogin__card').on('submit', function (event) {
+        event.preventDefault();
+        if (validateLoginForm()) {
+            sendLogin();
+        }
+    });
+
     $('#enviarLogin').click(function (event) {
         event.preventDefault();
         if (validateLoginForm()) {

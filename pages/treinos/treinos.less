@@ -1,0 +1,466 @@
+.studentTrainings {
+    .studentAreaContent {
+        max-width: 1060px;
+    }
+}
+
+.studentTrainingsHero,
+.studentTrainingCalendar,
+.studentTrainingInfo {
+    border: 1px solid rgba(255, 255, 255, 0.13);
+    border-radius: 8px;
+    background:
+        radial-gradient(circle at 100% 100%, rgba(255, 255, 255, 0.05), transparent 28%),
+        rgba(255, 255, 255, 0.035);
+}
+
+.studentTrainingsHero {
+    padding: 24px;
+
+    &__title {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        margin-bottom: 22px;
+
+        > span {
+            width: 76px;
+            height: 76px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid @yellow;
+            border-radius: 50%;
+            color: @yellow;
+            font-size: 40px;
+        }
+
+        h1 {
+            color: @white;
+            font-size: 36px;
+            line-height: 1.1;
+            font-weight: 900;
+            margin: 0 0 8px;
+        }
+
+        p {
+            color: #d0d0d0;
+            font-size: 15px;
+            margin: 0;
+        }
+    }
+}
+
+// ── Barra de info da turma ────────────────────────────────────────────────────
+
+.studentTrainingsDetails {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 7px;
+    overflow: hidden;
+
+    &__item {
+        flex: 1;
+        min-width: 150px;
+        padding: 13px 20px;
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
+
+        &:last-child { border-right: 0; }
+
+        span {
+            display: block;
+            color: rgba(255, 255, 255, 0.38);
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            margin-bottom: 5px;
+        }
+
+        strong {
+            display: block;
+            color: @white;
+            font-size: 14px;
+            font-weight: 700;
+        }
+    }
+}
+
+// ── Calendário ────────────────────────────────────────────────────────────────
+
+.studentTrainingCalendar {
+    margin-top: 20px;
+    padding: 22px 16px 24px;
+
+    &__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 28px;
+
+        > div {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        h2 {
+            color: @white;
+            font-size: 20px;
+            font-weight: 900;
+            margin: 0;
+        }
+    }
+
+    &__weekdays,
+    &__grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+    }
+
+    &__weekdays {
+        span {
+            color: @white;
+            font-size: 14px;
+            font-weight: 800;
+            text-align: center;
+            padding: 0 0 14px;
+        }
+    }
+
+    &__grid {
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.13);
+        border-radius: 7px;
+
+        article {
+            position: relative;
+            min-height: 90px;
+            padding: 20px 12px 10px;
+            border-right: 1px solid rgba(255, 255, 255, 0.13);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.13);
+            color: @white;
+            text-align: center;
+
+            &:nth-child(7n) { border-right: 0; }
+            &:nth-last-child(-n+7) { border-bottom: 0; }
+
+            strong {
+                display: block;
+                font-size: 19px;
+                line-height: 1;
+            }
+
+            span {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                color: @white;
+                font-size: 12px;
+                margin-top: 12px;
+
+                &::before {
+                    content: '';
+                    width: 10px;
+                    height: 10px;
+                    border-radius: 50%;
+                    background: @yellow;
+                }
+            }
+
+            &.is-muted { color: #5f6063; }
+
+            &.is-today {
+                border: 1px solid @yellow;
+                border-radius: 7px;
+                box-shadow: 0 0 0 1px rgba(255, 213, 0, 0.22) inset;
+            }
+
+            // Dot colors by state
+            &.is-done span::before     { background: #4ca900; }
+            &.is-canceled span::before { background: #ff2727; }
+            &.is-holiday span::before  { background: #8a8a8a; }
+            &.is-holiday span          { color: rgba(255, 255, 255, 0.4); }
+        }
+    }
+
+    &__legend {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 24px;
+        margin: 22px 0 0;
+
+        li {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #c8c8c8;
+            font-size: 13px;
+        }
+
+        i {
+            width: 13px;
+            height: 13px;
+            display: inline-block;
+            border-radius: 50%;
+
+            &.is-confirmed { background: @yellow; }
+            &.is-canceled  { background: #ff2727; }
+            &.is-holiday   { background: #8a8a8a; }
+            &.is-done      { background: #4ca900; }
+            &.is-today     { border: 2px solid @yellow; }
+        }
+    }
+}
+
+// ── Dois meses lado a lado ────────────────────────────────────────────────────
+
+.studentTraining2Months {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+}
+
+.studentTrainingMonth {
+    min-width: 0;
+
+    &__title {
+        color: rgba(255, 255, 255, 0.45);
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.7px;
+        margin-bottom: 12px;
+
+        &.is-current { color: @yellow; }
+    }
+
+    .studentTrainingCalendar__grid article {
+        min-height: 80px;
+        padding: 14px 6px 8px;
+
+        strong { font-size: 16px; }
+        span   { font-size: 11px; margin-top: 10px; }
+    }
+}
+
+// ── Botão de navegação do calendário ─────────────────────────────────────────
+
+.calNavBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 6px;
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 14px;
+    .transition(0.2s all);
+    flex-shrink: 0;
+
+    &:hover { border-color: @yellow; color: @yellow; }
+
+    &--disabled {
+        opacity: 0.2;
+        pointer-events: none;
+        cursor: default;
+    }
+}
+
+// ── Info ──────────────────────────────────────────────────────────────────────
+
+.studentTrainingInfo {
+    margin-top: 20px;
+    padding: 24px 20px 16px;
+
+    > h2 {
+        color: @white;
+        font-size: 18px;
+        font-weight: 900;
+        text-transform: uppercase;
+        margin: 0 0 22px;
+    }
+
+    &__cards {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 18px;
+
+        article {
+            min-height: 160px;
+            padding: 24px 22px;
+            border: 1px solid rgba(255, 255, 255, 0.13);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.025);
+
+            &.is-danger i { color: #ff2727; }
+        }
+
+        i {
+            display: block;
+            color: @yellow;
+            font-size: 31px;
+            margin-bottom: 22px;
+        }
+
+        h3 {
+            color: @white;
+            font-size: 16px;
+            margin: 0 0 12px;
+        }
+
+        p {
+            color: #d0d0d0;
+            font-size: 13px;
+            line-height: 1.55;
+            margin: 0;
+        }
+    }
+
+    &__help {
+        display: grid;
+        grid-template-columns: auto 1fr 220px;
+        gap: 20px;
+        align-items: center;
+        margin-top: 22px;
+        padding: 18px;
+        border: 1px solid rgba(255, 255, 255, 0.13);
+        border-radius: 8px;
+
+        > i {
+            color: #37d235;
+            font-size: 50px;
+        }
+
+        h3 {
+            color: @white;
+            font-size: 17px;
+            margin: 0 0 8px;
+        }
+
+        p {
+            color: #d0d0d0;
+            font-size: 14px;
+            margin: 0;
+        }
+
+        a {
+            min-height: 42px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 5px;
+            background: @yellow;
+            color: #050505;
+            font-size: 13px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+    }
+}
+
+// ── Responsivo ────────────────────────────────────────────────────────────────
+
+@media @tablet-large {
+    .studentTrainings {
+        .studentAreaContent { max-width: none; }
+    }
+
+    .studentTrainingInfo__cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .studentTrainingsDetails {
+        &__item { min-width: 0; }
+    }
+}
+
+@media @tablet-small {
+    .studentTrainingsHero__title {
+        align-items: flex-start;
+        flex-direction: column;
+
+        h1 { font-size: 30px; }
+    }
+
+    .studentTraining2Months {
+        grid-template-columns: 1fr;
+    }
+
+    .studentTrainingCalendar {
+        &__head {
+            align-items: flex-start;
+            flex-direction: column;
+
+            h2 { font-size: 17px; }
+        }
+
+        &__weekdays { display: none; }
+
+        &__grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            border: 0;
+            overflow: visible;
+
+            article {
+                min-height: 64px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                border: 1px solid rgba(255, 255, 255, 0.13);
+                border-radius: 7px;
+                padding: 14px 16px;
+
+                &:nth-child(7n),
+                &:nth-last-child(-n+7) { border: 1px solid rgba(255, 255, 255, 0.13); }
+
+                &.is-muted { display: none; }
+
+                strong { font-size: 20px; }
+                span   { margin-top: 0; }
+            }
+        }
+
+        &__legend {
+            align-items: flex-start;
+            flex-direction: column;
+            gap: 10px;
+        }
+    }
+
+    .studentTrainingInfo {
+        &__cards { grid-template-columns: 1fr; }
+
+        &__help {
+            grid-template-columns: 1fr;
+            text-align: center;
+            > i { margin: 0 auto; }
+        }
+    }
+
+    .studentTrainingsDetails {
+        &__item {
+            flex: none;
+            width: 50%;
+        }
+    }
+}
+
+@media @mobile-sm {
+    .studentTrainingsDetails {
+        &__item {
+            width: 100%;
+            border-right: 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            &:last-child { border-bottom: 0; }
+        }
+    }
+}

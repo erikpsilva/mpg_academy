@@ -9,6 +9,10 @@ body{
     font-size: 16px;
     font-weight: @regular;
     color: @colorFont;
+    background:
+        radial-gradient(circle at 88% 8%, rgba(255, 213, 0, 0.12), transparent 24%),
+        linear-gradient(180deg, #050607 0%, #090b0d 100%);
+    min-height: 100vh;
 }
 ul, li, p, a, h1, h2, h3, h4, h5, h6{
     margin: 0;
@@ -25,17 +29,21 @@ a {
 }
 
 h1, h2, h3, h4, h5, h6{
+    color: @white;
     font-weight: @regular;
     margin-bottom: 15px;
     span {
         font-weight: @semiBold;
+        color: @alert;
     }
 }
 
 //FORMULARIO
 .formGroup {
     border: 1px solid @borderColor;
-    background: @bgBoxContent;
+    background:
+        radial-gradient(circle at 100% 0, rgba(255, 213, 0, 0.08), transparent 30%),
+        rgba(17, 19, 21, 0.94);
     padding: 30px;
     @media @tabletSM {
         padding: 15px;
@@ -44,30 +52,67 @@ h1, h2, h3, h4, h5, h6{
     &__divisor {
         h3 {
             border-bottom: 1px solid @borderColor;
-            margin-bottom: 10px;
-            padding: 5px 0;
+            color: @white;
+            font-size: 16px;
+            font-weight: @bold;
+            margin-bottom: 18px;
+            padding: 5px 0 12px;
+            text-transform: uppercase;
         }
     }
     &__item {
         position: relative;
         label {
             display: block;
-            font-size: 16px;
-            margin-bottom: 5px;
+            color: @white;
+            font-size: 12px;
+            font-weight: @semiBold;
+            margin-bottom: 8px;
+            text-transform: uppercase;
             width: 100%;
         }
         input, select, textarea {
             border: 1px solid @borderColor;
             font-family: @font;
-            font-size: 16px;
+            font-size: 14px;
             width: 100%;
             margin-bottom: 20px;
             height: 55px;
             padding:10px;
+            background: rgba(255, 255, 255, 0.055);
+            color: @white;
             .radius;
+
+            &::placeholder {
+                color: rgba(255, 255, 255, 0.45);
+            }
+
+            &:disabled {
+                opacity: 0.58;
+            }
+
             &:focus-visible {
-                border: 2px solid @secundary;
+                border: 1px solid @alert;
+                box-shadow: 0 0 0 3px rgba(255, 213, 0, 0.11);
                 outline: none;
+            }
+        }
+
+        select {
+            appearance: none;
+            background-image:
+                linear-gradient(45deg, transparent 50%, @alert 50%),
+                linear-gradient(135deg, @alert 50%, transparent 50%);
+            background-position:
+                calc(100% - 18px) 24px,
+                calc(100% - 12px) 24px;
+            background-size: 6px 6px, 6px 6px;
+            background-repeat: no-repeat;
+            padding-right: 38px;
+
+            option {
+                background: @bgPanel;
+                color: @white;
             }
         }
         textarea {
@@ -107,20 +152,20 @@ h1, h2, h3, h4, h5, h6{
 .btn {
     cursor: pointer;
     font-family: @font;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: @semiBold;
-    padding: 15px;
+    padding: 10px 20px;
     text-transform: uppercase;
     .radius;
     .transition;
     &--primary {
-        border: 1px solid @white;
+        border: 1px solid @alert;
         background: @primary;
-        color: @white;
+        color: #050505;
         &:hover {
-            border: 1px solid @primary;
+            border: 1px solid @alert;
             background: @white;
-            color: @primary;
+            color: #050505;
         }
     }
     &--error {
@@ -144,13 +189,27 @@ h1, h2, h3, h4, h5, h6{
         }
     }
     &--gray {
-        border: 1px solid @btnGray;
+        border: 1px solid rgba(255, 255, 255, 0.16);
         background: @btnGray;
         color: @white;
         &:hover {
-            background: darken(@btnGray, 12%);
-            border: 1px solid darken(@btnGray, 12%);
+            background: @alert;
+            border: 1px solid @alert;
+            color: #050505;
         }
+    }
+    &--outline {
+        border: 1px solid rgba(255, 213, 0, 0.35);
+        background: transparent;
+        color: @alert;
+        &:hover {
+            background: rgba(255, 213, 0, 0.1);
+            border-color: @alert;
+        }
+    }
+    &--sm {
+        font-size: 11px;
+        padding: 5px 12px;
     }
 }
 
@@ -177,8 +236,8 @@ h1, h2, h3, h4, h5, h6{
 
   /* HTML: <div class="loader"></div> */
 .loader {
-    --c:no-repeat linear-gradient(@primary 0 0);
-    background: var(--c),var(--c),@secundary;
+    --c:no-repeat linear-gradient(@alert 0 0);
+    background: var(--c),var(--c),#2b2f34;
     background-size: 60% 100%;
     animation: l16 3s infinite;
     height: 4px;

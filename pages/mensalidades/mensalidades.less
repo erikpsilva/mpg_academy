@@ -1,0 +1,567 @@
+.studentMonthly {
+    .studentAreaContent {
+        max-width: 1120px;
+    }
+}
+
+.studentMonthlyBreadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 22px;
+    color: #b8b8b8;
+    font-size: 14px;
+
+    a {
+        color: @yellow;
+        font-weight: 700;
+    }
+
+    i {
+        color: @yellow;
+        font-size: 12px;
+    }
+
+    span {
+        color: #e8e8e8;
+    }
+}
+
+.studentMonthlyHero,
+.studentMonthlyAlert,
+.studentMonthlyNext,
+.studentMonthlyHistory,
+.studentMonthlyInfo {
+    min-width: 0;
+    border: 1px solid rgba(255, 255, 255, 0.13);
+    border-radius: 8px;
+    background:
+        radial-gradient(circle at 100% 100%, rgba(255, 255, 255, 0.055), transparent 30%),
+        rgba(255, 255, 255, 0.035);
+}
+
+.studentMonthlyHero {
+    display: flex;
+    align-items: center;
+    gap: 26px;
+    padding: 26px;
+
+    > span {
+        width: 72px;
+        height: 72px;
+        flex: 0 0 72px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid @yellow;
+        border-radius: 50%;
+        color: @yellow;
+        font-size: 36px;
+    }
+
+    h1 {
+        color: @white;
+        font-size: 36px;
+        line-height: 1.1;
+        font-weight: 900;
+        margin: 0 0 8px;
+    }
+
+    p {
+        color: #d4d4d4;
+        font-size: 15px;
+        line-height: 1.45;
+        margin: 0;
+    }
+}
+
+.studentMonthlyAlert {
+    display: grid;
+    grid-template-columns: 70px 1fr;
+    gap: 22px;
+    align-items: center;
+    margin-top: 18px;
+    padding: 22px 26px;
+    border-color: rgba(255, 213, 0, 0.75);
+    background:
+        radial-gradient(circle at 0 50%, rgba(255, 213, 0, 0.12), transparent 26%),
+        rgba(255, 213, 0, 0.04);
+
+    > span {
+        width: 58px;
+        height: 58px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid @yellow;
+        border-radius: 50%;
+        color: @yellow;
+        font-size: 34px;
+        font-weight: 900;
+    }
+
+    h2 {
+        color: @white;
+        font-size: 19px;
+        font-weight: 900;
+        margin: 0 0 8px;
+    }
+
+    p {
+        max-width: 720px;
+        color: #d7d7d7;
+        font-size: 14px;
+        line-height: 1.55;
+        margin: 0;
+    }
+}
+
+.studentMonthlyNext {
+    margin-top: 18px;
+    padding: 22px;
+
+    > h2 {
+        color: @white;
+        font-size: 18px;
+        font-weight: 800;
+        text-transform: uppercase;
+        margin: 0 0 18px;
+    }
+
+    &__box {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1.2fr 180px;
+        align-items: center;
+        gap: 0;
+        padding: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 7px;
+
+        article {
+            min-width: 0;
+            padding: 0 28px;
+            border-right: 1px solid rgba(255, 255, 255, 0.12);
+
+            &:first-child {
+                padding-left: 0;
+            }
+
+            span,
+            small {
+                display: block;
+                color: #b9b9b9;
+                font-size: 13px;
+                line-height: 1.45;
+            }
+
+            strong {
+                display: block;
+                color: @white;
+                font-size: 30px;
+                line-height: 1.15;
+                font-weight: 900;
+                margin: 5px 0;
+            }
+        }
+
+        > a {
+            width: 100%;
+            min-height: 48px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            border: 1px solid @yellow;
+            border-radius: 6px;
+            color: @yellow;
+            font-size: 13px;
+            font-weight: 900;
+            text-transform: uppercase;
+            .transition(0.25s all);
+
+            &:hover {
+                background: @yellow;
+                color: #060606;
+            }
+        }
+    }
+}
+
+.studentMonthlyStatus {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: fit-content;
+    min-height: 28px;
+    padding: 0 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+
+    &--paid {
+        border: 1px solid rgba(116, 255, 54, 0.72);
+        color: #79ff45;
+        background: rgba(46, 182, 16, 0.12);
+    }
+
+    &--late {
+        border: 1px solid rgba(255, 45, 45, 0.72);
+        color: #ff4b4b;
+        background: rgba(255, 45, 45, 0.12);
+    }
+}
+
+.studentMonthlyHistory {
+    margin-top: 18px;
+    padding: 22px;
+
+    &__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        margin-bottom: 16px;
+
+        h2 {
+            color: @white;
+            font-size: 18px;
+            font-weight: 800;
+            text-transform: uppercase;
+            margin: 0;
+        }
+
+        label {
+            position: relative;
+            width: min(100%, 230px);
+
+            &::after {
+                content: '';
+                position: absolute;
+                right: 18px;
+                top: 50%;
+                width: 9px;
+                height: 9px;
+                border-right: 2px solid @white;
+                border-bottom: 2px solid @white;
+                pointer-events: none;
+                transform: translateY(-70%) rotate(45deg);
+            }
+        }
+
+        select {
+            width: 100%;
+            min-height: 46px;
+            padding: 0 46px 0 16px;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 6px;
+            outline: 0;
+            appearance: none;
+            background: rgba(0, 0, 0, 0.22);
+            color: @white;
+            font-size: 14px;
+
+            option {
+                color: #111;
+            }
+        }
+    }
+}
+
+.studentMonthlyTable {
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 7px;
+
+    &__row {
+        display: grid;
+        grid-template-columns: 1fr 1fr 0.9fr 1fr 1.35fr 1.05fr;
+        align-items: center;
+        gap: 16px;
+        min-height: 66px;
+        padding: 0 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        color: @white;
+        font-size: 14px;
+
+        > span {
+            min-width: 0;
+        }
+
+        small {
+            display: block;
+            color: #b9b9b9;
+            font-size: 12px;
+            line-height: 1.25;
+            margin-top: 4px;
+        }
+
+        &--head {
+            min-height: 52px;
+            background: rgba(255, 255, 255, 0.045);
+            color: #d5d5d5;
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        &--late {
+            border-left: 3px solid #ff2929;
+            background: linear-gradient(90deg, rgba(255, 35, 35, 0.24), rgba(255, 35, 35, 0.03));
+            color: #ff5a5a;
+
+            strong {
+                color: #ff4c4c;
+                font-size: 17px;
+                font-weight: 900;
+            }
+        }
+    }
+
+    &__details {
+        display: grid;
+        grid-template-columns: 1.25fr 1fr 1fr;
+        gap: 28px;
+        padding: 22px 34px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.025);
+
+        > div {
+            min-width: 0;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 8px 20px;
+            align-items: center;
+            padding-right: 26px;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+
+            &:last-child {
+                border-right: 0;
+            }
+        }
+
+        span {
+            color: #c9c9c9;
+            font-size: 13px;
+        }
+
+        strong {
+            color: @white;
+            font-size: 15px;
+            font-weight: 800;
+        }
+
+        > div:last-child strong {
+            color: #ff3f3f;
+            font-size: 24px;
+        }
+    }
+}
+
+.studentMonthlyReceipt,
+.studentMonthlyPay {
+    width: 100%;
+    min-height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    border-radius: 5px;
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.studentMonthlyReceipt {
+    border: 1px solid rgba(255, 213, 0, 0.8);
+    color: @yellow;
+}
+
+.studentMonthlyPay {
+    border: 1px solid @yellow;
+    background: @yellow;
+    color: #050505;
+}
+
+.studentMonthlyInfo {
+    display: grid;
+    grid-template-columns: 44px 1fr;
+    gap: 18px;
+    margin-top: 18px;
+    padding: 22px;
+
+    > i {
+        width: 34px;
+        height: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid @white;
+        border-radius: 50%;
+        color: @white;
+        font-size: 20px;
+    }
+
+    h2 {
+        color: @white;
+        font-size: 18px;
+        font-weight: 900;
+        margin: 0 0 10px;
+    }
+
+    p {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        color: #d5d5d5;
+        font-size: 14px;
+        line-height: 1.5;
+        margin: 7px 0 0;
+
+        i {
+            color: @yellow;
+            font-size: 13px;
+            margin-top: 4px;
+        }
+    }
+}
+
+@media @tablet-large {
+    .studentMonthly {
+        .studentAreaContent {
+            max-width: none;
+        }
+    }
+
+    .studentMonthlyNext__box {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+
+        article {
+            padding: 0;
+            border-right: 0;
+        }
+
+        > a {
+            grid-column: 1 / -1;
+        }
+    }
+
+    .studentMonthlyTable__row {
+        grid-template-columns: 0.85fr 0.9fr 0.8fr 0.8fr 1.15fr 1fr;
+        gap: 12px;
+        padding: 0 14px;
+    }
+}
+
+@media @tablet-small {
+    .studentMonthlyHero {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 22px;
+
+        h1 {
+            font-size: 30px;
+        }
+    }
+
+    .studentMonthlyAlert {
+        grid-template-columns: 1fr;
+        padding: 20px;
+    }
+
+    .studentMonthlyHistory__head {
+        align-items: stretch;
+        flex-direction: column;
+
+        label {
+            width: 100%;
+        }
+    }
+
+    .studentMonthlyTable {
+        border: 0;
+        overflow: visible;
+
+        &__row {
+            grid-template-columns: 1fr;
+            gap: 10px;
+            min-height: 0;
+            margin-bottom: 12px;
+            padding: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 7px;
+            background: rgba(255, 255, 255, 0.035);
+
+            &--head {
+                display: none;
+            }
+
+            > span {
+                display: grid;
+                grid-template-columns: minmax(96px, 36%) 1fr;
+                gap: 12px;
+                align-items: center;
+                word-break: normal;
+                overflow-wrap: anywhere;
+
+                &::before {
+                    content: attr(data-label);
+                    color: #8f9297;
+                    font-size: 11px;
+                    font-weight: 900;
+                    text-transform: uppercase;
+                }
+            }
+        }
+
+        &__details {
+            grid-template-columns: 1fr;
+            gap: 14px;
+            margin: -6px 0 12px;
+            padding: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 7px;
+
+            > div {
+                border-right: 0;
+                padding-right: 0;
+            }
+        }
+    }
+}
+
+@media @mobile-sm {
+    .studentMonthlyHero {
+        gap: 18px;
+
+        > span {
+            width: 58px;
+            height: 58px;
+            flex-basis: 58px;
+            font-size: 28px;
+        }
+
+        h1 {
+            font-size: 27px;
+        }
+    }
+
+    .studentMonthlyNext,
+    .studentMonthlyHistory,
+    .studentMonthlyInfo {
+        padding: 16px;
+    }
+
+    .studentMonthlyNext__box {
+        grid-template-columns: 1fr;
+        padding: 16px;
+
+        article strong {
+            font-size: 25px;
+        }
+    }
+
+    .studentMonthlyInfo {
+        grid-template-columns: 1fr;
+    }
+}

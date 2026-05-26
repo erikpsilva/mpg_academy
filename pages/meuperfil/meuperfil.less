@@ -1,0 +1,213 @@
+.studentEditData {
+    .studentSignupForm {
+        gap: 20px;
+    }
+}
+
+.studentEditDataHero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 22px;
+    margin-bottom: 22px;
+    padding: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.13);
+    border-radius: 9px;
+    background:
+        linear-gradient(90deg, rgba(8, 9, 10, 0.98), rgba(8, 9, 10, 0.72)),
+        url('../images/areadoaluno/imgTopoBanner.png') center / cover no-repeat;
+
+    div {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 6px 18px;
+        align-items: center;
+    }
+
+    span {
+        grid-row: 1 / 3;
+        width: 62px;
+        height: 62px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid @yellow;
+        border-radius: 50%;
+        color: @yellow;
+        font-size: 31px;
+        background: rgba(255, 213, 0, 0.08);
+    }
+
+    h1 {
+        color: @white;
+        font-size: 30px;
+        line-height: 1.1;
+        font-weight: 900;
+        margin: 0;
+    }
+
+    p {
+        color: #d2d2d2;
+        font-size: 15px;
+        margin: 0;
+    }
+
+    > a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        min-height: 42px;
+        padding: 0 18px;
+        border: 1px solid @yellow;
+        border-radius: 6px;
+        color: @yellow;
+        font-size: 13px;
+        font-weight: 900;
+        text-transform: uppercase;
+
+        i {
+            transform: rotate(180deg);
+        }
+    }
+}
+
+.studentEditDataForm {
+    .studentSignupBox {
+        h2 {
+            margin-bottom: 14px;
+        }
+    }
+
+    &__profile {
+        display: flex;
+        align-items: center;
+        gap: 22px;
+        margin-bottom: 22px;
+
+        p {
+            color: #cfcfcf;
+            font-size: 14px;
+            line-height: 1.55;
+            margin: 0;
+        }
+    }
+
+    &__locked {
+        .studentField.is-disabled {
+            opacity: 0.72;
+            background: rgba(255, 255, 255, 0.02);
+
+            input {
+                color: #a9a9a9;
+                cursor: not-allowed;
+            }
+
+            &::before {
+                content: 'Bloqueado';
+                position: absolute;
+                right: 14px;
+                top: 12px;
+                color: @yellow;
+                font-size: 10px;
+                font-weight: 900;
+                text-transform: uppercase;
+            }
+        }
+    }
+}
+
+.studentEditDataActions {
+    display: grid;
+    grid-template-columns: 1fr 170px minmax(280px, 360px);
+    gap: 18px;
+    align-items: center;
+    padding: 26px;
+    border: 1px solid rgba(255, 213, 0, 0.34);
+    border-radius: 9px;
+    background: rgba(10, 12, 15, 0.78);
+
+    h2 {
+        color: @white;
+        font-size: 20px;
+        font-weight: 900;
+        margin: 0 0 8px;
+    }
+
+    p {
+        color: #cfcfcf;
+        font-size: 14px;
+        line-height: 1.5;
+        margin: 0;
+    }
+
+    a,
+    button {
+        min-height: 54px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        border-radius: 7px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 900;
+        text-transform: uppercase;
+    }
+
+    a {
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: @white;
+    }
+
+    button {
+        border: 0;
+        background: @yellow;
+        color: #050505;
+    }
+}
+
+@media @tablet-large {
+    .studentEditDataActions {
+        grid-template-columns: 1fr 1fr;
+
+        div {
+            grid-column: 1 / -1;
+        }
+    }
+}
+
+@media @tablet-small {
+    .studentEditDataHero {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 22px;
+
+        div {
+            grid-template-columns: 1fr;
+        }
+
+        span {
+            grid-row: auto;
+        }
+
+        h1 {
+            font-size: 26px;
+        }
+
+        > a {
+            width: 100%;
+        }
+    }
+
+    .studentEditDataForm {
+        &__profile {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+    }
+
+    .studentEditDataActions {
+        grid-template-columns: 1fr;
+    }
+}

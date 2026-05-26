@@ -1,0 +1,561 @@
+.studentSignup {
+    min-height: 100vh;
+    padding: 0 46px 58px;
+    background:
+        radial-gradient(circle at 50% 8%, rgba(255, 213, 0, 0.15), transparent 20%),
+        radial-gradient(circle at 8% 78%, rgba(255, 213, 0, 0.08), transparent 18%),
+        linear-gradient(180deg, #030506 0%, #08090a 48%, #050607 100%);
+    color: @white;
+
+    &__header {
+        min-height: 110px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 22px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+    }
+
+    &__brand {
+        display: inline-flex;
+        align-items: center;
+
+        img {
+            display: block;
+            width: 82px;
+            height: auto;
+        }
+    }
+
+    &__help {
+        display: inline-flex;
+        align-items: center;
+        gap: 13px;
+        min-width: 285px;
+        min-height: 66px;
+        padding: 0 20px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.03);
+        color: @white;
+
+        i {
+            color: @yellow;
+            font-size: 28px;
+        }
+
+        span {
+            display: grid;
+            gap: 2px;
+            flex: 1;
+            color: #d8d8d8;
+            font-size: 15px;
+            line-height: 1.15;
+        }
+
+        strong {
+            color: @white;
+            font-size: 14px;
+            font-weight: 900;
+        }
+
+        > .icon-go {
+            color: @white;
+            font-size: 21px;
+            font-weight: 500;
+        }
+    }
+
+    &__hero {
+        text-align: center;
+        padding: 0 0 12px;
+        margin-top: -36px;
+
+        h1 {
+            color: @white;
+            font-size: 42px;
+            line-height: 1.1;
+            font-weight: 900;
+            margin: 14px 0 8px;
+        }
+
+        p {
+            color: #cfcfcf;
+            font-size: 17px;
+            margin: 0;
+        }
+    }
+
+    &__photo {
+        position: relative;
+        width: 88px;
+        height: 88px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+
+        input {
+            display: none;
+        }
+    }
+
+    &__photoPreview {
+        width: 88px;
+        height: 88px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid @yellow;
+        border-radius: 50%;
+        background: rgba(255, 213, 0, 0.07);
+        box-shadow: 0 0 55px rgba(255, 213, 0, 0.26);
+        overflow: hidden;
+
+        i {
+            color: @yellow;
+            font-size: 42px;
+        }
+
+        img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    }
+
+    &__photoAdd {
+        position: absolute;
+        right: -3px;
+        bottom: 3px;
+        width: 30px;
+        height: 30px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid #050607;
+        border-radius: 50%;
+        background: @yellow;
+        color: #050505;
+        font-size: 24px;
+        line-height: 1;
+        font-weight: 900;
+    }
+
+    &__safe {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 11px;
+        color: #d8d8d8;
+        font-size: 13px;
+        margin: 26px 0 0;
+
+        i {
+            color: @yellow;
+            font-size: 22px;
+        }
+    }
+}
+
+.studentSignupForm {
+    display: grid;
+    gap: 16px;
+}
+
+.studentSignupNotice {
+    padding: 14px 18px;
+    border: 1px solid rgba(255, 80, 80, 0.34);
+    border-radius: 8px;
+    background: rgba(255, 80, 80, 0.1);
+    color: #ff9a9a;
+    font-size: 14px;
+    font-weight: 800;
+    margin: 0;
+
+    &--success {
+        border-color: rgba(255, 213, 0, 0.34);
+        background: rgba(255, 213, 0, 0.08);
+        color: @yellow;
+    }
+}
+
+.studentSignupForm__columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+
+    .studentSignupBox:nth-child(2) {
+        grid-row: span 2;
+    }
+}
+
+.studentSignupBox {
+    padding: 21px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 9px;
+    background:
+        radial-gradient(circle at 85% 15%, rgba(255, 255, 255, 0.05), transparent 22%),
+        rgba(10, 12, 15, 0.78);
+
+    h2 {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: @white;
+        font-size: 16px;
+        line-height: 1;
+        font-weight: 900;
+        text-transform: uppercase;
+        margin: 0 0 22px;
+
+        i {
+            color: @yellow;
+            font-size: 25px;
+        }
+    }
+}
+
+.studentSignupGrid {
+    display: grid;
+    gap: 16px;
+
+    &--full {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    &--two {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    &--address {
+        grid-template-columns: 1.55fr 0.95fr;
+    }
+}
+
+.studentField {
+    position: relative;
+    min-height: 70px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 15px 16px 12px 62px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.035);
+
+    &:focus-within {
+        border-color: rgba(255, 213, 0, 0.72);
+        box-shadow: 0 0 0 3px rgba(255, 213, 0, 0.08);
+    }
+
+    &--error {
+        border-color: rgba(255, 80, 80, 0.7) !important;
+        box-shadow: 0 0 0 3px rgba(255, 80, 80, 0.06) !important;
+    }
+
+    &__error {
+        display: block;
+        color: #ff8c8c;
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 1.2;
+        margin-top: 5px;
+    }
+
+    &--full {
+        grid-column: 1 / -1;
+    }
+
+    &--wide {
+        grid-column: span 1;
+    }
+
+    &--cep {
+        grid-column: 1 / -1;
+        padding-right: 170px;
+    }
+
+    &__icon {
+        position: absolute;
+        left: 20px;
+        top: 50%;
+        min-width: 22px;
+        color: #f0f0f0;
+        font-size: 20px;
+        line-height: 1;
+        text-align: center;
+        transform: translateY(-50%);
+
+        i {
+            font-size: 20px;
+        }
+    }
+
+    &__label {
+        color: @white;
+        font-size: 13px;
+        line-height: 1;
+        font-weight: 800;
+        margin-bottom: 8px;
+
+        b {
+            color: #ff9d00;
+        }
+    }
+
+    input,
+    select {
+        width: 100%;
+        height: 24px;
+        border: 0;
+        outline: none;
+        background: transparent;
+        color: #d7d7d7;
+        font-size: 16px;
+        line-height: 1;
+        appearance: none;
+
+        &::placeholder {
+            color: #c7c7c7;
+        }
+    }
+
+    select {
+        cursor: pointer;
+    }
+
+    &::after {
+        content: '';
+        display: none;
+        position: absolute;
+        right: 20px;
+        top: 50%;
+        width: 9px;
+        height: 9px;
+        border-right: 2px solid #dedede;
+        border-bottom: 2px solid #dedede;
+        transform: translateY(-70%) rotate(45deg);
+        pointer-events: none;
+    }
+
+    &:has(select)::after {
+        display: block;
+    }
+
+    button {
+        position: absolute;
+        right: 14px;
+        top: 50%;
+        min-width: 122px;
+        min-height: 40px;
+        border: 1px solid @yellow;
+        border-radius: 7px;
+        background: rgba(0, 0, 0, 0.18);
+        color: @yellow;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 900;
+        transform: translateY(-50%);
+    }
+
+    &__toggle {
+        min-width: auto !important;
+        min-height: auto !important;
+        border: 0 !important;
+        color: #dedede !important;
+        font-size: 11px !important;
+        text-transform: uppercase;
+
+        i {
+            font-size: 18px;
+        }
+    }
+}
+
+.studentSignupTerms {
+    display: grid;
+    grid-template-columns: auto 1fr minmax(320px, 480px);
+
+    &--error {
+        border-color: rgba(255, 80, 80, 0.6);
+        box-shadow: 0 0 0 3px rgba(255, 80, 80, 0.06);
+    }
+    gap: 20px;
+    align-items: center;
+    padding: 28px 34px;
+    border: 1px solid rgba(255, 213, 0, 0.34);
+    border-radius: 9px;
+    background: rgba(10, 12, 15, 0.78);
+
+    &__check {
+        cursor: pointer;
+
+        input {
+            display: none;
+
+            & + span::after {
+                opacity: 0;
+            }
+
+            &:checked + span {
+                background: @yellow;
+                border-color: @yellow;
+
+                &::after {
+                    opacity: 1;
+                }
+            }
+        }
+
+        span {
+            position: relative;
+            width: 34px;
+            height: 34px;
+            display: block;
+            border-radius: 8px;
+            background: transparent;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            transition: background 0.15s, border-color 0.15s;
+
+            &::after {
+                content: '';
+                position: absolute;
+                left: 10px;
+                top: 8px;
+                width: 11px;
+                height: 6px;
+                border-left: 2px solid #050505;
+                border-bottom: 2px solid #050505;
+                transform: rotate(-45deg);
+                transition: opacity 0.15s;
+            }
+        }
+    }
+
+    p {
+        color: @white;
+        font-size: 16px;
+        font-weight: 700;
+        margin: 0 0 10px;
+
+        a {
+            color: @yellow;
+            font-weight: 900;
+        }
+
+        b {
+            color: #ff4d4d;
+        }
+    }
+
+    small {
+        color: #c8c8c8;
+        font-size: 14px;
+    }
+
+    &__submit {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 28px;
+        min-height: 74px;
+        border: 0;
+        border-radius: 9px;
+        background: @yellow;
+        color: #050505;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: 900;
+        text-transform: uppercase;
+    }
+}
+
+@media @notebook-small {
+    .studentSignup {
+        padding-left: 24px;
+        padding-right: 24px;
+    }
+}
+
+@media @tablet-large {
+    .studentSignupForm__columns {
+        grid-template-columns: 1fr;
+
+        .studentSignupBox:nth-child(2) {
+            grid-row: auto;
+        }
+    }
+
+    .studentSignupTerms {
+        grid-template-columns: auto 1fr;
+
+        &__submit {
+            grid-column: 1 / -1;
+        }
+    }
+}
+
+@media @tablet-small {
+    .studentSignup {
+        padding: 0 16px 42px;
+
+        &__header {
+            min-height: 92px;
+        }
+
+        &__brand img {
+            width: 60px;
+        }
+
+        &__help {
+            min-width: auto;
+            min-height: 46px;
+            padding: 0 12px;
+
+            span {
+                display: none;
+            }
+        }
+
+        &__hero {
+            margin-top: 20px;
+
+            h1 {
+                font-size: 32px;
+            }
+        }
+    }
+
+    .studentSignupGrid,
+    .studentSignupGrid--full,
+    .studentSignupGrid--two,
+    .studentSignupGrid--address {
+        grid-template-columns: 1fr;
+    }
+
+    .studentField {
+        &--cep {
+            padding-right: 16px;
+        }
+
+        &--cep button {
+            position: static;
+            width: 100%;
+            margin-top: 14px;
+            transform: none;
+        }
+    }
+
+    .studentSignupTerms {
+        grid-template-columns: 1fr;
+        padding: 22px;
+        text-align: left;
+
+        &__submit {
+            min-height: 58px;
+            font-size: 15px;
+        }
+    }
+}

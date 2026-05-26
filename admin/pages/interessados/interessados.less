@@ -3,25 +3,30 @@
     &__header {
         align-items: center;
         margin-bottom: 25px;
+        padding: 24px;
+        border: 1px solid @borderColor;
+        border-radius: 8px;
+        background: rgba(17, 19, 21, 0.92);
 
         h2 {
-            font-size: 24px;
-            font-weight: @regular;
+            color: @white;
+            font-size: 30px;
+            font-weight: @bold;
             margin-bottom: 4px;
 
-            span { font-weight: @bold; color: @primary; }
+            span { font-weight: @bold; color: @alert; }
         }
 
         p {
-            color: @colorFont;
+            color: rgba(255, 255, 255, 0.68);
             font-size: 14px;
-            opacity: 0.7;
         }
     }
 
     &__totalCard {
-        background: @white;
-        border-left: 4px solid @primary;
+        background: linear-gradient(145deg, rgba(23, 25, 28, 0.96), rgba(9, 10, 12, 0.96));
+        border: 1px solid @borderColor;
+        border-left: 4px solid @alert;
         border-radius: 8px;
         padding: 18px 22px;
         text-align: right;
@@ -29,7 +34,7 @@
     }
 
     &__totalNum {
-        color: @primary;
+        color: @alert;
         display: block;
         font-size: 36px;
         font-weight: @bold;
@@ -38,7 +43,7 @@
     }
 
     &__totalLabel {
-        color: @colorFont;
+        color: rgba(255, 255, 255, 0.66);
         font-size: 11px;
         font-weight: @semiBold;
         letter-spacing: 0.5px;
@@ -67,13 +72,14 @@
     }
 
     &__count {
-        color: @colorFont;
+        color: rgba(255, 255, 255, 0.62);
         font-size: 13px;
         opacity: 0.65;
     }
 
     &__tableWrap {
-        background: @white;
+        background: rgba(17, 19, 21, 0.94);
+        border: 1px solid @borderColor;
         border-radius: 8px;
         margin-bottom: 20px;
         overflow-x: auto;
@@ -87,14 +93,14 @@
     }
 
     &__id {
-        color: @colorFont;
+        color: rgba(255, 255, 255, 0.45);
         opacity: 0.45;
         width: 50px;
     }
 
     &__loading,
     &__empty {
-        color: @colorFont;
+        color: rgba(255, 255, 255, 0.62);
         font-size: 13px;
         opacity: 0.6;
         padding: 30px 12px !important;
@@ -114,31 +120,36 @@
 }
 
 .btn--pag {
-    background: @white;
+    background: rgba(255, 255, 255, 0.06);
     border: 1px solid @borderColor;
     border-radius: 6px;
-    color: @colorFont;
+    color: rgba(255, 255, 255, 0.76);
     cursor: pointer;
     font-size: 13px;
     min-width: 38px;
     padding: 6px 12px;
     transition: all 0.2s;
 
+    &:disabled {
+        cursor: not-allowed;
+        opacity: 0.38;
+    }
+
     &:hover {
-        background: fade(@primary, 8%);
-        border-color: @primary;
-        color: @primary;
+        background: fade(@alert, 10%);
+        border-color: @alert;
+        color: @alert;
     }
 
     &--ativo {
-        background: @primary;
-        border-color: @primary;
-        color: @white;
+        background: @alert;
+        border-color: @alert;
+        color: #050505;
         font-weight: @semiBold;
 
         &:hover {
-            background: darken(@primary, 8%);
-            color: @white;
+            background: @white;
+            color: #050505;
         }
     }
 }

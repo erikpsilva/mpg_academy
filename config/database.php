@@ -5,7 +5,7 @@ require_once __DIR__ . '/app.php';
 $dbConfig = APP_IS_LOCAL
     ? [
         'host' => 'localhost',
-        'name' => 'mpg_db',
+        'name' => 'mpgacademy_mpg_db',
         'user' => 'root',
         'pass' => '',
     ]

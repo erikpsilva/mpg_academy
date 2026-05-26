@@ -1,0 +1,1074 @@
+.alunos {
+
+    &__header {
+        align-items: center;
+        background: rgba(17, 19, 21, 0.92);
+        border: 1px solid @borderColor;
+        border-radius: 8px;
+        margin-bottom: 25px;
+        padding: 24px;
+
+        h2 {
+            color: @white;
+            font-size: 30px;
+            font-weight: @bold;
+            margin-bottom: 4px;
+        }
+
+        p {
+            color: rgba(255, 255, 255, 0.68);
+            font-size: 14px;
+        }
+    }
+
+    &__headerActions {
+        align-items: center;
+        display: flex;
+        justify-content: flex-end;
+
+        @media @tabletSM {
+            margin-top: 15px;
+            justify-content: flex-start;
+        }
+    }
+
+    &__back {
+        color: rgba(255, 255, 255, 0.45);
+        display: block;
+        font-size: 13px;
+        margin-bottom: 8px;
+        .transition;
+
+        &:hover { color: @alert; }
+    }
+
+    &__tools {
+        display: grid;
+        grid-template-columns: minmax(240px, 1fr) minmax(200px, 340px) auto;
+        align-items: end;
+        gap: 18px;
+        margin-bottom: 18px;
+
+        @media @tabletSM {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    &__filtroWrap {
+        display: block;
+
+        span {
+            display: block;
+            color: rgba(255, 255, 255, 0.52);
+            font-size: 11px;
+            font-weight: @bold;
+            letter-spacing: 0.8px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .input {
+            height: 48px;
+            margin-bottom: 0;
+        }
+    }
+
+    &__filtroTurma {
+        height: 48px;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 7px;
+        background:
+            linear-gradient(90deg, rgba(255, 213, 0, 0.08), transparent 26%),
+            rgba(255, 255, 255, 0.055);
+        color: @white;
+        padding: 0 38px 0 16px;
+        width: 100%;
+        appearance: none;
+        background-image:
+            linear-gradient(45deg, transparent 50%, @alert 50%),
+            linear-gradient(135deg, @alert 50%, transparent 50%);
+        background-position:
+            calc(100% - 18px) 20px,
+            calc(100% - 12px) 20px;
+        background-size: 6px 6px, 6px 6px;
+        background-repeat: no-repeat;
+
+        option { background: #111315; color: @white; }
+
+        &:focus {
+            border-color: @alert;
+            box-shadow: 0 0 0 3px rgba(255, 213, 0, 0.1);
+            outline: none;
+        }
+    }
+
+    &__searchWrap {
+        display: block;
+
+        span {
+            display: block;
+            color: rgba(255, 255, 255, 0.52);
+            font-size: 11px;
+            font-weight: @bold;
+            letter-spacing: 0.8px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+    }
+
+    &__search {
+        height: 48px;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 7px;
+        background:
+            linear-gradient(90deg, rgba(255, 213, 0, 0.08), transparent 26%),
+            rgba(255, 255, 255, 0.055);
+        color: @white;
+        padding: 0 16px;
+        width: 100%;
+
+        &::placeholder {
+            color: rgba(255, 255, 255, 0.42);
+        }
+
+        &:focus {
+            border-color: @alert;
+            box-shadow: 0 0 0 3px rgba(255, 213, 0, 0.1);
+            outline: none;
+        }
+    }
+
+    &__resultMeta {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        min-height: 48px;
+        color: rgba(255, 255, 255, 0.58);
+        font-size: 13px;
+
+        @media @tabletSM {
+            justify-content: flex-start;
+            min-height: auto;
+        }
+    }
+
+    &__table {
+        table-layout: fixed;
+        min-width: 920px;
+        width: 100%;
+
+        th,
+        td {
+            vertical-align: middle;
+        }
+
+        td {
+            padding-top: 16px;
+            padding-bottom: 16px;
+        }
+
+        th:nth-child(1),
+        td:nth-child(1) {
+            width: 56px;
+        }
+
+        th:nth-child(2),
+        td:nth-child(2) {
+            width: 18%;
+        }
+
+        th:nth-child(3),
+        td:nth-child(3) {
+            width: 22%;
+        }
+
+        th:nth-child(4),
+        td:nth-child(4) {
+            width: 22%;
+        }
+
+        th:nth-child(5),
+        td:nth-child(5) {
+            width: 190px;
+        }
+
+        th:nth-child(6),
+        td:nth-child(6) {
+            width: 105px;
+            text-align: center;
+        }
+
+        th:nth-child(7),
+        td:nth-child(7) {
+            width: 160px;
+            text-align: right;
+        }
+    }
+
+    &__cellNome {
+        strong {
+            color: @white;
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    }
+
+    &__cellEmail {
+        color: rgba(255, 255, 255, 0.68);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__cellTurma {
+        white-space: normal;
+    }
+
+    &__cellMensalidade {
+        text-align: left;
+    }
+
+    &__cellStatus {
+        white-space: nowrap;
+    }
+
+    &__cellAcoes {
+        text-align: right;
+    }
+
+    &__btnDetalhe {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 40px;
+        min-width: 150px;
+        padding: 0 18px;
+        white-space: nowrap;
+    }
+
+    &__actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    &__pagination {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        margin: 18px 0 30px;
+        padding: 16px 18px;
+        border: 1px solid @borderColor;
+        border-radius: 8px;
+        background: rgba(17, 19, 21, 0.72);
+
+        @media @tabletSM {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+    }
+
+    &__paginationLabel {
+        color: rgba(255, 255, 255, 0.52);
+        font-size: 11px;
+        font-weight: @bold;
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+    }
+
+    &__paginationControls {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: flex-end;
+
+        &:empty::before {
+            content: 'Página 1 de 1';
+            display: inline-flex;
+            align-items: center;
+            min-height: 34px;
+            padding: 0 12px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 6px;
+            color: rgba(255, 255, 255, 0.58);
+            font-size: 12px;
+        }
+
+        @media @tabletSM {
+            justify-content: flex-start;
+        }
+    }
+
+    &__pageInfo {
+        color: rgba(255, 255, 255, 0.58);
+        font-size: 12px;
+        padding: 0 4px;
+    }
+
+    // ── Foto ──────────────────────────────────────────────────
+
+    &__fotoCard {
+        background: rgba(17, 19, 21, 0.94);
+        border: 1px solid @borderColor;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        overflow: hidden;
+        padding: 15px;
+        text-align: center;
+        .shadow;
+    }
+
+    &__foto {
+        border-radius: 6px;
+        max-width: 100%;
+        object-fit: cover;
+    }
+
+    &__detailLayout {
+        align-items: start;
+        display: grid;
+        gap: 20px;
+        grid-template-columns: minmax(0, 7fr) minmax(360px, 5fr);
+
+        @media @notebookSM {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    &__detailMain,
+    &__detailAside {
+        min-width: 0;
+    }
+
+    &__profileCard,
+    &__turmasCard {
+        margin-bottom: 0;
+    }
+
+    &__profileTop {
+        align-items: start;
+        border-bottom: 1px solid @borderColor;
+        display: grid;
+        gap: 18px;
+        grid-template-columns: 150px minmax(0, 1fr);
+        margin-bottom: 18px;
+        padding-bottom: 18px;
+
+        @media @tabletSM {
+            grid-template-columns: 1fr;
+        }
+
+        &--noPhoto {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    &__fotoCard--compact {
+        margin-bottom: 0;
+        padding: 8px;
+
+        .alunos__foto {
+            aspect-ratio: 1;
+            display: block;
+            height: 132px;
+            width: 132px;
+
+            @media @tabletSM {
+                height: 118px;
+                width: 118px;
+            }
+        }
+    }
+
+    &__profileSummary {
+        min-width: 0;
+
+        h3 {
+            color: @white;
+            font-size: 24px;
+            font-weight: @bold;
+            line-height: 1.15;
+            margin-bottom: 4px;
+        }
+
+        p {
+            color: rgba(255, 255, 255, 0.66);
+            font-size: 14px;
+            margin-bottom: 16px;
+            word-break: break-word;
+        }
+
+        dl {
+            display: grid;
+            gap: 16px;
+            grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+
+            @media @tabletSM {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        dt {
+            color: rgba(255, 255, 255, 0.42);
+            font-size: 11px;
+            font-weight: @bold;
+            letter-spacing: 0.5px;
+            margin-bottom: 3px;
+            text-transform: uppercase;
+        }
+
+        dd {
+            color: @white;
+            font-size: 13px;
+            font-weight: @semiBold;
+        }
+    }
+
+    &__profileLabel {
+        color: @alert;
+        display: block;
+        font-size: 11px;
+        font-weight: @bold;
+        letter-spacing: 0.8px;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+    }
+
+    &__detailColumns {
+        display: grid;
+        gap: 18px;
+        grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+
+        @media @tabletSM {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    &__turmasCard {
+        position: sticky;
+        top: 92px;
+
+        @media @notebookSM {
+            position: static;
+        }
+    }
+
+    // ── Card de detalhe ───────────────────────────────────────
+
+    // ── Turma badge (lista) ───────────────────────────────────
+
+    &__mensalidadeBadge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: rgba(255, 213, 0, 0.08);
+        border: 1px solid rgba(255, 213, 0, 0.28);
+        border-radius: 7px;
+        color: @alert;
+        font-size: 12px;
+        min-width: 150px;
+        padding: 7px 12px;
+        white-space: nowrap;
+
+        strong {
+            font-size: 17px;
+            font-weight: @bold;
+        }
+
+        em {
+            color: rgba(255, 213, 0, 0.55);
+            font-size: 11px;
+            font-style: normal;
+        }
+
+        &--desconto {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 3px;
+            padding: 7px 12px;
+        }
+    }
+
+    &__mensalidadeValor {
+        align-items: baseline;
+        display: inline-flex;
+        gap: 3px;
+        line-height: 1;
+        white-space: nowrap;
+    }
+
+    &__mensalidadeOriginal {
+        color: rgba(255, 255, 255, 0.3);
+        font-size: 11px;
+        text-decoration: line-through;
+    }
+
+    &__descontoBadge {
+        background: rgba(0, 200, 83, 0.18);
+        border: 1px solid rgba(0, 200, 83, 0.35);
+        border-radius: 4px;
+        color: #00c853;
+        font-size: 9px;
+        font-weight: @bold;
+        letter-spacing: 0.6px;
+        padding: 2px 6px;
+    }
+
+    &__mensalidadeDetalhes {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    &__mensalidadeItem {
+        align-items: center;
+        display: flex;
+        gap: 8px;
+        justify-content: space-between;
+    }
+
+    &__mensalidadeItemNome {
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 11px;
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 120px;
+    }
+
+    &__mensalidadeItemValor {
+        color: @white;
+        font-size: 12px;
+        white-space: nowrap;
+
+        s {
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 11px;
+        }
+
+        strong {
+            color: @alert;
+        }
+    }
+
+    &__mensalidadeTotal {
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        color: @alert;
+        font-size: 12px;
+        font-weight: @bold;
+        margin-top: 2px;
+        padding-top: 5px;
+        text-align: right;
+        white-space: nowrap;
+
+        s {
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 11px;
+            font-weight: normal;
+            margin-right: 4px;
+        }
+    }
+
+    &__turmaBadge {
+        background: rgba(255, 213, 0, 0.1);
+        border: 1px solid rgba(255, 213, 0, 0.22);
+        border-radius: 4px;
+        color: @alert;
+        display: inline-block;
+        font-size: 11px;
+        font-weight: @semiBold;
+        line-height: 1.4;
+        max-width: 100%;
+        overflow: hidden;
+        padding: 3px 8px;
+        text-overflow: ellipsis;
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+
+    &__semTurmaLabel {
+        color: rgba(255, 255, 255, 0.3);
+        font-size: 13px;
+    }
+
+    // ── Turmas do aluno (detalhe) ─────────────────────────────
+
+    &__turmasHeader {
+        border-bottom: 1px solid @borderColor;
+        margin-bottom: 16px;
+        padding-bottom: 10px;
+
+        h4 {
+            color: rgba(255, 255, 255, 0.45);
+            font-size: 11px;
+            font-weight: @semiBold;
+            letter-spacing: 0.5px;
+            margin-bottom: 0;
+            text-transform: uppercase;
+        }
+    }
+
+    &__turmaRow {
+        align-items: flex-start;
+        border-bottom: 1px solid @borderColor;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 12px;
+        padding: 13px 0;
+
+        &:last-child { border-bottom: none; }
+    }
+
+    &__turmaInfo {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-width: 140px;
+    }
+
+    &__turmaNome {
+        color: @white;
+        font-size: 14px;
+        font-weight: @semiBold;
+    }
+
+    &__turmaQuadra {
+        color: rgba(255, 255, 255, 0.45);
+        font-size: 12px;
+        margin-top: 2px;
+    }
+
+    &__turmaValorWrap {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        white-space: nowrap;
+
+        @media @tabletSM {
+            align-items: flex-start;
+        }
+    }
+
+    &__turmaValor {
+        color: @alert;
+        font-size: 13px;
+        font-weight: @bold;
+        white-space: nowrap;
+    }
+
+    &__turmaValorOriginal {
+        color: rgba(255, 255, 255, 0.3);
+        font-size: 11px;
+        text-decoration: line-through;
+        white-space: nowrap;
+    }
+
+    &__turmaAcoes {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+        flex-shrink: 0;
+        justify-content: flex-end;
+        width: 100%;
+
+        .btn {
+            min-height: 34px;
+            padding-left: 12px;
+            padding-right: 12px;
+        }
+
+        @media @tabletSM {
+            justify-content: flex-start;
+        }
+    }
+
+    &__turmaDesde {
+        color: rgba(255, 255, 255, 0.38);
+        font-size: 12px;
+        white-space: nowrap;
+
+        @media @tabletSM { display: none; }
+    }
+
+    &__semTurma {
+        color: rgba(255, 255, 255, 0.45);
+        font-size: 13px;
+        padding: 8px 0 16px;
+    }
+
+    &__addTurmaWrap {
+        align-items: end;
+        border-top: 1px solid @borderColor;
+        display: grid;
+        gap: 14px;
+        grid-template-columns: minmax(220px, 1fr) 150px;
+        margin-top: 14px;
+        padding-top: 16px;
+
+        .input {
+            background-color: rgba(255, 255, 255, 0.055);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 7px;
+            color: @white;
+            font-size: 13px;
+            height: 46px;
+            margin-bottom: 0;
+            min-width: 0;
+            padding: 0 14px;
+            width: 100%;
+
+            &:focus {
+                border-color: @alert;
+                box-shadow: 0 0 0 3px rgba(255, 213, 0, 0.1);
+                outline: none;
+            }
+        }
+
+        .btn {
+            flex-shrink: 0;
+            grid-column: 1 / -1;
+            justify-self: end;
+            min-height: 46px;
+            min-width: 128px;
+        }
+
+        @media @notebookSM {
+            grid-template-columns: 1fr 150px;
+        }
+
+        @media @tabletSM {
+            grid-template-columns: 1fr;
+
+            .btn {
+                justify-self: stretch;
+                width: 100%;
+            }
+        }
+    }
+
+    &__addTurmaData {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+
+        label {
+            color: rgba(255, 255, 255, 0.55);
+            font-size: 11px;
+            font-weight: @bold;
+            letter-spacing: 0.5px;
+            margin-bottom: 7px;
+            text-transform: uppercase;
+        }
+
+        .input {
+            flex: none;
+            min-width: 0;
+            width: 100%;
+        }
+
+        input[type="date"] {
+            color-scheme: dark;
+
+            &::-webkit-calendar-picker-indicator {
+                cursor: pointer;
+                filter: invert(84%) sepia(85%) saturate(1648%) hue-rotate(359deg) brightness(103%) contrast(104%);
+                opacity: 0.9;
+            }
+        }
+    }
+
+    &__selectTurma {
+        appearance: none;
+        background-color: rgba(255, 255, 255, 0.055);
+        background-image:
+            linear-gradient(45deg, transparent 50%, @alert 50%),
+            linear-gradient(135deg, @alert 50%, transparent 50%);
+        background-position:
+            calc(100% - 18px) 20px,
+            calc(100% - 12px) 20px;
+        background-size: 6px 6px, 6px 6px;
+        background-repeat: no-repeat;
+        padding-right: 40px !important;
+
+        option {
+            background: #111315;
+            color: @white;
+        }
+    }
+
+    &__detalheCard {
+        background: rgba(17, 19, 21, 0.94);
+        border: 1px solid @borderColor;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        padding: 22px;
+        .shadow;
+    }
+
+    &__detalheGrupo {
+        margin-bottom: 0;
+
+        h4 {
+            border-bottom: 1px solid @borderColor;
+            color: rgba(255, 255, 255, 0.45);
+            font-size: 11px;
+            font-weight: @semiBold;
+            letter-spacing: 0.5px;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            text-transform: uppercase;
+        }
+    }
+
+    &__detalheList {
+        li {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 11px;
+
+            span {
+                color: rgba(255, 255, 255, 0.42);
+                font-size: 11px;
+                font-weight: @semiBold;
+                letter-spacing: 0.4px;
+                margin-bottom: 2px;
+                text-transform: uppercase;
+            }
+
+            strong {
+                color: @white;
+                font-size: 14px;
+                font-weight: @semiBold;
+            }
+        }
+
+        &--inline {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+
+            li { min-width: 150px; }
+        }
+    }
+}
+
+// ── Status badge ──────────────────────────────────────────────────────────────
+
+.statusBadge {
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: @bold;
+    letter-spacing: 0.5px;
+    padding: 3px 8px;
+    text-transform: uppercase;
+
+    &--ativo    { background: rgba(0, 200, 83, 0.14);  color: #00c853; }
+    &--inativo  { background: rgba(255, 77, 77, 0.14); color: @error;  }
+    &--pendente { background: rgba(255, 157, 0, 0.14); color: @orange; }
+}
+
+// ── Modal de confirmação ──────────────────────────────────────────────────────
+
+.confirmModal {
+    align-items: center;
+    background: rgba(0, 0, 0, 0.78);
+    bottom: 0;
+    display: none;
+    justify-content: center;
+    left: 0;
+    position: fixed;
+    right: 0;
+    top: 0;
+    z-index: 200;
+
+    &--open { display: flex; }
+
+    &__box {
+        background: #111315;
+        border: 1px solid @borderColor;
+        border-radius: 10px;
+        max-width: 420px;
+        padding: 32px;
+        width: 90%;
+        .shadow;
+
+        h3 {
+            color: @white;
+            font-size: 18px;
+            font-weight: @bold;
+            margin-bottom: 12px;
+        }
+
+        p {
+            color: rgba(255, 255, 255, 0.72);
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+
+            strong { color: @white; }
+        }
+    }
+
+    &__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        justify-content: flex-end;
+
+        .btn {
+            min-height: 48px;
+            min-width: 122px;
+        }
+
+        @media @tabletSM {
+            .btn {
+                width: 100%;
+            }
+        }
+    }
+}
+
+// ── Modal de desconto ─────────────────────────────────────────────────────────
+
+.descontoModal {
+
+    &__box {
+        max-width: 520px !important;
+    }
+
+    &__turmaLabel {
+        color: rgba(255, 255, 255, 0.72);
+        font-size: 14px;
+        margin-bottom: 20px !important;
+
+        strong { color: @alert; }
+    }
+
+    &__form {
+        margin-bottom: 22px;
+    }
+
+    &__row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 140px;
+        gap: 14px;
+        margin-bottom: 14px;
+
+        @media @tabletSM {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    &__label {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+
+        span {
+            color: rgba(255, 255, 255, 0.52);
+            font-size: 11px;
+            font-weight: @bold;
+            letter-spacing: 0.8px;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        .input {
+            background-color: rgba(255, 255, 255, 0.055);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 7px;
+            color: @white;
+            font-size: 14px;
+            height: 46px;
+            margin-bottom: 0;
+            padding: 0 14px;
+            width: 100%;
+
+            &:focus {
+                border-color: @alert;
+                box-shadow: 0 0 0 3px rgba(255, 213, 0, 0.1);
+                outline: none;
+            }
+        }
+
+        &--tipo { min-width: 0; }
+    }
+
+    &__select {
+        height: 46px;
+        margin-bottom: 0;
+        appearance: none;
+        background-color: rgba(255, 255, 255, 0.055);
+        background-image:
+            linear-gradient(45deg, transparent 50%, @alert 50%),
+            linear-gradient(135deg, @alert 50%, transparent 50%);
+        background-position:
+            calc(100% - 18px) 20px,
+            calc(100% - 12px) 20px;
+        background-size: 6px 6px, 6px 6px;
+        background-repeat: no-repeat;
+        padding-right: 38px;
+
+        option { background: #111315; color: @white; }
+    }
+
+    &__input {
+        height: 46px;
+        margin-bottom: 0;
+    }
+
+    &__preview {
+        color: rgba(255, 255, 255, 0.72);
+        font-size: 13px;
+        margin-bottom: 16px;
+        min-height: 20px;
+        padding: 11px 13px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 7px;
+        background: rgba(255, 255, 255, 0.035);
+
+        strong { color: @alert; }
+        s { color: rgba(255, 255, 255, 0.35); }
+    }
+
+    &__checkLabel {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: rgba(255, 255, 255, 0.72);
+        font-size: 13px;
+        cursor: pointer;
+        margin-bottom: 14px;
+
+        input[type="checkbox"] { accent-color: @alert; width: 16px; height: 16px; }
+    }
+
+    &__datas {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 6px;
+
+        input[type="date"] {
+            color-scheme: dark;
+
+            &::-webkit-calendar-picker-indicator {
+                cursor: pointer;
+                filter: invert(84%) sepia(85%) saturate(1648%) hue-rotate(359deg) brightness(103%) contrast(104%);
+                opacity: 0.9;
+            }
+        }
+
+        @media @tabletSM {
+            grid-template-columns: 1fr;
+        }
+    }
+}

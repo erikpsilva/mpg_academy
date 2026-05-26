@@ -1,5 +1,10 @@
 .header {
-    background: @black;
+    background: rgba(0, 0, 0, 0.92);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.28);
+    position: sticky;
+    top: 0;
+    z-index: 8;
     width: 100%;
 
     &__row {
@@ -17,7 +22,7 @@
         gap: 15px;
 
         img {
-            max-height: 45px;
+            max-height: 48px;
             width: auto;
 
             @media @tabletSM {
@@ -32,10 +37,15 @@
         cursor: pointer;
         display: none;
         flex-shrink: 0;
-        padding: 4px;
+        height: 38px;
+        justify-content: center;
+        padding: 0;
+        width: 42px;
+        border: 1px solid rgba(255, 213, 0, 0.45);
+        border-radius: 6px;
 
         span {
-            background: @white;
+            background: @alert;
             border-radius: 2px;
             display: block;
             height: 2px;
@@ -57,6 +67,7 @@
         &__name {
             color: @white;
             font-size: 14px;
+            font-weight: @semiBold;
             margin-right: 20px;
 
             @media @tabletSM {
@@ -67,6 +78,7 @@
 
         &__logout {
             font-size: 13px;
+            border-radius: 6px;
             padding: 8px 20px;
 
             @media @tabletSM {

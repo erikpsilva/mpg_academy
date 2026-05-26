@@ -10,6 +10,10 @@ body{
     font-weight: @regular;
     color: @color-font;
 }
+
+body.is-menu-open {
+    overflow: hidden;
+}
 ul{
     padding: 0;
 }
@@ -26,3 +30,12 @@ h1, h2, h3, h4, h5, h6 {
     padding: 0;
 }
 
+:where(main:not(.home) > section + section) {
+    margin-top: 56px;
+}
+
+@media @tablet-small {
+    :where(main:not(.home) > section + section) {
+        margin-top: 36px;
+    }
+}

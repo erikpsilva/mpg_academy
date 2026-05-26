@@ -1,6 +1,10 @@
 Options -Indexes
 RewriteEngine On
 
+# Redirecionar non-www para www
+RewriteCond %{HTTP_HOST} ^mpgacademy\.com\.br$ [NC]
+RewriteRule ^(.*)$ https://www.mpgacademy.com.br/$1 [R=301,L]
+
 # Bloquear acesso direto à pasta config
 RewriteRule ^config/ - [F,L]
 

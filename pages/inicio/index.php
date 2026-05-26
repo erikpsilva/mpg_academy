@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<title>MPG Academy | Escola de Vôlei</title>
+<title>MPG Academy | Escola de Volei Adulto</title>
 
 <?php include ROOT . '/includes/assets.php';?>
 
@@ -9,189 +9,200 @@
 
 <body>
 
-<main class="home">
-    <section class="homeHero">
-        <div class="container">
-            <header class="homeHeader">
-                <a href="<?= BASE_URL ?>" class="homeBrand" aria-label="MPG Academy">
-                    <img class="homeBrand__logo" src="<?= BASE_URL ?>/images/logo.png" alt="MPG Academy - Escola de Vôlei">
-                </a>
+<?php include ROOT . '/includes/header/header.php';?>
 
-                <div class="homeHeader__status">
-                    <span>Zona Norte - São Paulo</span>
-                    <i class="homeHeader__dot" aria-hidden="true"></i>
-                    <span>Lançamento em breve</span>
-                    <a class="homeHeader__instagram" href="https://www.instagram.com/mpgacademy/" target="_blank" rel="noopener" aria-label="Acessar Instagram da MPG Academy">
-                        <img class="homeHeader__instagramIcon" src="<?= BASE_URL ?>/images/instagram.svg" alt="">
-                        <span class="homeHeader__instagramText">@mpgacademy</span>
+<main class="home">
+    <section class="homeHero" id="home">
+        <div class="container">
+            <div class="homeHero__content">
+                <h1 class="homeHero__title">
+                    <span>Volei adulto.</span>
+                    Evolução todos os dias.
+                </h1>
+
+                <p class="homeHero__text">
+                    Treinos para adultos 18+ de todos os níveis: do primeiro contato
+                    com o volei até quem já joga e quer evoluir com consistência.
+                </p>
+
+                <div class="homeHero__actions">
+                    <a class="homeButton homeButton--primary" href="<?= BASE_URL ?>/turmastreino">
+                        Ver turmas
+                        <i class="icon-go" aria-hidden="true"></i>
+                    </a>
+                    <a class="homeButton homeButton--outline" href="https://wa.me/5511972330097" target="_blank" rel="noopener">
+                        <i class="icon-whatsapp" aria-hidden="true"></i>
+                        Falar no WhatsApp
                     </a>
                 </div>
-            </header>
 
-            <div class="row align-items-center homeHero__grid">
-                <div class="col-lg-7 col-md-12">
-                    <div class="homeHero__content">
-                        <span class="homeTag">Matrículas em breve</span>
-
-                        <h1 class="homeHero__title">
-                            A nova escola de vôlei da <span>Zona Norte</span> está chegando.
-                        </h1>
-
-                        <p class="homeHero__text">
-                            A MPG Academy nasce com a proposta de criar uma experiência completa para quem ama vôlei.
-                            Vamos organizar turmas, horários fixos de treino, professores qualificados e uma comunidade
-                            apaixonada pelo esporte.
-                        </p>
-
-                        <div class="homeHero__actions">
-                            <a href="#cadastro" class="homeButton homeButton--primary">Quero participar</a>
-                            <a href="#sobre" class="homeButton homeButton--outline">Conheça o projeto</a>
-                        </div>
-
-                        <div class="row homeFeatures" id="sobre">
-                            <div class="col-md-4 col-sm-12">
-                                <article class="homeFeature">
-                                    <span class="homeFeature__icon">01</span>
-                                    <h3 class="homeFeature__title">Treinos</h3>
-                                    <p class="homeFeature__text">Turmas organizadas por nível, faixa etária e evolução dos alunos.</p>
-                                </article>
-                            </div>
-
-                            <div class="col-md-4 col-sm-12">
-                                <article class="homeFeature">
-                                    <span class="homeFeature__icon">02</span>
-                                    <h3 class="homeFeature__title">Professores</h3>
-                                    <p class="homeFeature__text">Equipe preparada para acompanhar sua evolução dentro de quadra.</p>
-                                </article>
-                            </div>
-
-                            <div class="col-md-4 col-sm-12">
-                                <article class="homeFeature">
-                                    <span class="homeFeature__icon">03</span>
-                                    <h3 class="homeFeature__title">Zona Norte</h3>
-                                    <p class="homeFeature__text">Quadras parceiras, horários fixos e treinos recorrentes em São Paulo.</p>
-                                </article>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-lg-5 col-md-12">
-                    <aside class="homeVisual" aria-label="MPG Academy em breve">
-                        <div class="homeVisual__court">
-                            <div class="homeVisual__circle" aria-hidden="true"></div>
-                            <div class="homeVisual__content">
-                                <span class="homeVisual__ball" aria-hidden="true"></span>
-                                <strong class="homeVisual__title">MPG</strong>
-                                <span class="homeVisual__subtitle">Academy</span>
-                                <i class="homeVisual__line" aria-hidden="true"></i>
-                                <p class="homeVisual__text">Em breve novas turmas, treinos e experiências para quem quer evoluir no vôlei.</p>
-                            </div>
-                        </div>
-
-                        <div class="row homeStats">
-                            <div class="col-4">
-                                <div class="homeStat">
-                                    <strong class="homeStat__number">+100</strong>
-                                    <span class="homeStat__label">Interessados</span>
-                                </div>
-                            </div>
-
-                            <div class="col-4">
-                                <div class="homeStat">
-                                    <strong class="homeStat__number">ZN</strong>
-                                    <span class="homeStat__label">São Paulo</span>
-                                </div>
-                            </div>
-
-                            <div class="col-4">
-                                <div class="homeStat">
-                                    <strong class="homeStat__number">2026</strong>
-                                    <span class="homeStat__label">Lançamento</span>
-                                </div>
-                            </div>
-                        </div>
-                    </aside>
-                </div>
+                <ul class="homeHighlights" aria-label="Destaques MPG Academy">
+                    <li><i class="icon-adultos18" aria-hidden="true"></i> Adultos 18+</li>
+                    <li><i class="icon-evolucaotecnica" aria-hidden="true"></i> Evolução técnica</li>
+                    <li><i class="icon-inicianteintermediario" aria-hidden="true"></i> Do iniciante ao avançado</li>
+                </ul>
             </div>
         </div>
     </section>
 
-    <section class="homeSignup" id="cadastro">
+    <section class="homeBenefits" aria-label="Benefícios">
         <div class="container">
-            <div class="homeSignup__box">
-                <div class="row align-items-center">
-                    <div class="col-lg-5 col-md-12">
-                        <div class="homeSignup__content">
-                            <span class="homeTag">Faça parte do início da MPG</span>
+            <div class="homeCards">
+                <article class="homeCard">
+                    <i class="icon-treinosfocados" aria-hidden="true"></i>
+                    <h3>Treinos Focados</h3>
+                    <p>Metodologia que desenvolve técnica, tática, físico e mental.</p>
+                </article>
 
-                            <h2 class="homeSignup__title">Entre na lista de interesse.</h2>
+                <article class="homeCard">
+                    <i class="icon-comunidade" aria-hidden="true"></i>
+                    <h3>Comunidade</h3>
+                    <p>Ambiente saudável, leve e acolhedor para evoluir no seu ritmo.</p>
+                </article>
 
-                            <p class="homeSignup__text">
-                                Preencha seus dados para receber novidades sobre abertura das turmas, horários disponíveis,
-                                quadras parceiras e início oficial das inscrições.
-                            </p>
+                <article class="homeCard">
+                    <i class="icon-inicianteintermediario" aria-hidden="true"></i>
+                    <h3>Todos os Níveis</h3>
+                    <p>Turmas para iniciantes, intermediários e avançados.</p>
+                </article>
 
-                            <ul class="homeCheckList">
-                                <li class="homeCheckList__item">Treinos organizados por nível</li>
-                                <li class="homeCheckList__item">Professores qualificados</li>
-                                <li class="homeCheckList__item">Quadras na Zona Norte de SP</li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <div class="col-lg-7 col-md-12">
-                        <form class="homeForm" id="homeLeadForm" action="<?= BASE_URL ?>/services/site/register_interest.php" method="post">
-                            <div class="row">
-                                <div class="col-md-12">
-                                    <label class="homeForm__field" for="nome">
-                                        <span class="homeForm__label">Nome completo</span>
-                                        <input class="homeForm__input" id="nome" name="nome" type="text" placeholder="Digite seu nome" required>
-                                    </label>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label class="homeForm__field" for="email">
-                                        <span class="homeForm__label">E-mail</span>
-                                        <input class="homeForm__input" id="email" name="email" type="email" placeholder="Digite seu e-mail" required>
-                                    </label>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label class="homeForm__field" for="celular">
-                                        <span class="homeForm__label">Celular / WhatsApp</span>
-                                        <input class="homeForm__input" id="celular" name="celular" type="tel" placeholder="(11) 99999-9999" required>
-                                    </label>
-                                </div>
-
-                                <div class="col-md-12">
-                                    <button class="homeForm__button" type="submit">Quero fazer parte</button>
-                                    <small class="homeForm__note">
-                                        Seus dados serão utilizados apenas para contato sobre a abertura da MPG Academy.
-                                    </small>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+                <article class="homeCard">
+                    <i class="icon-flexibilidade" aria-hidden="true"></i>
+                    <h3>Flexibilidade</h3>
+                    <p>Horários estratégicos para se encaixar na sua rotina.</p>
+                </article>
             </div>
         </div>
     </section>
 
-    <footer class="homeFooter">
+    <section class="homePlansBanner" aria-label="Turmas e valores">
         <div class="container">
-            <div class="homeFooter__grid">
-                <p class="homeFooter__copy">© 2026 MPG Academy - Escola de Vôlei</p>
-                <p class="homeFooter__links">
-                    São Paulo - Zona Norte |
-                    <a href="https://www.instagram.com/mpgacademy/" target="_blank" rel="noopener">Instagram - @mpgacademy</a> |
-                    <a href="https://wa.me/55119972330097" target="_blank" rel="noopener">WhatsApp - 11 997233-0097</a>
-                </p>
+            <a class="homePlansBanner__box" href="<?= BASE_URL ?>/turmastreino">
+                <img src="<?= BASE_URL ?>/images/turmasvalores/bannerTopo.png" alt="Turmas de volei MPG Academy">
+                <div>
+                    <span class="homeEyebrow">Turmas e Valores</span>
+                    <h2>Encontre a turma ideal para você.</h2>
+                    <p>Veja horários, níveis, valores e promoções disponíveis para começar seus treinos na MPG Academy.</p>
+                </div>
+                <strong>
+                    Ver turmas e valores
+                    <i class="icon-go" aria-hidden="true"></i>
+                </strong>
+            </a>
+        </div>
+    </section>
+
+    <section class="homeAbout" id="sobre">
+        <div class="container">
+            <div class="homeAbout__grid">
+                <div class="homeAbout__content">
+                    <span class="homeEyebrow">Sobre Nós</span>
+                    <h2>Mais que uma escola, <span>uma experiência.</span></h2>
+                    <p>A MPG Academy nasceu da paixão pelo volei e do desejo de criar um ambiente onde adultos possam aprender, evoluir e construir amizades através do esporte.</p>
+                    <p>Aqui você encontra estrutura, metodologia e um time de profissionais dedicados para acompanhar o seu nível, seja você iniciante, intermediário ou avançado.</p>
+                    <a class="homeButton homeButton--small homeButton--outline" href="#treinos">
+                        Conhecer nossa história
+                        <i class="icon-go" aria-hidden="true"></i>
+                    </a>
+                </div>
+
+                <figure class="homeAbout__image">
+                    <img src="<?= BASE_URL ?>/images/home/imgMaisQueUmaEscola.png" alt="Equipe MPG Academy reunida em quadra">
+                </figure>
             </div>
         </div>
-    </footer>
+    </section>
+
+    <!--
+    <section class="homeNumbers" aria-label="Números da MPG Academy">
+        <div class="container">
+            <div class="homeNumbers__bar">
+                <article>
+                    <i class="icon-alunos" aria-hidden="true"></i>
+                    <strong>+200</strong>
+                    <span>Alunos</span>
+                </article>
+                <article>
+                    <i class="icon-timesativossvg" aria-hidden="true"></i>
+                    <strong>15+</strong>
+                    <span>Turmas ativas</span>
+                </article>
+                <article>
+                    <i class="icon-diasdetreino" aria-hidden="true"></i>
+                    <strong>6</strong>
+                    <span>Dias de treino</span>
+                </article>
+                <article>
+                    <i class="icon-inicianteintermediario" aria-hidden="true"></i>
+                    <strong>3</strong>
+                    <span>Níveis de treino</span>
+                </article>
+                <article>
+                    <i class="icon-zonanorte" aria-hidden="true"></i>
+                    <strong>Zona Norte</strong>
+                    <span>São Paulo - SP</span>
+                </article>
+            </div>
+        </div>
+    </section>
+    -->
+
+    <section class="homeTraining" id="treinos">
+        <div class="container">
+            <div class="homeSectionTitle">
+                <span class="homeEyebrow">Nossos Treinos</span>
+                <h2>Do iniciante ao avançado</h2>
+            </div>
+
+            <div class="homeCards homeCards--training">
+                <article class="homeCard">
+                    <i class="icon-inicianteintermediario" aria-hidden="true"></i>
+                    <h3>Iniciante / Intermediário</h3>
+                    <p>Para quem quer aprender, se desenvolver e ganhar confiança.</p>
+                    <a href="#contato">Saiba mais <i class="icon-go" aria-hidden="true"></i></a>
+                </article>
+
+                <article class="homeCard">
+                    <i class="icon-intermediarioavancado" aria-hidden="true"></i>
+                    <h3>Intermediário / Avançado</h3>
+                    <p>Treinos intensos para elevar seu nível técnico e tático.</p>
+                    <a href="#contato">Saiba mais <i class="icon-go" aria-hidden="true"></i></a>
+                </article>
+
+                <article class="homeCard">
+                    <i class="icon-comunidade" aria-hidden="true"></i>
+                    <h3>Turmas por Nível</h3>
+                    <p>Treinos organizados para você evoluir com pessoas no mesmo momento de jogo.</p>
+                    <a href="#contato">Saiba mais <i class="icon-go" aria-hidden="true"></i></a>
+                </article>
+
+                <article class="homeCard">
+                    <i class="icon-condicionamentofisico" aria-hidden="true"></i>
+                    <h3>Condicionamento Físico</h3>
+                    <p>Treinos físicos específicos para melhorar sua performance.</p>
+                    <a href="#contato">Saiba mais <i class="icon-go" aria-hidden="true"></i></a>
+                </article>
+            </div>
+
+            <aside class="homeCta" id="planos">
+                <img src="<?= BASE_URL ?>/images/home/imgProntoPraFazerParteDaMpgAcademy.png" alt="Bola de volei MPG Academy">
+                <div>
+                    <h2>Pronto para fazer parte <span>da MPG Academy?</span></h2>
+                    <p>Venha treinar, evoluir e viver o volei com a gente!</p>
+                </div>
+                <div class="homeCta__actions">
+                    <a class="homeButton homeButton--primary" href="https://wa.me/5511972330097" target="_blank" rel="noopener">
+                        <i class="icon-whatsapp" aria-hidden="true"></i>
+                        Falar no WhatsApp
+                    </a>
+                    <a href="#treinos">Ver planos e horários <i class="icon-go" aria-hidden="true"></i></a>
+                </div>
+            </aside>
+        </div>
+    </section>
 </main>
 
+<?php include ROOT . '/includes/footer/footer.php';?>
 <?php include ROOT . '/includes/scripts.php';?>
 <?php
 $version = time();

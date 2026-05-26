@@ -5,8 +5,8 @@ require_once dirname(__FILE__, 3) . '/config/mail.php';
 
 const MPG_MAIL_FROM      = 'contato@mpgacademy.com.br';
 const MPG_INSTAGRAM_URL  = 'https://www.instagram.com/mpgacademy/';
-const MPG_WHATSAPP_URL   = 'https://wa.me/55119972330097';
-const MPG_PHONE_LABEL    = '11 997233-0097';
+const MPG_WHATSAPP_URL   = 'https://wa.me/5511972330097';
+const MPG_PHONE_LABEL    = '11 97233-0097';
 
 function mpgLogoUrl(): string {
     return (APP_IS_LOCAL ? appBaseUrl() : 'https://www.mpgacademy.com.br') . '/images/logo.png';
@@ -142,6 +142,150 @@ function sendMpgSignupConfirmation(string $to, string $nome): bool {
     }
 
     // Fallback: mail() nativo do PHP
+    return _mpgMailNative($to, $subject, $body, $config);
+}
+
+// ── Email: confirmação de aula experimental ───────────────────────────────────
+
+function buildMpgTesteEmail(string $nome, string $turma, string $dataFormatada, string $horario): string {
+    $safeName   = htmlspecialchars($nome,          ENT_QUOTES, 'UTF-8');
+    $safeTurma  = htmlspecialchars($turma,         ENT_QUOTES, 'UTF-8');
+    $safeData   = htmlspecialchars($dataFormatada, ENT_QUOTES, 'UTF-8');
+    $safeHora   = htmlspecialchars($horario,       ENT_QUOTES, 'UTF-8');
+
+    return '
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aula experimental confirmada - MPG Academy</title>
+</head>
+<body style="margin:0;padding:0;background:#050505;font-family:Arial,Helvetica,sans-serif;color:#ffffff;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#050505;padding:32px 16px;">
+        <tr>
+            <td align="center">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;background:#111113;border:1px solid #262626;border-radius:8px;overflow:hidden;">
+                    <tr>
+                        <td style="padding:34px 32px 20px;text-align:center;background:#050505;">
+                            <img src="' . mpgLogoUrl() . '" alt="MPG Academy" width="240" style="display:block;margin:0 auto;max-width:100%;height:auto;">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:34px 32px 12px;">
+                            <p style="margin:0 0 12px;color:#ffd500;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Aula experimental</p>
+                            <h1 style="margin:0 0 18px;color:#ffffff;font-size:28px;line-height:1.15;font-weight:900;">Sua aula esta confirmada, ' . $safeName . '!</h1>
+                            <p style="margin:0 0 24px;color:#d4d4d8;font-size:16px;line-height:1.7;">
+                                Ficamos felizes em te receber na MPG Academy. Sua aula experimental esta agendada com os detalhes abaixo:
+                            </p>
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#1a1a1e;border:1px solid #2e2e34;border-radius:8px;overflow:hidden;margin-bottom:24px;">
+                                <tr>
+                                    <td style="padding:18px 22px;border-bottom:1px solid #2e2e34;">
+                                        <p style="margin:0 0 4px;color:#ffd500;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">Turma</p>
+                                        <p style="margin:0;color:#ffffff;font-size:16px;font-weight:700;">' . $safeTurma . '</p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:18px 22px;border-bottom:1px solid #2e2e34;">
+                                        <p style="margin:0 0 4px;color:#ffd500;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">Data</p>
+                                        <p style="margin:0;color:#ffffff;font-size:16px;font-weight:700;">' . $safeData . '</p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:18px 22px;">
+                                        <p style="margin:0 0 4px;color:#ffd500;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">Horario</p>
+                                        <p style="margin:0;color:#ffffff;font-size:16px;font-weight:700;">' . $safeHora . '</p>
+                                    </td>
+                                </tr>
+                            </table>
+                            <p style="margin:0;color:#d4d4d8;font-size:15px;line-height:1.7;">
+                                Lembre-se de chegar alguns minutos antes. Caso precise remarcar ou tenha alguma duvida, fale com a gente pelo WhatsApp.
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:22px 32px 34px;">
+                            <a href="' . MPG_WHATSAPP_URL . '" style="display:block;background:#ffd500;color:#050505;text-decoration:none;text-align:center;font-size:15px;font-weight:900;text-transform:uppercase;border-radius:8px;padding:15px 18px;">Falar no WhatsApp: ' . MPG_PHONE_LABEL . '</a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:20px 32px;background:#0a0a0b;border-top:1px solid #262626;text-align:center;">
+                            <p style="margin:0;color:#85858c;font-size:13px;line-height:1.6;">
+                                MPG Academy - Escola de Volei<br>
+                                Instagram: @mpgacademy | WhatsApp: ' . MPG_PHONE_LABEL . '
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>';
+}
+
+function sendMpgTesteConfirmation(string $to, string $nome, string $turma, string $dataFormatada, string $horario): bool {
+    $config  = getMpgMailConfig();
+    $subject = 'Aula experimental confirmada - MPG Academy';
+    $body    = buildMpgTesteEmail($nome, $turma, $dataFormatada, $horario);
+
+    $host    = $_SERVER['HTTP_HOST'] ?? '';
+    $isLocal = strpos($host, 'localhost') !== false || strpos($host, '127.0.0.1') !== false;
+    if ($isLocal) {
+        $dir = dirname(__FILE__, 3) . '/storage/emails_teste';
+        if (!is_dir($dir)) mkdir($dir, 0755, true);
+        $fname = $dir . '/' . date('Y-m-d_H-i-s') . '_teste_' . preg_replace('/[^a-z0-9]/i', '_', $to) . '.html';
+        $meta  = '<div style="background:#fff3cd;border:1px solid #ffc107;padding:12px 16px;font-family:monospace;font-size:12px;margin-bottom:16px;">'
+               . '<strong>[TESTE LOCAL]</strong> Para: <b>' . htmlspecialchars($to) . '</b> | '
+               . 'Assunto: <b>' . htmlspecialchars($subject) . '</b> | '
+               . date('d/m/Y H:i:s') . '</div>';
+        file_put_contents($fname, $meta . $body);
+        error_log('[mpg-email-local] Salvo em: ' . $fname);
+        return true;
+    }
+
+    if ($config['smtp_active'] && $config['smtp_host'] && $config['smtp_user'] && $config['smtp_pass']) {
+        $autoload = dirname(__FILE__, 3) . '/vendor/autoload.php';
+        if (!file_exists($autoload)) {
+            error_log('[mpg-email] vendor/autoload.php nao encontrado — rode composer install');
+            return _mpgMailNative($to, $subject, $body, $config);
+        }
+        require_once $autoload;
+
+        try {
+            $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
+            $mail->isSMTP();
+            $mail->Host     = $config['smtp_host'];
+            $mail->SMTPAuth = true;
+            $mail->Username = $config['smtp_user'];
+            $mail->Password = $config['smtp_pass'];
+            $mail->Port     = (int) $config['smtp_port'];
+
+            $enc = strtolower($config['smtp_enc'] ?? 'tls');
+            if ($enc === 'ssl') {
+                $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
+            } elseif ($enc === 'tls') {
+                $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+            } else {
+                $mail->SMTPAutoTLS = false;
+                $mail->SMTPSecure  = false;
+            }
+
+            $mail->setFrom($config['from_addr'], $config['from_name']);
+            $mail->addReplyTo($config['from_addr'], $config['from_name']);
+            $mail->addAddress($to);
+            $mail->CharSet = 'UTF-8';
+            $mail->isHTML(true);
+            $mail->Subject = $subject;
+            $mail->Body    = $body;
+            $mail->send();
+            return true;
+        } catch (\PHPMailer\PHPMailer\Exception $e) {
+            error_log('[mpg-email] PHPMailer error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
     return _mpgMailNative($to, $subject, $body, $config);
 }
 

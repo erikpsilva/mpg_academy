@@ -5,47 +5,73 @@
     &__content {
         flex: 1;
         overflow: auto;
-        padding: 30px;
+        padding: 34px;
+        min-width: 0;
+
+        @media @tabletSM {
+            padding: 22px 16px;
+        }
     }
 }
 
 .sidebar {
-    background: @white;
-    border-right: 1px solid @borderColor;
+    background: linear-gradient(180deg, #0b0d0f 0%, #050607 100%);
+    border-right: 1px solid rgba(255, 255, 255, 0.12);
     flex-shrink: 0;
-    width: 250px;
+    width: 268px;
     .transition(transform 0.3s ease);
 
     &__menu {
-        padding: 10px 0;
+        padding: 18px 10px;
+    }
+
+    &__section {
+        color: rgba(255, 213, 0, 0.72);
+        font-size: 10px;
+        font-weight: @bold;
+        letter-spacing: 1.4px;
+        margin: 20px 8px 9px;
+        text-transform: uppercase;
+
+        &:first-child {
+            margin-top: 4px;
+        }
+    }
+
+    &__divider {
+        height: 1px;
+        margin: 16px 8px 18px;
+        background: rgba(255, 255, 255, 0.14);
     }
 
     &__link {
-        border-left: 3px solid transparent;
-        color: @colorFont;
+        border: 1px solid transparent;
+        border-radius: 7px;
+        color: rgba(255, 255, 255, 0.76);
         display: block;
         font-size: 12px;
-        font-weight: @semiBold;
-        letter-spacing: 1px;
-        padding: 14px 25px;
+        font-weight: @bold;
+        letter-spacing: 0.5px;
+        margin-bottom: 6px;
+        padding: 14px 16px;
         text-transform: uppercase;
         .transition;
 
         &:hover {
-            background: @bgBoxContent;
-            border-left-color: @primary;
-            color: @primary;
+            background: rgba(255, 213, 0, 0.08);
+            border-color: rgba(255, 213, 0, 0.32);
+            color: @alert;
         }
 
         &--active {
-            background: @bgBoxContent;
-            border-left-color: @primary;
-            color: @primary;
+            background: @alert;
+            border-color: @alert;
+            color: #050505;
         }
     }
 
     &__overlay {
-        background: rgba(0, 0, 0, 0.5);
+        background: rgba(0, 0, 0, 0.68);
         bottom: 0;
         display: none;
         left: 0;

@@ -1,3 +1,139 @@
 .footer {
+    border-top: 1px solid @yellow;
+    background: #050607;
+    color: #c9c9c9;
+    padding: 28px 0 26px;
 
+    &__grid {
+        display: grid;
+        grid-template-columns: 1.35fr 0.7fr 0.85fr 1.05fr 0.95fr;
+        gap: 36px;
+        align-items: stretch;
+    }
+
+    &__brand,
+    &__nav,
+    &__contact,
+    &__social {
+        min-height: 100%;
+        padding-right: 28px;
+        border-right: 1px solid rgba(255, 255, 255, 0.14);
+    }
+
+    &__social {
+        border-right: 0;
+        padding-right: 0;
+    }
+
+    &__logo {
+        display: block;
+        width: 126px;
+        height: auto;
+        margin-bottom: 12px;
+    }
+
+    p,
+    a,
+    small {
+        color: #b8b8b8;
+        font-size: 13px;
+        line-height: 1.45;
+        margin: 0;
+    }
+
+    small {
+        display: block;
+        color: #8f8f8f;
+        margin-top: 18px;
+    }
+
+    strong {
+        display: block;
+        color: @white;
+        font-size: 13px;
+        font-weight: 900;
+        text-transform: uppercase;
+        margin-bottom: 16px;
+    }
+
+    &__nav {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+
+        a {
+            .transition(0.25s all);
+
+            &:hover {
+                color: @yellow;
+            }
+        }
+    }
+
+    &__contact {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+
+        a,
+        p {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        i {
+            color: @yellow;
+            font-size: 17px;
+            margin-top: 1px;
+        }
+    }
+
+    &__social {
+        a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: @white;
+            font-size: 15px;
+
+            i {
+                width: 34px;
+                height: 34px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                border: 2px solid #ed276f;
+                border-radius: 8px;
+                color: #ed276f;
+                font-size: 22px;
+            }
+        }
+    }
+}
+
+@media @tablet-large {
+    .footer {
+        &__grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        &__brand,
+        &__nav,
+        &__contact,
+        &__social {
+            min-height: auto;
+            border-right: 0;
+            padding-right: 0;
+        }
+    }
+}
+
+@media @mobile-large {
+    .footer {
+        &__grid {
+            grid-template-columns: 1fr;
+            gap: 26px;
+        }
+    }
 }

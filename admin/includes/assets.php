@@ -1,3 +1,4 @@
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, user-scalable=no">
 
 <meta name="title" content="MPG Academy">
