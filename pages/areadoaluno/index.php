@@ -4,6 +4,7 @@ if (empty($_SESSION['aluno'])) {
     exit;
 }
 
+// Usa a sessão já sincronizada pelo header (inclui foto mais recente)
 $aluno = $_SESSION['aluno'];
 $primeiroNome = explode(' ', $aluno['nome'])[0];
 

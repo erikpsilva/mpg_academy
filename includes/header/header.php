@@ -6,6 +6,24 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 $aluno = $_SESSION['aluno'] ?? null;
+
+// Sincroniza foto e dados do aluno com o banco (pode ter sido atualizado pelo app)
+if ($aluno && !empty($aluno['id'])) {
+    if (!defined('ROOT')) define('ROOT', dirname(__FILE__, 3));
+    require_once ROOT . '/config/database.php';
+    $__pdo  = getDbConnection();
+    $__stmt = $__pdo->prepare("SELECT foto, nome, email, celular FROM alunos WHERE id = ?");
+    $__stmt->execute([$aluno['id']]);
+    $__fresh = $__stmt->fetch(PDO::FETCH_ASSOC);
+    if ($__fresh) {
+        $_SESSION['aluno']['foto']    = $__fresh['foto'];
+        $_SESSION['aluno']['nome']    = $__fresh['nome'];
+        $_SESSION['aluno']['email']   = $__fresh['email'];
+        $_SESSION['aluno']['celular'] = $__fresh['celular'];
+        $aluno = $_SESSION['aluno'];
+    }
+}
+
 $primeiroNome = $aluno ? explode(' ', $aluno['nome'])[0] : '';
 ?>
 <header class="header<?= $isStudentArea ? ' header--studentArea' : '' ?>">

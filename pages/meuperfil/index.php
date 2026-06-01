@@ -167,11 +167,6 @@ function sel($opt, $val) { return $opt === $val ? ' selected' : ''; }
                                 <input type="email" name="email" value="<?= e($perfil['email']) ?>" required>
                             </label>
 
-                            <label class="studentField studentField--full">
-                                <span class="studentField__icon" aria-hidden="true"><i class="icon-whatsapp"></i></span>
-                                <span class="studentField__label">WhatsApp <b>*</b></span>
-                                <input type="text" name="whatsapp" class="studentPhone" value="<?= e($perfil['whatsapp']) ?>" required>
-                            </label>
                         </div>
                     </section>
 

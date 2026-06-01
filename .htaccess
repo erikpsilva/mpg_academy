@@ -1,6 +1,9 @@
 Options -Indexes
 RewriteEngine On
 
+# Passa o header Authorization para o PHP (necessário para autenticação mobile Bearer token)
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
 # Redirecionar non-www para www
 RewriteCond %{HTTP_HOST} ^mpgacademy\.com\.br$ [NC]
 RewriteRule ^(.*)$ https://www.mpgacademy.com.br/$1 [R=301,L]

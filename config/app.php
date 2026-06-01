@@ -21,7 +21,15 @@ function appHostName(): string {
 function appIsLocal(): bool {
     $host = appHostName();
 
-    return in_array($host, ['localhost', '127.0.0.1', '::1'], true);
+    // Localhost padrão
+    if (in_array($host, ['localhost', '127.0.0.1', '::1'], true)) return true;
+
+    // IPs de rede local (acesso via celular/dispositivo na mesma rede)
+    if (preg_match('/^192\.168\./', $host)) return true;
+    if (preg_match('/^10\./',       $host)) return true;
+    if (preg_match('/^172\.(1[6-9]|2\d|3[01])\./', $host)) return true;
+
+    return false;
 }
 
 function appScheme(): string {

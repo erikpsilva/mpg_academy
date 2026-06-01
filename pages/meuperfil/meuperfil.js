@@ -70,11 +70,6 @@ $(document).ready(() => {
                 if (!telefoneValido(val)) return 'Celular inválido. Inclua o DDD.';
                 return '';
             },
-            whatsapp() {
-                if (!val.trim()) return 'WhatsApp é obrigatório.';
-                if (!telefoneValido(val)) return 'Número inválido. Inclua o DDD.';
-                return '';
-            },
             cep() {
                 if (!val.trim()) return 'CEP é obrigatório.';
                 if (val.replace(/\D/g, '').length !== 8) return 'CEP inválido.';

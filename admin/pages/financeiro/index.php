@@ -434,6 +434,16 @@ if ($aba === 'divida') {
             </div>
             <button class="btn btn--primary" id="btnGerarSalarios" data-mes="<?= $mes ?>">Gerar Folha de Pagamento</button>
         </div>
+        <div style="background:rgba(229,194,0,.05);border:1px solid rgba(229,194,0,.2);border-radius:8px;padding:14px 20px;margin-bottom:22px;display:flex;align-items:center;justify-content:space-between;gap:16px;">
+            <div>
+                <strong style="color:#e5c200;">Sincronizar Pagamentos Mercado Pago</strong>
+                <p style="color:#888;font-size:13px;margin:4px 0 0;">Verifica pagamentos aprovados no MP e atualiza o status das mensalidades. Também marca como atrasadas as mensalidades com vencimento passado.</p>
+            </div>
+            <button class="btn btn--gray" id="btnSyncMP">🔄 Sincronizar MP</button>
+        </div>
+        <div id="syncMPMsg" style="display:none;margin-bottom:16px;font-size:13px;"></div>
+        <div style="display:none">
+        </div>
         <?php else: ?>
         <div style="background:rgba(46,182,16,.06);border:1px solid rgba(116,255,54,.2);border-radius:8px;padding:10px 18px;margin-bottom:22px;font-size:13px;color:#79ff45;">
             ✓ Folha de pagamento de <?= $mesLabel ?> já gerada.
@@ -783,6 +793,27 @@ if (btnNovaDivida) {
 }
 
 // ── Gerar salários ────────────────────────────────────────────────────────────
+// ── Sync MP ───────────────────────────────────────────────────────────────────
+var btnSyncMP = document.getElementById('btnSyncMP');
+if (btnSyncMP) {
+    btnSyncMP.addEventListener('click', function () {
+        this.disabled = true; this.textContent = 'Sincronizando...';
+        var msg = document.getElementById('syncMPMsg');
+        fetch(ADMIN_BASE_URL + '/services/sincronizar_pagamentos_mp.php', {
+            method: 'POST', credentials: 'same-origin',
+        })
+        .then(r => r.json())
+        .then(d => {
+            msg.textContent   = d.mensagem || 'Concluído.';
+            msg.style.color   = d.atualizadas > 0 ? '#7ecf7e' : '#aaa';
+            msg.style.display = '';
+            if (d.atualizadas > 0) location.reload();
+        })
+        .catch(() => { msg.textContent = 'Erro de comunicação.'; msg.style.color = '#cf7e7e'; msg.style.display = ''; })
+        .finally(() => { this.disabled = false; this.textContent = '🔄 Sincronizar MP'; });
+    });
+}
+
 var btnGerarSal = document.getElementById('btnGerarSalarios');
 if (btnGerarSal) {
     btnGerarSal.addEventListener('click', function () {

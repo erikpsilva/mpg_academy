@@ -113,6 +113,13 @@ function fmtMoney(float $val): string {
 <head>
 <title>MPG Academy | Mensalidades</title>
 <?php include ROOT . '/includes/assets.php'; ?>
+<style>
+.studentMonthlyStatus--pending {
+    border: 1px solid rgba(96,165,250,0.6);
+    color: #60a5fa;
+    background: rgba(96,165,250,0.1);
+}
+</style>
 </head>
 
 <body>
@@ -220,9 +227,10 @@ function fmtMoney(float $val): string {
 
                     <?php foreach ($mensalidades as $m): ?>
                     <?php
-                        $isLate   = $m['status'] === 'atrasado';
-                        $isPaid   = $m['status'] === 'pago';
-                        $refLabel = refLabel($m['referencia'], $meses);
+                        $isLate    = $m['status'] === 'atrasado';
+                        $isPaid    = $m['status'] === 'pago';
+                        $isPending = $m['status'] === 'pendente';
+                        $refLabel  = refLabel($m['referencia'], $meses);
                     ?>
 
                     <div class="studentMonthlyTable__row<?= $isLate ? ' studentMonthlyTable__row--late' : '' ?>"
@@ -236,6 +244,9 @@ function fmtMoney(float $val): string {
                             <?php if ($isLate): ?>
                                 <b class="studentMonthlyStatus studentMonthlyStatus--late">Atrasado</b>
                                 <small>Vencido h&aacute; <?= $m['dias_atraso'] ?> dia<?= $m['dias_atraso'] === 1 ? '' : 's' ?></small>
+                            <?php elseif ($isPending): ?>
+                                <b class="studentMonthlyStatus studentMonthlyStatus--pending">A Vencer</b>
+                                <small>Vence em <?= fmtDate($m['vencimento']) ?></small>
                             <?php else: ?>
                                 <b class="studentMonthlyStatus studentMonthlyStatus--paid">Pago</b>
                             <?php endif; ?>

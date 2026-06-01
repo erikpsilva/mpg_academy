@@ -102,6 +102,8 @@ if (!empty($input['issuer_id'])) {
 }
 
 $accessToken = mpAccessToken($pdo);
+$modoTeste   = mpModoTeste($pdo);
+error_log('[mpg-pagamento] modo_teste=' . ($modoTeste ? 'SIM' : 'NAO') . ' | token_fim=' . substr($accessToken, -10) . ' | appIsLocal=' . (APP_IS_LOCAL ? 'SIM' : 'NAO'));
 $result      = mpCriarPagamento($accessToken, $paymentData);
 $body        = $result['body'];
 $status      = $body['status'] ?? '';

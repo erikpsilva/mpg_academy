@@ -28,7 +28,6 @@ $id       = (int) $_SESSION['aluno']['id'];
 $email    = trim($_POST['email'] ?? '');
 $sexo     = trim($_POST['sexo'] ?? '');
 $celular  = trim($_POST['celular'] ?? '');
-$whatsapp = trim($_POST['whatsapp'] ?? '');
 $cep      = trim($_POST['cep'] ?? '');
 $rua      = trim($_POST['rua'] ?? '');
 $numero   = trim($_POST['numero'] ?? '');
@@ -40,7 +39,7 @@ $senha    = $_POST['senha'] ?? '';
 $confirmar = $_POST['confirmar_senha'] ?? '';
 
 // Validações obrigatórias
-$required = compact('email', 'sexo', 'celular', 'whatsapp', 'cep', 'rua', 'numero', 'bairro', 'cidade', 'estado');
+$required = compact('email', 'sexo', 'celular', 'cep', 'rua', 'numero', 'bairro', 'cidade', 'estado');
 foreach ($required as $field => $value) {
     if (empty($value)) {
         http_response_code(400);
@@ -118,7 +117,6 @@ $fields = [
     'email'       => $email,
     'sexo'        => $sexo,
     'celular'     => $celular,
-    'whatsapp'    => $whatsapp,
     'cep'         => $cep,
     'rua'         => $rua,
     'numero'      => $numero,
