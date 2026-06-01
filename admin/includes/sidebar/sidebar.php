@@ -1,7 +1,7 @@
 <aside class="sidebar">
     <nav class="sidebar__nav">
         <ul class="sidebar__menu">
-            <li class="sidebar__section">Plataforma</li>
+            <li class="sidebar__section">Home</li>
 
             <li class="sidebar__item">
                 <a href="<?= BASE_URL ?>/admin/inicio"
@@ -10,33 +10,27 @@
                 </a>
             </li>
 
-            <?php if ($_SESSION['usuario']['nivel_acesso'] === 'admin'): ?>
-            <li class="sidebar__item">
-                <a href="<?= BASE_URL ?>/admin/cadastrarusuario"
-                   class="sidebar__link <?= ($subRoute === 'cadastrarusuario') ? 'sidebar__link--active' : '' ?>">
-                    Cadastrar Usuário
-                </a>
-            </li>
-            <?php endif; ?>
+            <li class="sidebar__divider" aria-hidden="true"></li>
+            <li class="sidebar__section">Financeiro</li>
 
             <li class="sidebar__item">
-                <a href="<?= BASE_URL ?>/admin/meusdados"
-                   class="sidebar__link <?= ($subRoute === 'meusdados') ? 'sidebar__link--active' : '' ?>">
-                    Meus Dados
+                <a href="<?= BASE_URL ?>/admin/financeiro"
+                   class="sidebar__link <?= ($subRoute === 'financeiro') ? 'sidebar__link--active' : '' ?>">
+                    Dashboard
                 </a>
             </li>
 
             <li class="sidebar__item">
-                <a href="<?= BASE_URL ?>/admin/usuarios"
-                   class="sidebar__link <?= ($subRoute === 'usuarios') ? 'sidebar__link--active' : '' ?>">
-                    Administrar Usuários
+                <a href="<?= BASE_URL ?>/admin/financeiro?aba=dividas"
+                   class="sidebar__link">
+                    Dívidas
                 </a>
             </li>
 
             <li class="sidebar__item">
-                <a href="<?= BASE_URL ?>/admin/configuracoes"
-                   class="sidebar__link <?= ($subRoute === 'configuracoes') ? 'sidebar__link--active' : '' ?>">
-                    Configurações
+                <a href="<?= BASE_URL ?>/admin/patrocinadores"
+                   class="sidebar__link <?= ($subRoute === 'patrocinadores') ? 'sidebar__link--active' : '' ?>">
+                    Patrocinadores
                 </a>
             </li>
 
@@ -79,23 +73,6 @@
             </li>
 
             <li class="sidebar__divider" aria-hidden="true"></li>
-            <li class="sidebar__section">Financeiro</li>
-
-            <li class="sidebar__item">
-                <a href="<?= BASE_URL ?>/admin/financeiro"
-                   class="sidebar__link <?= ($subRoute === 'financeiro') ? 'sidebar__link--active' : '' ?>">
-                    Dashboard
-                </a>
-            </li>
-
-            <li class="sidebar__item">
-                <a href="<?= BASE_URL ?>/admin/financeiro?aba=dividas"
-                   class="sidebar__link">
-                    Dívidas
-                </a>
-            </li>
-
-            <li class="sidebar__divider" aria-hidden="true"></li>
             <li class="sidebar__section">Administrativo</li>
 
             <li class="sidebar__item">
@@ -116,6 +93,39 @@
                 <a href="<?= BASE_URL ?>/admin/professores"
                    class="sidebar__link <?= ($subRoute === 'professores') ? 'sidebar__link--active' : '' ?>">
                     Professores
+                </a>
+            </li>
+
+            <li class="sidebar__divider" aria-hidden="true"></li>
+            <li class="sidebar__section">Plataforma</li>
+
+            <?php if ($_SESSION['usuario']['nivel_acesso'] === 'admin'): ?>
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/cadastrarusuario"
+                   class="sidebar__link <?= ($subRoute === 'cadastrarusuario') ? 'sidebar__link--active' : '' ?>">
+                    Cadastrar Usuário
+                </a>
+            </li>
+            <?php endif; ?>
+
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/meusdados"
+                   class="sidebar__link <?= ($subRoute === 'meusdados') ? 'sidebar__link--active' : '' ?>">
+                    Meus Dados
+                </a>
+            </li>
+
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/usuarios"
+                   class="sidebar__link <?= ($subRoute === 'usuarios') ? 'sidebar__link--active' : '' ?>">
+                    Administrar Usuários
+                </a>
+            </li>
+
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/configuracoes"
+                   class="sidebar__link <?= ($subRoute === 'configuracoes') ? 'sidebar__link--active' : '' ?>">
+                    Configurações
                 </a>
             </li>
 

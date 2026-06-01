@@ -1,0 +1,262 @@
+.patrocinadores {
+    &__headerActions {
+        align-items: center;
+        display: flex;
+        justify-content: flex-end;
+
+        @media @tabletSM {
+            justify-content: flex-start;
+            margin-top: 16px;
+        }
+    }
+
+    &__listCard,
+    &__form {
+        background: rgba(17, 19, 21, 0.94);
+        border: 1px solid @borderColor;
+        border-radius: 8px;
+        .shadow();
+    }
+
+    &__listCard {
+        margin-top: 24px;
+        overflow: hidden;
+    }
+
+    &__empty {
+        color: rgba(255, 255, 255, 0.48);
+        font-size: 13px;
+        padding: 34px 24px;
+        text-align: center;
+
+        a {
+            color: @alert;
+            font-weight: @bold;
+            margin-left: 6px;
+
+            &:hover { color: @white; }
+        }
+    }
+
+    &__form {
+        margin-top: 24px;
+        max-width: 940px;
+        padding: 24px;
+    }
+
+    &__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 12px;
+
+        .btn {
+            min-height: 46px;
+            min-width: 170px;
+        }
+    }
+
+    &__message {
+        border-radius: 7px;
+        display: none;
+        font-size: 13px;
+        margin-top: 14px;
+        padding: 11px 13px;
+    }
+}
+
+.patGrid {
+    align-items: center;
+    border-bottom: 1px solid @borderColor;
+    color: rgba(255, 255, 255, 0.72);
+    display: grid;
+    font-size: 13px;
+    gap: 14px;
+    grid-template-columns: minmax(190px, 2fr) minmax(140px, 1.2fr) minmax(170px, 1.5fr) minmax(115px, 0.9fr) minmax(86px, 0.7fr) minmax(170px, 1fr);
+    padding: 16px 18px;
+
+    &:last-child {
+        border-bottom: 0;
+    }
+
+    &--head {
+        background: rgba(255, 255, 255, 0.045);
+        color: rgba(255, 255, 255, 0.46);
+        font-size: 11px;
+        font-weight: @bold;
+        letter-spacing: 0.6px;
+        min-height: 48px;
+        padding-bottom: 13px;
+        padding-top: 13px;
+        text-transform: uppercase;
+    }
+
+    &__nome {
+        color: @white;
+        display: block;
+        font-weight: @bold;
+        line-height: 1.35;
+    }
+
+    &__razao,
+    &__cnpj,
+    &__email {
+        color: rgba(255, 255, 255, 0.48);
+        font-size: 12px;
+        line-height: 1.35;
+    }
+
+    &__razao {
+        display: block;
+        margin-top: 3px;
+    }
+
+    &__valor {
+        color: @alert;
+        font-weight: @bold;
+        white-space: nowrap;
+    }
+
+    &__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+
+        .btn {
+            min-height: 34px;
+            padding: 0 12px;
+        }
+    }
+
+    @media @tabletLG {
+        grid-template-columns: minmax(180px, 1.6fr) minmax(130px, 1fr) minmax(130px, 1fr) minmax(100px, 0.8fr) minmax(82px, 0.7fr) minmax(150px, 0.9fr);
+    }
+
+    @media @tabletSM {
+        align-items: start;
+        grid-template-columns: 1fr;
+
+        &--head {
+            display: none;
+        }
+
+        & > span,
+        & > div {
+            min-width: 0;
+        }
+
+        &__actions {
+            .btn {
+                flex: 1 1 120px;
+            }
+        }
+    }
+}
+
+.patForm {
+    &__section {
+        border-bottom: 1px solid @borderColor;
+        color: rgba(255, 255, 255, 0.46);
+        font-size: 11px;
+        font-weight: @bold;
+        letter-spacing: 0.8px;
+        margin: 2px 0 16px;
+        padding-bottom: 9px;
+        text-transform: uppercase;
+
+        &:not(:first-of-type) {
+            margin-top: 28px;
+        }
+    }
+
+    &__grid {
+        display: grid;
+        gap: 16px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        margin-bottom: 16px;
+
+        &--3 {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        &--4 {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+        &--single {
+            grid-template-columns: 1fr;
+        }
+
+        @media @tabletSM {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    &__field {
+        min-width: 0;
+
+        label {
+            color: rgba(255, 255, 255, 0.52);
+            display: block;
+            font-size: 11px;
+            font-weight: @bold;
+            letter-spacing: 0.7px;
+            margin-bottom: 7px;
+            text-transform: uppercase;
+
+            span { color: @error; }
+        }
+
+        .input {
+            background-color: rgba(255, 255, 255, 0.055);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 7px;
+            color: @white;
+            font-size: 14px;
+            height: 46px;
+            margin-bottom: 0;
+            padding: 0 14px;
+            width: 100%;
+
+            &::placeholder {
+                color: rgba(255, 255, 255, 0.38);
+            }
+
+            &:focus {
+                border-color: @alert;
+                box-shadow: 0 0 0 3px rgba(255, 213, 0, 0.1);
+                outline: none;
+            }
+        }
+
+        select.input {
+            appearance: none;
+            background-image:
+                linear-gradient(45deg, transparent 50%, @alert 50%),
+                linear-gradient(135deg, @alert 50%, transparent 50%);
+            background-position:
+                calc(100% - 18px) 20px,
+                calc(100% - 12px) 20px;
+            background-repeat: no-repeat;
+            background-size: 6px 6px, 6px 6px;
+            padding-right: 40px;
+
+            option {
+                background: #111315;
+                color: @white;
+            }
+        }
+
+        &--span2 {
+            grid-column: span 2;
+
+            @media @tabletSM {
+                grid-column: auto;
+            }
+        }
+
+        &--uf .input {
+            text-transform: uppercase;
+        }
+    }
+}

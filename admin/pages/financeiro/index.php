@@ -26,6 +26,7 @@ $catLabels = [
     'material'       => 'Material Esportivo',
     'marketing'      => 'Marketing',
     'administrativo' => 'Administrativo',
+    'patrocinio'     => 'Patrocínios',
     'outros_receita' => 'Outras Receitas',
     'outros'         => 'Outros',
 ];
