@@ -30,12 +30,14 @@ $stTurma = $pdo->prepare("
 $stTurma->execute([$alunoId]);
 $turma = $stTurma->fetch();
 
-// Mensalidades em ordem decrescente
+// Mensalidades em ordem decrescente com nome da turma
 $stMens = $pdo->prepare("
-    SELECT referencia, valor, vencimento, data_pagamento, status
-    FROM mensalidades
-    WHERE aluno_id = ?
-    ORDER BY referencia DESC
+    SELECT m.id, m.referencia, m.valor, m.vencimento, m.data_pagamento, m.status,
+           t.nome AS turma_nome
+    FROM mensalidades m
+    LEFT JOIN turmas t ON t.id = m.turma_id
+    WHERE m.aluno_id = ?
+    ORDER BY m.referencia DESC
 ");
 $stMens->execute([$alunoId]);
 $mensalidades = $stMens->fetchAll();
@@ -78,7 +80,10 @@ if (!empty($mensalidades)) {
     $proxDate     = new DateTime("$ano-$mes-01");
     $proxDate->modify('+1 month');
     $proxRef      = $proxDate->format('Y-m');
-    $proxVencDate = new DateTime($proxDate->format('Y-m') . '-05');
+    // Vencimento = dia 5 do mês seguinte ao de referência (ciclo fecha dia 30, paga dia 5)
+    $proxVencMes  = clone $proxDate;
+    $proxVencMes->modify('+1 month');
+    $proxVencDate = new DateTime($proxVencMes->format('Y-m') . '-05');
 
     $diff = (int) $hoje->diff($proxVencDate)->days;
     if ($proxVencDate > $hoje) {
@@ -248,10 +253,18 @@ function fmtMoney(float $val): string {
                         </span>
 
                         <span data-label="A&ccedil;&otilde;es">
-                            <?php if ($isLate): ?>
-                                <a class="studentMonthlyPay" href="#">Pagar agora</a>
+                            <?php if ($isLate || $m['status'] === 'pendente'): ?>
+                                <a class="studentMonthlyPay" href="<?= BASE_URL ?>/pagamento?mensalidade_id=<?= $m['id'] ?>">Pagar agora</a>
                             <?php else: ?>
-                                <a class="studentMonthlyReceipt" href="#">Ver recibo <i class="icon-go"></i></a>
+                                <a class="studentMonthlyReceipt btnVerRecibo" href="#"
+                                   data-ref="<?= $refLabel ?>"
+                                   data-turma="<?= htmlspecialchars($m['turma_nome'] ?? '—') ?>"
+                                   data-aluno="<?= htmlspecialchars($aluno['nome']) ?>"
+                                   data-valor="<?= $m['valor'] ?>"
+                                   data-vencimento="<?= $m['vencimento'] ?>"
+                                   data-pagamento="<?= $m['data_pagamento'] ?? '' ?>">
+                                    Ver recibo <i class="icon-go"></i>
+                                </a>
                             <?php endif; ?>
                         </span>
                     </div>
@@ -302,20 +315,162 @@ function fmtMoney(float $val): string {
 <?php include ROOT . '/includes/footer/footer.php'; ?>
 <?php include ROOT . '/includes/scripts.php'; ?>
 
-<script>
-(function () {
-    var sel    = document.getElementById('filtroStatus');
-    var table  = document.querySelector('.studentMonthlyTable');
-    if (!sel || !table) return;
+<!-- ── Modal Recibo ────────────────────────────────────────────────────────── -->
+<div id="reciboModal" style="display:none;position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);">
+    <div id="reciboCard" style="position:relative;width:100%;max-width:460px;max-height:90vh;overflow-y:auto;background:#111;border:1px solid #2a2a2a;border-radius:14px;">
 
+        <button id="reciboClose" style="position:absolute;top:14px;right:16px;background:none;border:none;color:#888;font-size:24px;cursor:pointer;line-height:1;z-index:2;" aria-label="Fechar">&times;</button>
+
+        <div id="reciboContent" style="padding:32px 28px 28px;"><!-- preenchido pelo JS --></div>
+    </div>
+</div>
+
+<style>
+@media (max-width: 640px) {
+    #reciboCard {
+        max-width: 100% !important;
+        max-height: 100% !important;
+        border-radius: 0 !important;
+        height: 100%;
+    }
+    #reciboModal {
+        padding: 0 !important;
+        align-items: stretch !important;
+    }
+}
+.recibo__divider { border: none; border-top: 1px solid #2a2a2a; margin: 18px 0; }
+.recibo__row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 5px 0; font-size: 14px; color: #ccc; }
+.recibo__row strong { color: #fff; white-space: nowrap; }
+.recibo__row--total { font-size: 17px; font-weight: 900; color: #fff; padding-top: 12px; }
+.recibo__row--total span:last-child { color: #e5c200; font-size: 20px; }
+.recibo__tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 900; text-transform: uppercase; margin-bottom: 18px; }
+.recibo__tag--ok   { background: rgba(46,182,16,.12); border: 1px solid rgba(116,255,54,.4); color: #79ff45; }
+.recibo__tag--late { background: rgba(255,45,45,.12); border: 1px solid rgba(255,45,45,.4); color: #ff6060; }
+</style>
+
+<script>
+var BASE_URL  = "<?= BASE_URL ?>";
+var LOGO_URL  = BASE_URL + "/images/logo.png";
+var ALUNO_NOME = "<?= htmlspecialchars($aluno['nome'], ENT_QUOTES) ?>";
+
+// ── Filtro de status ────────────────────────────────────────────────────────
+(function () {
+    var sel   = document.getElementById('filtroStatus');
+    var table = document.querySelector('.studentMonthlyTable');
+    if (!sel || !table) return;
     sel.addEventListener('change', function () {
         var filter = this.value;
         table.querySelectorAll('[data-status]').forEach(function (el) {
-            if (!filter || el.dataset.status === filter) {
-                el.style.display = '';
-            } else {
-                el.style.display = 'none';
-            }
+            el.style.display = (!filter || el.dataset.status === filter) ? '' : 'none';
+        });
+    });
+}());
+
+// ── Recibo ──────────────────────────────────────────────────────────────────
+(function () {
+    var modal   = document.getElementById('reciboModal');
+    var content = document.getElementById('reciboContent');
+    var closeBtn = document.getElementById('reciboClose');
+
+    var fmt = function (n) {
+        return 'R$ ' + parseFloat(n).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    };
+    var fmtDate = function (str) {
+        if (!str) return '—';
+        var p = str.split('-');
+        return p[2] + '/' + p[1] + '/' + p[0];
+    };
+
+    function buildRecibo(d) {
+        var valor = parseFloat(d.valor);
+        var venc  = new Date(d.vencimento + 'T00:00:00');
+        var pago  = d.pagamento ? new Date(d.pagamento + 'T00:00:00') : null;
+
+        var isLate = pago && pago > venc;
+        var diasAtraso = isLate ? Math.round((pago - venc) / 86400000) : 0;
+        var multa  = isLate ? valor * 0.05 : 0;
+        var base   = valor + multa;
+        var juros  = isLate ? base * 0.005 * diasAtraso : 0;
+        var total  = isLate ? base + juros : valor;
+
+        var tagHtml = isLate
+            ? '<span class="recibo__tag recibo__tag--late">Pago com atraso (' + diasAtraso + ' dia' + (diasAtraso === 1 ? '' : 's') + ')</span>'
+            : '<span class="recibo__tag recibo__tag--ok">Pago em dia</span>';
+
+        var itensHtml = '';
+        if (isLate) {
+            itensHtml +=
+                '<div class="recibo__row"><span>Mensalidade ' + d.ref + '</span><strong>' + fmt(valor) + '</strong></div>' +
+                '<div class="recibo__row"><span>Multa por atraso (5%)</span><strong>' + fmt(multa) + '</strong></div>' +
+                '<div class="recibo__row"><span>Juros de atraso (0,5%/dia &times; ' + diasAtraso + ' dia' + (diasAtraso === 1 ? '' : 's') + ')</span><strong>' + fmt(juros) + '</strong></div>';
+        } else {
+            itensHtml +=
+                '<div class="recibo__row"><span>Mensalidade ' + d.ref + '</span><strong>' + fmt(valor) + '</strong></div>';
+        }
+
+        return '<div style="text-align:center;margin-bottom:24px;">'
+            + '<img src="' + LOGO_URL + '" alt="MPG Academy" style="height:48px;object-fit:contain;margin-bottom:12px;">'
+            + '<p style="margin:0;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.08em;">Recibo de Mensalidade</p>'
+            + '</div>'
+
+            + '<hr class="recibo__divider">'
+
+            + '<div style="margin-bottom:16px;">'
+            + '<div class="recibo__row"><span>Aluno</span><strong>' + d.aluno + '</strong></div>'
+            + '<div class="recibo__row"><span>Turma</span><strong>' + d.turma + '</strong></div>'
+            + '<div class="recibo__row"><span>Refer&ecirc;ncia</span><strong>' + d.ref + '</strong></div>'
+            + '<div class="recibo__row"><span>Vencimento</span><strong>' + fmtDate(d.vencimento) + '</strong></div>'
+            + (d.pagamento ? '<div class="recibo__row"><span>Data do pagamento</span><strong>' + fmtDate(d.pagamento) + '</strong></div>' : '')
+            + '</div>'
+
+            + '<hr class="recibo__divider">'
+
+            + tagHtml
+
+            + itensHtml
+
+            + '<hr class="recibo__divider">'
+
+            + '<div class="recibo__row recibo__row--total"><span>Total pago</span><span>' + fmt(total) + '</span></div>'
+
+            + '<hr class="recibo__divider">'
+
+            + '<p style="text-align:center;color:#555;font-size:11px;margin:0;">'
+            + 'MPG Academy — Escola de V&ocirc;lei<br>'
+            + 'Recibo gerado em ' + new Date().toLocaleDateString('pt-BR')
+            + '</p>';
+    }
+
+    function openModal(d) {
+        content.innerHTML = buildRecibo(d);
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', function (e) {
+        if (e.target === modal) closeModal();
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeModal();
+    });
+
+    document.addEventListener('click', function (e) {
+        var btn = e.target.closest('.btnVerRecibo');
+        if (!btn) return;
+        e.preventDefault();
+        openModal({
+            ref:        btn.dataset.ref,
+            turma:      btn.dataset.turma,
+            aluno:      btn.dataset.aluno || ALUNO_NOME,
+            valor:      btn.dataset.valor,
+            vencimento: btn.dataset.vencimento,
+            pagamento:  btn.dataset.pagamento || '',
         });
     });
 }());

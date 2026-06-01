@@ -6,6 +6,26 @@ if (empty($_SESSION['aluno'])) {
 
 $aluno = $_SESSION['aluno'];
 $primeiroNome = explode(' ', $aluno['nome'])[0];
+
+require_once ROOT . '/config/database.php';
+$pdo = getDbConnection();
+
+// 3 últimos comunicados publicados
+$stCom = $pdo->query("
+    SELECT titulo, conteudo, imagem, criado_em
+    FROM comunicados
+    WHERE publicado = 1
+    ORDER BY criado_em DESC
+    LIMIT 3
+");
+$ultimosComunicados = $stCom->fetchAll();
+
+function tempoRelativo(string $data): string {
+    $diff = time() - strtotime($data);
+    if ($diff < 3600)  return 'Ha ' . max(1, (int)($diff / 60)) . ' min';
+    if ($diff < 86400) return 'Ha ' . (int)($diff / 3600) . ' hora' . ((int)($diff / 3600) > 1 ? 's' : '');
+    return 'Ha ' . (int)($diff / 86400) . ' dia' . ((int)($diff / 86400) > 1 ? 's' : '');
+}
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -122,27 +142,25 @@ $primeiroNome = explode(' ', $aluno['nome'])[0];
                     </div>
 
                     <div class="studentNewsList">
+                        <?php if (empty($ultimosComunicados)): ?>
+                        <p style="color:#666;font-size:14px;padding:16px 0;">Nenhum comunicado no momento.</p>
+                        <?php else: ?>
+                        <?php foreach ($ultimosComunicados as $c):
+                            $imgSrc = $c['imagem']
+                                ? BASE_URL . '/' . htmlspecialchars($c['imagem'])
+                                : BASE_URL . '/images/areadoaluno/imgNoticiaExemplo.png';
+                            $resumo = mb_substr(strip_tags($c['conteudo'] ?? ''), 0, 80);
+                            if (mb_strlen(strip_tags($c['conteudo'] ?? '')) > 80) $resumo .= '…';
+                        ?>
                         <article>
-                            <img src="<?= BASE_URL ?>/images/areadoaluno/imgNoticiaExemplo.png" alt="Comunicado MPG Academy">
+                            <img src="<?= $imgSrc ?>" alt="<?= htmlspecialchars($c['titulo']) ?>">
                             <div>
-                                <h3>Novo uniforme 2024 <span>Ha 2 horas</span></h3>
-                                <p>Confira o novo uniforme oficial da MPG Academy!</p>
+                                <h3><?= htmlspecialchars($c['titulo']) ?> <span><?= tempoRelativo($c['criado_em']) ?></span></h3>
+                                <p><?= htmlspecialchars($resumo) ?></p>
                             </div>
                         </article>
-                        <article>
-                            <img src="<?= BASE_URL ?>/images/home/imgMaisQueUmaEscola.png" alt="Avaliacao fisica MPG Academy">
-                            <div>
-                                <h3>Avaliacao fisica <span>Ha 1 dia</span></h3>
-                                <p>Avaliacoes fisicas agendadas para o proximo sabado.</p>
-                            </div>
-                        </article>
-                        <article>
-                            <img src="<?= BASE_URL ?>/images/home/imgProntoPraFazerParteDaMpgAcademy.png" alt="Jogo treino MPG Academy">
-                            <div>
-                                <h3>Jogo treino <span>Ha 2 dias</span></h3>
-                                <p>Temos um jogo treino marcado para o dia 01/06.</p>
-                            </div>
-                        </article>
+                        <?php endforeach; ?>
+                        <?php endif; ?>
                     </div>
                 </section>
 

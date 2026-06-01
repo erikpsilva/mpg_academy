@@ -289,6 +289,190 @@ function sendMpgTesteConfirmation(string $to, string $nome, string $turma, strin
     return _mpgMailNative($to, $subject, $body, $config);
 }
 
+// ── Email: notificação de mensalidade em atraso (para o aluno) ────────────────
+
+function buildMpgAtrasoAlunoEmail(string $nome, string $refLabel, int $dias, int $diasParaBloqueio): string
+{
+    $safeName  = htmlspecialchars($nome,     ENT_QUOTES, 'UTF-8');
+    $safeRef   = htmlspecialchars($refLabel, ENT_QUOTES, 'UTF-8');
+    $urgente   = $diasParaBloqueio <= 5;
+    $corAlerta = $urgente ? '#ff4444' : '#ffd500';
+    $msgUrgencia = $urgente
+        ? "⚠️ <strong>ATENÇÃO:</strong> faltam apenas <strong>{$diasParaBloqueio} dia(s)</strong> para o bloqueio do seu acesso às aulas."
+        : "Você tem <strong>{$diasParaBloqueio} dias</strong> para regularizar antes do bloqueio do acesso às aulas.";
+
+    return '<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mensalidade em atraso - MPG Academy</title></head>
+<body style="margin:0;padding:0;background:#050505;font-family:Arial,Helvetica,sans-serif;color:#fff;">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#050505;padding:32px 16px;">
+<tr><td align="center">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;background:#111113;border:1px solid #262626;border-radius:8px;overflow:hidden;">
+  <tr><td style="padding:34px 32px 20px;text-align:center;background:#050505;">
+    <img src="' . mpgLogoUrl() . '" alt="MPG Academy" width="220" style="display:block;margin:0 auto;max-width:100%;height:auto;">
+  </td></tr>
+  <tr><td style="padding:8px 0;background:' . $corAlerta . ';text-align:center;">
+    <p style="margin:0;color:#050505;font-size:13px;font-weight:900;text-transform:uppercase;letter-spacing:1px;">Mensalidade em Atraso</p>
+  </td></tr>
+  <tr><td style="padding:32px 32px 16px;">
+    <h1 style="margin:0 0 16px;color:#fff;font-size:26px;font-weight:900;line-height:1.2;">Ol&aacute;, ' . $safeName . '</h1>
+    <p style="margin:0 0 18px;color:#d4d4d8;font-size:15px;line-height:1.7;">
+      Identificamos que sua mensalidade referente a <strong style="color:#fff;">' . $safeRef . '</strong>
+      est&aacute; em atraso h&aacute; <strong style="color:' . $corAlerta . ';">' . $dias . ' dia(s)</strong>.
+    </p>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#1a1a1e;border:2px solid ' . $corAlerta . ';border-radius:8px;margin-bottom:22px;">
+      <tr><td style="padding:18px 22px;">
+        <p style="margin:0;color:#d4d4d8;font-size:14px;line-height:1.7;">' . $msgUrgencia . '</p>
+      </td></tr>
+    </table>
+    <p style="margin:0 0 8px;color:#d4d4d8;font-size:15px;line-height:1.7;">
+      Para evitar o bloqueio, acesse sua &aacute;rea do aluno e regularize sua situa&ccedil;&atilde;o o quanto antes.
+    </p>
+  </td></tr>
+  <tr><td style="padding:4px 32px 32px;">
+    <a href="' . appBaseUrl() . '/mensalidades" style="display:block;background:#ffd500;color:#050505;text-decoration:none;text-align:center;font-size:15px;font-weight:900;text-transform:uppercase;border-radius:8px;padding:15px 18px;">Pagar mensalidade agora</a>
+  </td></tr>
+  <tr><td style="padding:12px 32px 28px;">
+    <a href="' . MPG_WHATSAPP_URL . '" style="display:block;background:#1f1f23;color:#fff;text-decoration:none;text-align:center;font-size:15px;font-weight:900;text-transform:uppercase;border-radius:8px;padding:15px 18px;border:1px solid #34343a;">D&uacute;vidas? Falar no WhatsApp: ' . MPG_PHONE_LABEL . '</a>
+  </td></tr>
+  <tr><td style="padding:20px 32px;background:#0a0a0b;border-top:1px solid #262626;text-align:center;">
+    <p style="margin:0;color:#85858c;font-size:13px;line-height:1.6;">MPG Academy — Escola de Volei<br>Instagram: @mpgacademy | WhatsApp: ' . MPG_PHONE_LABEL . '</p>
+  </td></tr>
+</table>
+</td></tr>
+</table>
+</body></html>';
+}
+
+function buildMpgAtrasoAdminEmail(string $alunoNome, string $alunoEmail, string $refLabel, int $dias, int $diasParaBloqueio): string
+{
+    $safeName  = htmlspecialchars($alunoNome,  ENT_QUOTES, 'UTF-8');
+    $safeEmail = htmlspecialchars($alunoEmail, ENT_QUOTES, 'UTF-8');
+    $safeRef   = htmlspecialchars($refLabel,   ENT_QUOTES, 'UTF-8');
+    $cor = $diasParaBloqueio <= 5 ? '#ff4444' : '#ffd500';
+
+    return '<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8"><title>Aluno em atraso - MPG Academy</title></head>
+<body style="margin:0;padding:0;background:#050505;font-family:Arial,Helvetica,sans-serif;color:#fff;">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#050505;padding:32px 16px;">
+<tr><td align="center">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;background:#111113;border:1px solid #262626;border-radius:8px;overflow:hidden;">
+  <tr><td style="padding:28px 32px 20px;text-align:center;background:#050505;">
+    <img src="' . mpgLogoUrl() . '" alt="MPG Academy" width="200" style="display:block;margin:0 auto;max-width:100%;height:auto;">
+  </td></tr>
+  <tr><td style="padding:8px 0;background:' . $cor . ';text-align:center;">
+    <p style="margin:0;color:#050505;font-size:13px;font-weight:900;text-transform:uppercase;letter-spacing:1px;">Aviso Interno — Aluno em Atraso</p>
+  </td></tr>
+  <tr><td style="padding:28px 32px;">
+    <p style="margin:0 0 18px;color:#d4d4d8;font-size:15px;line-height:1.7;">
+      O aluno abaixo est&aacute; com mensalidade em atraso e foi notificado por e-mail.
+    </p>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#1a1a1e;border:1px solid #2e2e34;border-radius:8px;margin-bottom:22px;">
+      <tr><td style="padding:14px 20px;border-bottom:1px solid #2e2e34;">
+        <p style="margin:0 0 3px;color:' . $cor . ';font-size:11px;font-weight:700;text-transform:uppercase;">Aluno</p>
+        <p style="margin:0;color:#fff;font-size:16px;font-weight:700;">' . $safeName . '</p>
+      </td></tr>
+      <tr><td style="padding:14px 20px;border-bottom:1px solid #2e2e34;">
+        <p style="margin:0 0 3px;color:' . $cor . ';font-size:11px;font-weight:700;text-transform:uppercase;">E-mail</p>
+        <p style="margin:0;color:#fff;font-size:15px;">' . $safeEmail . '</p>
+      </td></tr>
+      <tr><td style="padding:14px 20px;border-bottom:1px solid #2e2e34;">
+        <p style="margin:0 0 3px;color:' . $cor . ';font-size:11px;font-weight:700;text-transform:uppercase;">Mensalidade</p>
+        <p style="margin:0;color:#fff;font-size:15px;">' . $safeRef . '</p>
+      </td></tr>
+      <tr><td style="padding:14px 20px;">
+        <p style="margin:0 0 3px;color:' . $cor . ';font-size:11px;font-weight:700;text-transform:uppercase;">Dias em atraso</p>
+        <p style="margin:0;color:' . $cor . ';font-size:18px;font-weight:900;">' . $dias . ' dia(s) — bloqueio em ' . $diasParaBloqueio . ' dia(s)</p>
+      </td></tr>
+    </table>
+    <a href="' . appBaseUrl() . '/admin/alunos" style="display:block;background:#ffd500;color:#050505;text-decoration:none;text-align:center;font-size:14px;font-weight:900;text-transform:uppercase;border-radius:8px;padding:13px 18px;">Ver painel de alunos</a>
+  </td></tr>
+  <tr><td style="padding:16px 32px;background:#0a0a0b;border-top:1px solid #262626;text-align:center;">
+    <p style="margin:0;color:#85858c;font-size:12px;">MPG Academy — Notifica&ccedil;&atilde;o interna autom&aacute;tica</p>
+  </td></tr>
+</table>
+</td></tr>
+</table>
+</body></html>';
+}
+
+function mpgEnviarEmail(string $to, string $toName, string $subject, string $body): bool
+{
+    $config  = getMpgMailConfig();
+    $isLocal = APP_IS_LOCAL;
+
+    if ($isLocal) {
+        $dir   = dirname(__FILE__, 3) . '/storage/emails_teste';
+        if (!is_dir($dir)) mkdir($dir, 0755, true);
+        $fname = $dir . '/' . date('Y-m-d_H-i-s') . '_' . preg_replace('/[^a-z0-9]/i', '_', $to) . '.html';
+        $meta  = '<div style="background:#fff3cd;border:1px solid #ffc107;padding:12px 16px;font-family:monospace;font-size:12px;margin-bottom:16px;">'
+               . '<strong>[TESTE LOCAL]</strong> Para: <b>' . htmlspecialchars($to) . '</b> | '
+               . 'Assunto: <b>' . htmlspecialchars($subject) . '</b> | ' . date('d/m/Y H:i:s') . '</div>';
+        file_put_contents($fname, $meta . $body);
+        return true;
+    }
+
+    if ($config['smtp_active'] && $config['smtp_host'] && $config['smtp_user'] && $config['smtp_pass']) {
+        $autoload = dirname(__FILE__, 3) . '/vendor/autoload.php';
+        if (!file_exists($autoload)) return _mpgMailNative($to, $subject, $body, $config);
+        require_once $autoload;
+        try {
+            $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
+            $mail->isSMTP();
+            $mail->Host     = $config['smtp_host'];
+            $mail->SMTPAuth = true;
+            $mail->Username = $config['smtp_user'];
+            $mail->Password = $config['smtp_pass'];
+            $mail->Port     = (int) $config['smtp_port'];
+            $enc = strtolower($config['smtp_enc'] ?? 'tls');
+            if ($enc === 'ssl')       { $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS; }
+            elseif ($enc === 'tls')   { $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS; }
+            else                      { $mail->SMTPAutoTLS = false; $mail->SMTPSecure = false; }
+            $mail->setFrom($config['from_addr'], $config['from_name']);
+            $mail->addReplyTo($config['from_addr'], $config['from_name']);
+            $mail->addAddress($to, $toName);
+            $mail->CharSet = 'UTF-8';
+            $mail->isHTML(true);
+            $mail->Subject = $subject;
+            $mail->Body    = $body;
+            $mail->send();
+            return true;
+        } catch (\PHPMailer\PHPMailer\Exception $e) {
+            error_log('[mpg-email] PHPMailer error: ' . $e->getMessage());
+            return false;
+        }
+    }
+    return _mpgMailNative($to, $subject, $body, $config);
+}
+
+function mpgEnviarNotificacaoAtraso(PDO $pdo, array $aluno, array $mens): bool
+{
+    $dias            = (int) $mens['dias_atraso'];
+    $diasParaBloqueio = max(0, 30 - $dias);
+    $refLabel        = $mens['ref_label'];
+
+    // Email para o aluno
+    $bodyAluno = buildMpgAtrasoAlunoEmail($aluno['nome'], $refLabel, $dias, $diasParaBloqueio);
+    mpgEnviarEmail($aluno['email'], $aluno['nome'], 'Mensalidade em atraso - MPG Academy', $bodyAluno);
+
+    // Email para o grupo de notificação
+    $bodyAdmin = buildMpgAtrasoAdminEmail($aluno['nome'], $aluno['email'], $refLabel, $dias, $diasParaBloqueio);
+    $stEmails  = $pdo->query("SELECT email, nome FROM emails_notificacao WHERE ativo = 1");
+    foreach ($stEmails->fetchAll() as $en) {
+        mpgEnviarEmail($en['email'], $en['nome'] ?: 'MPG Admin', '[MPG Academy] Aluno com mensalidade em atraso', $bodyAdmin);
+    }
+
+    // Registra no log
+    $stLog = $pdo->prepare("
+        INSERT IGNORE INTO notificacoes_log (aluno_id, mensalidade_id, tipo)
+        VALUES (?, ?, 'atraso_25dias')
+    ");
+    $stLog->execute([$aluno['id'], $mens['id']]);
+
+    return true;
+}
+
+// ── Email: _mpgMailNative (fallback) ──────────────────────────────────────────
+
 function _mpgMailNative(string $to, string $subject, string $body, array $config): bool {
     $headers = implode("\r\n", [
         'MIME-Version: 1.0',

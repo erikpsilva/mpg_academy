@@ -11,6 +11,7 @@ $pdo = getDbConnection();
 $stmt = $pdo->prepare("
     SELECT t.id, t.nome, t.nivel, t.genero, t.valor_mensalidade, t.promo_valor, t.promo_meses,
            q.nome AS quadra_nome,
+           CONCAT(q.rua, ', ', q.numero, ' – ', q.bairro, ', ', q.cidade, '/', q.estado) AS quadra_endereco,
            GROUP_CONCAT(
                CONCAT(qh.dia_semana, '~', qh.hora_inicio, '~', qh.hora_fim)
                ORDER BY qh.dia_semana, qh.hora_inicio

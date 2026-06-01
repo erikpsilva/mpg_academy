@@ -45,6 +45,7 @@ const cardHtml = (t, idx) => {
             '</div>' +
             '<h2>' + esc(t.nome) + '</h2>' +
             '<p>' + esc(t.quadra_nome) + '</p>' +
+            (t.quadra_endereco ? '<div class="turmaCard__address"><i class="icon-rua" aria-hidden="true"></i><span>' + esc(t.quadra_endereco) + '</span></div>' : '') +
             (schedule ? '<div class="turmaCard__schedule"><i class="icon-calendar" aria-hidden="true"></i>' + schedule + '</div>' : '') +
             '<div class="turmaCard__price">' + price + '</div>' +
             '<div class="turmaCard__benefits">' +

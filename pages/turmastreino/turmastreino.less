@@ -289,7 +289,27 @@
     p {
         color: rgba(255, 255, 255, 0.86);
         font-size: 15px;
-        margin: 0 0 18px;
+        margin: 0 0 8px;
+    }
+
+    &__address {
+        align-items: flex-start;
+        display: flex;
+        gap: 8px;
+        margin-bottom: 16px;
+
+        i {
+            color: @yellow;
+            flex: 0 0 auto;
+            font-size: 16px;
+            padding-top: 1px;
+        }
+
+        span {
+            color: rgba(255, 255, 255, 0.62);
+            font-size: 13px;
+            line-height: 1.4;
+        }
     }
 
     &__schedule {

@@ -83,7 +83,10 @@ $stmt = $pdo->prepare("
                    ROUND(COALESCE(t.valor_mensalidade, 0), 2)
                )
                ORDER BY t.nome SEPARATOR '|'
-           ) AS mensalidade_detalhes
+           ) AS mensalidade_detalhes,
+           (SELECT MAX(DATEDIFF(CURDATE(), m.vencimento))
+            FROM mensalidades m
+            WHERE m.aluno_id = a.id AND m.status = 'atrasado') AS max_dias_atraso
     FROM alunos a
     LEFT JOIN turma_alunos ta ON ta.aluno_id = a.id AND ta.status = 'ativo'
     LEFT JOIN turmas t ON t.id = ta.turma_id

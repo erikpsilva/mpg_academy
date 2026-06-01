@@ -36,7 +36,6 @@ if ($turmaId <= 0 || $alunoId <= 0) {
 
 $pdo = getDbConnection();
 
-// Fetch aluno data to return
 $aluno = $pdo->prepare("SELECT id, nome, email, celular FROM alunos WHERE id = ? AND status = 'ativo'");
 $aluno->execute([$alunoId]);
 $aluno = $aluno->fetch();
@@ -47,74 +46,155 @@ if (!$aluno) {
     exit;
 }
 
-// Fetch turma info (promo + capacidade)
 $turmaInfo = $pdo->prepare("SELECT valor_mensalidade, promo_valor, promo_meses, max_alunos FROM turmas WHERE id = ? AND status = 'ativa'");
 $turmaInfo->execute([$turmaId]);
 $turmaData = $turmaInfo->fetch();
 
-// Verifica capacidade máxima
 if ($turmaData && $turmaData['max_alunos'] !== null) {
     $countStmt = $pdo->prepare("SELECT COUNT(*) FROM turma_alunos WHERE turma_id = ? AND status = 'ativo'");
     $countStmt->execute([$turmaId]);
-    $alunosAtivos = (int) $countStmt->fetchColumn();
-    if ($alunosAtivos >= (int) $turmaData['max_alunos']) {
+    if ((int) $countStmt->fetchColumn() >= (int) $turmaData['max_alunos']) {
         http_response_code(409);
         echo json_encode(['success' => false, 'message' => 'Esta turma já atingiu o limite máximo de alunos.']);
         exit;
     }
 }
 
-// Calculate promo discount if applicable
 $desconto          = null;
 $descontoTipo      = 'fixo';
 $descontoInicio    = null;
 $descontoFim       = null;
 $descontoVitalicio = 0;
+$mensalidadesParaGerar = [];
 
-if ($turmaData &&
-    $turmaData['promo_valor'] !== null &&
-    $turmaData['promo_meses'] !== null &&
-    $turmaData['valor_mensalidade'] !== null &&
-    (float) $turmaData['promo_valor'] < (float) $turmaData['valor_mensalidade']
-) {
-    $today  = new DateTime($dataInicio);
-    $day    = (int) $today->format('j');
-    $year   = (int) $today->format('Y');
-    $month  = (int) $today->format('n');
+if ($turmaData && $turmaData['valor_mensalidade'] !== null) {
+    $entrada   = new DateTime($dataInicio);
+    $entryDay  = (int) $entrada->format('j');
+    $valorBase = (float) $turmaData['valor_mensalidade'];
 
-    // Next occurrence of day 5
-    if ($day <= 5) {
-        $nextDay5 = new DateTime(sprintf('%04d-%02d-05', $year, $month));
-    } elseif ($month === 12) {
-        $nextDay5 = new DateTime(sprintf('%04d-%02d-05', $year + 1, 1));
+    $temPromo = $turmaData['promo_valor'] !== null
+             && $turmaData['promo_meses'] !== null
+             && (float) $turmaData['promo_valor'] < $valorBase;
+
+    // Exceção: aluno entrou nos 5 primeiros dias do mês (dentro de 5 dias após o fechamento
+    // do ciclo no dia 30 do mês anterior) → mês cheio, sem cobrança proporcional
+    $isExcecao = ($entryDay <= 5);
+
+    if ($temPromo) {
+        $promoValor = (float) $turmaData['promo_valor'];
+        $promoMeses = (int) $turmaData['promo_meses'];
+
+        if ($isExcecao) {
+            // Mês cheio: mês atual conta como mês 1 da promoção
+            $refDate = new DateTime($entrada->format('Y-m') . '-01');
+            for ($i = 0; $i < $promoMeses; $i++) {
+                $vencDate = clone $refDate;
+                $vencDate->modify('+1 month');
+                $mensalidadesParaGerar[] = [
+                    'referencia' => $refDate->format('Y-m'),
+                    'valor'      => $promoValor,
+                    'vencimento' => $vencDate->format('Y-m') . '-05',
+                ];
+                $refDate->modify('+1 month');
+            }
+
+            // Desconto vigente: do mês de entrada até o último mês promocional
+            $fimPromo = new DateTime($entrada->format('Y-m') . '-01');
+            $fimPromo->modify('+' . $promoMeses . ' months');
+            $fimPromo->modify('-1 day');
+
+            $desconto       = round($valorBase - $promoValor, 2);
+            $descontoInicio = $dataInicio;
+            $descontoFim    = $fimPromo->format('Y-m-d');
+
+        } else {
+            // Proporcional: cobra os dias usados no mês de entrada (sobre o valor promocional)
+            // depois $promoMeses meses cheios de promoção
+            $daysInMonth  = (int) $entrada->format('t');
+            $daysUsed     = $daysInMonth - $entryDay + 1;
+            $proportional = round(($daysUsed / $daysInMonth) * $promoValor, 2);
+
+            $nextMonth = new DateTime($entrada->format('Y-m') . '-01');
+            $nextMonth->modify('+1 month');
+
+            // Fatura proporcional: referência = mês de entrada, vencimento = dia 5 do mês seguinte
+            $mensalidadesParaGerar[] = [
+                'referencia' => $entrada->format('Y-m'),
+                'valor'      => $proportional,
+                'vencimento' => $nextMonth->format('Y-m') . '-05',
+            ];
+
+            // Meses promocionais cheios a partir do mês seguinte ao de entrada
+            $refDate = clone $nextMonth;
+            for ($i = 0; $i < $promoMeses; $i++) {
+                $vencDate = clone $refDate;
+                $vencDate->modify('+1 month');
+                $mensalidadesParaGerar[] = [
+                    'referencia' => $refDate->format('Y-m'),
+                    'valor'      => $promoValor,
+                    'vencimento' => $vencDate->format('Y-m') . '-05',
+                ];
+                $refDate->modify('+1 month');
+            }
+
+            // Desconto vigente: do mês seguinte até o último mês promocional
+            $fimPromo = clone $nextMonth;
+            $fimPromo->modify('+' . $promoMeses . ' months');
+            $fimPromo->modify('-1 day');
+
+            $desconto       = round($valorBase - $promoValor, 2);
+            $descontoInicio = $dataInicio;
+            $descontoFim    = $fimPromo->format('Y-m-d');
+        }
+
     } else {
-        $nextDay5 = new DateTime(sprintf('%04d-%02d-05', $year, $month + 1));
+        // Sem promoção: gera apenas a primeira fatura (proporcional ou mês cheio)
+        if ($isExcecao) {
+            $vencDate = new DateTime($entrada->format('Y-m') . '-01');
+            $vencDate->modify('+1 month');
+            $mensalidadesParaGerar[] = [
+                'referencia' => $entrada->format('Y-m'),
+                'valor'      => $valorBase,
+                'vencimento' => $vencDate->format('Y-m') . '-05',
+            ];
+        } else {
+            $daysInMonth  = (int) $entrada->format('t');
+            $daysUsed     = $daysInMonth - $entryDay + 1;
+            $proportional = round(($daysUsed / $daysInMonth) * $valorBase, 2);
+
+            $nextMonth = new DateTime($entrada->format('Y-m') . '-01');
+            $nextMonth->modify('+1 month');
+
+            $mensalidadesParaGerar[] = [
+                'referencia' => $entrada->format('Y-m'),
+                'valor'      => $proportional,
+                'vencimento' => $nextMonth->format('Y-m') . '-05',
+            ];
+        }
     }
-
-    $daysToNext5 = (int) $today->diff($nextDay5)->days;
-    $promoMeses  = (int) $turmaData['promo_meses'];
-
-    $promoFim = clone $nextDay5;
-    if ($daysToNext5 < 10) {
-        // Less than 10 days to payment day → partial doesn't count → full promo_meses from next day 5
-        $promoFim->modify('+' . $promoMeses . ' months');
-    } else {
-        // Partial month counts as month 1 → (promo_meses - 1) more full months
-        $promoFim->modify('+' . max(0, $promoMeses - 1) . ' months');
-    }
-
-    $desconto       = round((float) $turmaData['valor_mensalidade'] - (float) $turmaData['promo_valor'], 2);
-    $descontoInicio = $dataInicio;
-    $descontoFim    = $promoFim->format('Y-m-d');
 }
 
 try {
+    $pdo->beginTransaction();
+
     $stmt = $pdo->prepare("
         INSERT INTO turma_alunos
             (turma_id, aluno_id, data_entrada, desconto, desconto_tipo, desconto_inicio, desconto_fim, desconto_vitalicio)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     ");
     $stmt->execute([$turmaId, $alunoId, $dataInicio, $desconto, $descontoTipo, $descontoInicio, $descontoFim, $descontoVitalicio]);
+
+    if (!empty($mensalidadesParaGerar)) {
+        $stmtMens = $pdo->prepare("
+            INSERT INTO mensalidades (aluno_id, turma_id, referencia, valor, vencimento, status)
+            VALUES (?, ?, ?, ?, ?, 'pendente')
+        ");
+        foreach ($mensalidadesParaGerar as $m) {
+            $stmtMens->execute([$alunoId, $turmaId, $m['referencia'], $m['valor'], $m['vencimento']]);
+        }
+    }
+
+    $pdo->commit();
 
     $turmaStmt = $pdo->prepare("
         SELECT t.id, t.nome, t.valor_mensalidade, t.promo_valor, t.promo_meses, q.nome AS quadra_nome
@@ -125,21 +205,22 @@ try {
     $turma = $turmaStmt->fetch();
     $turma['data_entrada'] = $dataInicio;
 
-    // Valor efetivo para exibição imediata
-    $valorEfetivo = $turma['valor_mensalidade'];
+    $valorEfetivo = (float) $turma['valor_mensalidade'];
     if ($desconto !== null && $desconto > 0) {
-        $valorEfetivo = max(0, (float)$turma['valor_mensalidade'] - $desconto);
+        $valorEfetivo = max(0, (float) $turma['valor_mensalidade'] - $desconto);
     } elseif ($turma['promo_valor'] !== null && $turma['promo_meses'] !== null
-              && (float)$turma['promo_valor'] < (float)$turma['valor_mensalidade']) {
-        $fimPromo = date('Y-m-d', strtotime($dataInicio . ' +' . $turma['promo_meses'] . ' months'));
-        if ($fimPromo >= $dataInicio) {
-            $valorEfetivo = (float)$turma['promo_valor'];
+              && (float) $turma['promo_valor'] < (float) $turma['valor_mensalidade']) {
+        $fimPromoChk = date('Y-m-d', strtotime($dataInicio . ' +' . $turma['promo_meses'] . ' months'));
+        if ($fimPromoChk >= $dataInicio) {
+            $valorEfetivo = (float) $turma['promo_valor'];
         }
     }
     $turma['valor_efetivo'] = $valorEfetivo;
 
     echo json_encode(['success' => true, 'aluno' => $aluno, 'aluno_turma' => $turma]);
+
 } catch (PDOException $e) {
+    $pdo->rollBack();
     if ($e->getCode() === '23000') {
         http_response_code(409);
         echo json_encode(['success' => false, 'message' => 'O aluno já faz parte dessa turma.']);

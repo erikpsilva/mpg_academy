@@ -73,9 +73,22 @@ const renderTabela = (registros) => {
             ? '<span class="alunos__turmaBadge">' + $('<span>').text(r.turmas_nomes).html() + '</span>'
             : '<span class="alunos__semTurmaLabel">—</span>';
 
+        const dias = parseInt(r.max_dias_atraso) || 0;
+        const atrasoBadge = dias > 0
+            ? '<span style="display:inline-flex;align-items:center;gap:3px;margin-top:5px;padding:2px 8px;'
+              + 'background:' + (dias >= 25 ? 'rgba(255,68,68,.15)' : 'rgba(255,140,0,.13)') + ';'
+              + 'border:1px solid ' + (dias >= 25 ? 'rgba(255,68,68,.55)' : 'rgba(255,140,0,.45)') + ';'
+              + 'border-radius:4px;font-size:10px;font-weight:900;text-transform:uppercase;'
+              + 'color:' + (dias >= 25 ? '#ff5a5a' : '#ff9a1e') + ';white-space:nowrap;">'
+              + '⚠ ' + dias + 'd em atraso'
+              + (dias >= 25 ? ' — bloquear em ' + Math.max(0, 30 - dias) + 'd' : '')
+              + '</span>'
+            : '';
+
         return '<tr>' +
             '<td class="interessados__id">' + r.id + '</td>' +
-            '<td class="alunos__cellNome"><strong>' + $('<span>').text(r.nome).html() + '</strong></td>' +
+            '<td class="alunos__cellNome"><strong>' + $('<span>').text(r.nome).html() + '</strong>' +
+                (atrasoBadge ? '<br>' + atrasoBadge : '') + '</td>' +
             '<td class="alunos__cellEmail">' + $('<span>').text(r.email).html() + '</td>' +
             '<td class="alunos__cellTurma">' + turmaCell + '</td>' +
             '<td class="alunos__cellMensalidade">' + renderMensalidade(r.mensalidade_detalhes) + '</td>' +

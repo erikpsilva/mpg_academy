@@ -13,6 +13,7 @@ $seoDescriptions = [
     'treinos' => 'Agenda de treinos da MPG Academy, escola de volei na Zona Norte de São Paulo com aulas planejadas para evolução técnica e física.',
     'comunicados' => 'Comunicados da MPG Academy com novidades, avisos e informações importantes para alunos da escola de volei.',
     'meuperfil' => 'Perfil do aluno MPG Academy com dados cadastrais e informações da conta.',
+    'patrocinio' => 'Conheça os planos de patrocínio da MPG Academy e conecte sua marca a uma comunidade de volei adulto na Zona Norte de São Paulo.',
 ];
 $seoDescription = $seoDescriptions[$currentRoute] ?? $defaultDescription;
 $seoKeywords = 'MPG Academy, volei, jogar volei, jogar vole, volei zona norte, zona norte volei, zona noire volei, jogar volei na zona norte, treino de volei, treinos de volei, aula de volei, aulas de volei, escola de volei, escola de volei zona norte, volei adulto, volei iniciante, volei intermediário, volei avançado, voleibol, escola de voleibol, São Paulo, Zona Norte São Paulo';

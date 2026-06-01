@@ -3,6 +3,20 @@ if (empty($_SESSION['aluno'])) {
     header('Location: ' . BASE_URL);
     exit;
 }
+
+require_once ROOT . '/config/database.php';
+$pdo = getDbConnection();
+
+$comunicados = $pdo->query("
+    SELECT * FROM comunicados
+    WHERE publicado = 1
+    ORDER BY destaque DESC, criado_em DESC
+")->fetchAll();
+
+$cores = ['is-blue', 'is-green', 'is-purple', 'is-orange'];
+$corTag = function(string $tag) use ($cores): string {
+    return $tag ? $cores[abs(crc32($tag)) % count($cores)] : 'is-blue';
+};
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -72,71 +86,45 @@ if (empty($_SESSION['aluno'])) {
             </div>
 
             <section class="studentAnnouncementsList">
-                <article class="studentAnnouncementCard is-featured">
-                    <img src="<?= BASE_URL ?>/images/areadoaluno/imgNoticiaExemplo.png" alt="Avaliacoes fisicas MPG Academy">
+                <?php if (empty($comunicados)): ?>
+                <p style="color:#888;text-align:center;padding:40px 0;">Nenhum comunicado disponível no momento.</p>
+                <?php endif; ?>
+
+                <?php foreach ($comunicados as $c):
+                    $imgSrc  = $c['imagem'] ? BASE_URL . '/' . htmlspecialchars($c['imagem']) : BASE_URL . '/images/areadoaluno/imgNoticiaExemplo.png';
+                    $imgAlt  = htmlspecialchars($c['titulo']);
+                    $dataFmt = date('d/m/Y', strtotime($c['criado_em']));
+                    $tag     = $c['tag'] ?: '';
+                    $cor     = $corTag($tag);
+                    // Resumo: texto sem tags, primeiros 160 chars
+                    $resumo  = mb_substr(strip_tags($c['conteudo'] ?? ''), 0, 160);
+                    if (mb_strlen(strip_tags($c['conteudo'] ?? '')) > 160) $resumo .= '…';
+                ?>
+                <article class="studentAnnouncementCard<?= $c['destaque'] ? ' is-featured' : '' ?>">
+                    <img src="<?= $imgSrc ?>" alt="<?= $imgAlt ?>">
                     <div>
+                        <?php if ($c['destaque']): ?>
                         <strong><i class="icon-check"></i> Destaque</strong>
-                        <h2>Avaliacoes fisicas do 2º semestre</h2>
-                        <p>As avaliacoes fisicas do 2º semestre ja tem data marcada! Fiquem atentos ao cronograma da sua turma e nao faltem.</p>
+                        <?php endif; ?>
+                        <h2><?= htmlspecialchars($c['titulo']) ?></h2>
+                        <p><?= htmlspecialchars($resumo) ?></p>
                         <footer>
-                            <span><i class="icon-calendar"></i> 22/05/2024</span>
-                            <b class="is-purple">Avaliacoes</b>
-                            <button type="button" class="studentAnnouncementOpen" data-title="Avaliacoes fisicas do 2º semestre" data-date="22/05/2024" data-tag="Avaliacoes" data-image="<?= BASE_URL ?>/images/areadoaluno/imgNoticiaExemplo.png" data-text="As avaliacoes fisicas do 2º semestre ja tem data marcada. Todos os alunos devem acompanhar o cronograma da sua turma e comparecer no horario combinado. A avaliacao ajuda nossa equipe a acompanhar evolucao, condicionamento e pontos de melhoria para os proximos treinos.">Ver comunicado completo <i class="icon-go"></i></button>
+                            <span><i class="icon-calendar"></i> <?= $dataFmt ?></span>
+                            <?php if ($tag): ?>
+                            <b class="<?= $cor ?>"><?= htmlspecialchars($tag) ?></b>
+                            <?php endif; ?>
+                            <button type="button" class="studentAnnouncementOpen"
+                                    data-title="<?= htmlspecialchars($c['titulo']) ?>"
+                                    data-date="<?= $dataFmt ?>"
+                                    data-tag="<?= htmlspecialchars($tag) ?>"
+                                    data-image="<?= $imgSrc ?>"
+                                    data-html="<?= htmlspecialchars($c['conteudo'] ?? '') ?>">
+                                Ver comunicado completo <i class="icon-go"></i>
+                            </button>
                         </footer>
                     </div>
                 </article>
-
-                <article class="studentAnnouncementCard">
-                    <img src="<?= BASE_URL ?>/images/home/imgMaisQueUmaEscola.png" alt="Quadra MPG Academy">
-                    <div>
-                        <h2>Recesso de Ferias - Julho</h2>
-                        <p>Informamos que nao havera treinos entre os dias 15/07 e 21/07 devido ao recesso de ferias. Retornaremos normalmente no dia 22/07.</p>
-                        <footer>
-                            <span><i class="icon-calendar"></i> 20/05/2024</span>
-                            <b class="is-blue">Avisos</b>
-                            <button type="button" class="studentAnnouncementOpen" data-title="Recesso de Ferias - Julho" data-date="20/05/2024" data-tag="Avisos" data-image="<?= BASE_URL ?>/images/home/imgMaisQueUmaEscola.png" data-text="Informamos que nao havera treinos entre os dias 15/07 e 21/07 devido ao recesso de ferias. As atividades retornam normalmente no dia 22/07, seguindo os mesmos horarios e turmas.">Ver comunicado completo <i class="icon-go"></i></button>
-                        </footer>
-                    </div>
-                </article>
-
-                <article class="studentAnnouncementCard">
-                    <img src="<?= BASE_URL ?>/images/home/imgProntoPraFazerParteDaMpgAcademy.png" alt="Uniforme MPG Academy">
-                    <div>
-                        <h2>Novo uniforme MPG Academy</h2>
-                        <p>Ja estao disponiveis os novos uniformes oficiais da MPG Academy! Procure seu treinador para mais informacoes sobre valores e tamanhos.</p>
-                        <footer>
-                            <span><i class="icon-calendar"></i> 18/05/2024</span>
-                            <b class="is-green">Uniformes</b>
-                            <button type="button" class="studentAnnouncementOpen" data-title="Novo uniforme MPG Academy" data-date="18/05/2024" data-tag="Uniformes" data-image="<?= BASE_URL ?>/images/home/imgProntoPraFazerParteDaMpgAcademy.png" data-text="Ja estao disponiveis os novos uniformes oficiais da MPG Academy. Procure seu treinador para consultar valores, tamanhos disponiveis e prazos de entrega.">Ver comunicado completo <i class="icon-go"></i></button>
-                        </footer>
-                    </div>
-                </article>
-
-                <article class="studentAnnouncementCard">
-                    <img src="<?= BASE_URL ?>/images/home/imgTopoBanner.png" alt="Copa MPG Academy">
-                    <div>
-                        <h2>Copa MPG Academy 2024</h2>
-                        <p>Vem ai a Copa MPG Academy! O maior torneio interno do ano comeca dia 10/06. Monte seu time e participe!</p>
-                        <footer>
-                            <span><i class="icon-calendar"></i> 15/05/2024</span>
-                            <b class="is-orange">Competicoes</b>
-                            <button type="button" class="studentAnnouncementOpen" data-title="Copa MPG Academy 2024" data-date="15/05/2024" data-tag="Evento interno" data-image="<?= BASE_URL ?>/images/home/imgTopoBanner.png" data-text="Vem ai a Copa MPG Academy 2024. Nosso evento interno comeca dia 10/06. Monte seu time, fale com a equipe tecnica e participe dessa experiencia com a comunidade MPG.">Ver comunicado completo <i class="icon-go"></i></button>
-                        </footer>
-                    </div>
-                </article>
-
-                <article class="studentAnnouncementCard">
-                    <img src="<?= BASE_URL ?>/images/areadoaluno/imgTopoBanner.png" alt="Calendario de treino MPG Academy">
-                    <div>
-                        <h2>Alteracao no horario de treino</h2>
-                        <p>A partir de 03/06, os treinos das tercas e quintas-feiras serao realizados das 19h as 20h30.</p>
-                        <footer>
-                            <span><i class="icon-calendar"></i> 10/05/2024</span>
-                            <b class="is-blue">Horarios</b>
-                            <button type="button" class="studentAnnouncementOpen" data-title="Alteracao no horario de treino" data-date="10/05/2024" data-tag="Horarios" data-image="<?= BASE_URL ?>/images/areadoaluno/imgTopoBanner.png" data-text="A partir de 03/06, os treinos das tercas e quintas-feiras serao realizados das 19h as 20h30. Organize sua chegada com antecedencia para evitar atrasos.">Ver comunicado completo <i class="icon-go"></i></button>
-                        </footer>
-                    </div>
-                </article>
+                <?php endforeach; ?>
             </section>
 
             <nav class="studentAnnouncementsPagination" aria-label="Paginacao de comunicados">
@@ -158,7 +146,7 @@ if (empty($_SESSION['aluno'])) {
                 <span class="studentAnnouncementModal__tag"></span>
                 <h2 id="announcementModalTitle"></h2>
                 <time></time>
-                <p></p>
+                <div class="studentAnnouncementModal__content"></div>
             </div>
         </article>
     </div>

@@ -71,8 +71,15 @@
                 </a>
             </li>
 
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/comunicados"
+                   class="sidebar__link <?= ($subRoute === 'comunicados') ? 'sidebar__link--active' : '' ?>">
+                    Avisos
+                </a>
+            </li>
+
             <li class="sidebar__divider" aria-hidden="true"></li>
-            <li class="sidebar__section">Turmas</li>
+            <li class="sidebar__section">Administrativo</li>
 
             <li class="sidebar__item">
                 <a href="<?= BASE_URL ?>/admin/quadras"
@@ -88,6 +95,12 @@
                 </a>
             </li>
 
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/professores"
+                   class="sidebar__link <?= ($subRoute === 'professores') ? 'sidebar__link--active' : '' ?>">
+                    Professores
+                </a>
+            </li>
 
         </ul>
     </nav>

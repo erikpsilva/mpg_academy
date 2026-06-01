@@ -1,0 +1,722 @@
+.patrocinio {
+    background:
+        radial-gradient(circle at 82% 8%, rgba(255, 213, 0, 0.13), transparent 18%),
+        linear-gradient(180deg, #050607 0%, #080a0b 52%, #050607 100%);
+    color: @white;
+    min-height: 100vh;
+    padding: 124px 0 58px;
+
+    .container {
+        max-width: 1440px;
+    }
+}
+
+.patrocinioBreadcrumb {
+    align-items: center;
+    color: rgba(255, 255, 255, 0.72);
+    display: flex;
+    font-size: 14px;
+    gap: 12px;
+    margin-bottom: 22px;
+
+    a {
+        color: rgba(255, 255, 255, 0.72);
+    }
+
+    i {
+        color: @yellow;
+        font-size: 11px;
+    }
+}
+
+.patrocinioEyebrow {
+    color: @yellow;
+    display: block;
+    font-size: 14px;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    margin-bottom: 14px;
+    text-transform: uppercase;
+}
+
+.patrocinioHero {
+    h1 {
+        color: @white;
+        font-size: 62px;
+        font-weight: 900;
+        line-height: 1.02;
+        margin: 0 0 24px;
+
+        span {
+            color: @yellow;
+            display: block;
+        }
+    }
+
+    p {
+        border-left: 5px solid @yellow;
+        color: rgba(255, 255, 255, 0.88);
+        font-size: 19px;
+        line-height: 1.65;
+        margin: 0 0 30px;
+        max-width: 620px;
+        padding-left: 22px;
+    }
+
+    &__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    &__image {
+        border: 1px solid rgba(255, 213, 0, 0.24);
+        border-radius: 10px;
+        margin: 0;
+        overflow: hidden;
+
+        img {
+            display: block;
+            height: 440px;
+            object-fit: cover;
+            width: 100%;
+        }
+    }
+}
+
+.patrocinioButton {
+    align-items: center;
+    border-radius: 7px;
+    display: inline-flex;
+    font-size: 14px;
+    font-weight: 900;
+    gap: 12px;
+    justify-content: center;
+    min-height: 52px;
+    padding: 0 26px;
+    text-transform: uppercase;
+    .transition(0.25s all);
+
+    &:hover {
+        transform: translateY(-2px);
+    }
+
+    &--primary {
+        background: @yellow;
+        border: 1px solid @yellow;
+        color: #050505;
+
+        &:hover {
+            color: #050505;
+        }
+    }
+
+    &--outline {
+        background: rgba(0, 0, 0, 0.28);
+        border: 1px solid rgba(255, 213, 0, 0.74);
+        color: @white;
+
+        &:hover {
+            color: @yellow;
+        }
+    }
+}
+
+.patrocinioStats {
+    margin-top: 28px;
+}
+
+.patrocinioStat,
+.patrocinioTextBox,
+.patrocinioCourt,
+.patrocinioMetric,
+.patrocinioInsight,
+.patrocinioPlan,
+.patrocinioTableWrap {
+    background: linear-gradient(145deg, rgba(18, 20, 22, 0.94), rgba(8, 9, 10, 0.9));
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+}
+
+.patrocinioStat {
+    height: 100%;
+    padding: 26px 20px;
+    text-align: center;
+
+    strong {
+        color: @yellow;
+        display: block;
+        font-size: 46px;
+        font-weight: 900;
+        line-height: 1;
+        margin-bottom: 10px;
+    }
+
+    span {
+        color: rgba(255, 255, 255, 0.84);
+        display: block;
+        font-size: 15px;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+}
+
+.patrocinioIntro,
+.patrocinioReach,
+.patrocinioPlans,
+.patrocinioUniform,
+.patrocinioCompare,
+.patrocinioCta {
+    h2 {
+        color: @white;
+        font-size: 42px;
+        font-weight: 900;
+        line-height: 1.12;
+        margin: 0 0 20px;
+    }
+
+    p {
+        color: rgba(255, 255, 255, 0.84);
+        font-size: 17px;
+        line-height: 1.7;
+        margin: 0;
+    }
+}
+
+.patrocinioUniform {
+    > .container > .row {
+        row-gap: 28px;
+    }
+
+    &__legend {
+        display: grid;
+        gap: 10px;
+        margin: 24px 0 18px;
+
+        span {
+            align-items: center;
+            color: rgba(255, 255, 255, 0.88);
+            display: inline-flex;
+            font-size: 15px;
+            font-weight: 800;
+            gap: 10px;
+        }
+
+        b {
+            border-radius: 50%;
+            display: inline-block;
+            height: 12px;
+            width: 12px;
+        }
+
+        span:first-child b {
+            background: @yellow;
+            box-shadow: 0 0 0 4px rgba(255, 213, 0, 0.13);
+        }
+
+        span:last-child b {
+            background: rgba(255, 255, 255, 0.72);
+            box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.08);
+        }
+    }
+
+    small {
+        border-left: 4px solid @yellow;
+        color: rgba(255, 255, 255, 0.68);
+        display: block;
+        font-size: 13px;
+        line-height: 1.55;
+        padding-left: 14px;
+    }
+
+    &__image {
+        background: linear-gradient(145deg, rgba(18, 20, 22, 0.94), rgba(8, 9, 10, 0.9));
+        border: 1px solid rgba(255, 213, 0, 0.32);
+        border-radius: 8px;
+        margin: 0;
+        overflow: hidden;
+
+        img {
+            display: block;
+            height: auto;
+            width: 100%;
+        }
+
+        figcaption {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
+            font-weight: 900;
+            letter-spacing: 0.05em;
+            margin: 0;
+            padding: 13px 16px;
+            text-transform: uppercase;
+        }
+    }
+}
+
+.patrocinioTextBox {
+    padding: 30px 34px;
+
+    p + p {
+        margin-top: 18px;
+    }
+}
+
+.patrocinioCourts {
+    margin-top: 26px;
+}
+
+.patrocinioCourt {
+    height: 100%;
+    padding: 26px;
+
+    h3 {
+        align-items: center;
+        color: @white;
+        display: flex;
+        font-size: 21px;
+        font-weight: 900;
+        gap: 12px;
+        margin: 0 0 10px;
+
+        span {
+            border-radius: 50%;
+            display: inline-block;
+            flex: 0 0 auto;
+            height: 12px;
+            width: 12px;
+        }
+    }
+
+    p {
+        font-size: 16px;
+        margin: 0 0 16px;
+    }
+
+    ul {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin: 0;
+    }
+
+    li {
+        background: rgba(255, 213, 0, 0.1);
+        border: 1px solid rgba(255, 213, 0, 0.28);
+        border-radius: 6px;
+        color: @yellow;
+        font-size: 13px;
+        font-weight: 800;
+        padding: 8px 10px;
+    }
+}
+
+.patrocinioReach {
+    > .container > .row {
+        row-gap: 26px;
+    }
+
+    &__metrics {
+        margin-top: 24px;
+        row-gap: 16px;
+    }
+}
+
+.patrocinioMetric {
+    height: 100%;
+    padding: 28px;
+
+    small {
+        color: @yellow;
+        display: block;
+        font-size: 12px;
+        font-weight: 900;
+        margin-bottom: 12px;
+        text-transform: uppercase;
+    }
+
+    strong {
+        color: @white;
+        display: block;
+        font-size: 52px;
+        font-weight: 900;
+        line-height: 1;
+        margin-bottom: 8px;
+    }
+
+    span {
+        color: rgba(255, 255, 255, 0.92);
+        display: block;
+        font-size: 16px;
+        font-weight: 900;
+        margin-bottom: 12px;
+        text-transform: uppercase;
+    }
+
+    p {
+        font-size: 15px;
+        line-height: 1.6;
+    }
+}
+
+.patrocinioInsight {
+    margin: 0;
+    overflow: hidden;
+
+    img {
+        display: block;
+        height: auto;
+        width: 100%;
+    }
+
+    figcaption {
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.68);
+        font-size: 12px;
+        font-weight: 900;
+        letter-spacing: 0.06em;
+        margin: 0;
+        padding: 12px 16px;
+        text-transform: uppercase;
+    }
+}
+
+.patrocinioNote {
+    background: rgba(255, 213, 0, 0.09);
+    border-left: 5px solid @yellow;
+    border-radius: 0 8px 8px 0;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 16px;
+    line-height: 1.65;
+    margin-top: 18px;
+    padding: 22px 24px;
+}
+
+.patrocinioSectionTitle {
+    margin: 0 auto 28px;
+    max-width: 760px;
+    text-align: center;
+}
+
+.patrocinioPlan {
+    height: 100%;
+    overflow: hidden;
+    position: relative;
+
+    &--gold {
+        border-color: @yellow;
+        box-shadow: 0 0 36px rgba(255, 213, 0, 0.1);
+    }
+
+    &__label {
+        background: @yellow;
+        color: #050505;
+        font-size: 12px;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        padding: 10px 14px;
+        text-align: center;
+        text-transform: uppercase;
+    }
+
+    &__head {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+        padding: 28px 30px 22px;
+
+        > span {
+            color: @yellow;
+            display: block;
+            font-size: 13px;
+            font-weight: 900;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        h3 {
+            color: @white;
+            font-size: 42px;
+            font-weight: 900;
+            margin: 0 0 12px;
+        }
+
+        div {
+            align-items: flex-end;
+            display: flex;
+            gap: 5px;
+        }
+
+        strong {
+            color: @yellow;
+            font-size: 56px;
+            font-weight: 900;
+            line-height: 0.9;
+        }
+
+        small {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 16px;
+            font-weight: 800;
+        }
+    }
+
+    ul {
+        margin: 0;
+        padding: 24px 30px 30px;
+    }
+
+    li {
+        color: rgba(255, 255, 255, 0.86);
+        font-size: 16px;
+        line-height: 1.55;
+        padding-left: 26px;
+        position: relative;
+
+        + li {
+            margin-top: 14px;
+        }
+
+        &::before {
+            background: @yellow;
+            border-radius: 50%;
+            content: '';
+            height: 8px;
+            left: 0;
+            position: absolute;
+            top: 9px;
+            width: 8px;
+        }
+
+        strong {
+            color: @white;
+        }
+    }
+}
+
+.patrocinioTableWrap {
+    overflow: hidden;
+}
+
+.patrocinioTable {
+    border-collapse: collapse;
+    width: 100%;
+
+    th,
+    td {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        color: rgba(255, 255, 255, 0.86);
+        font-size: 15px;
+        padding: 17px 20px;
+        text-align: center;
+    }
+
+    th {
+        background: rgba(255, 213, 0, 0.1);
+        color: @yellow;
+        font-size: 13px;
+        font-weight: 900;
+        text-transform: uppercase;
+    }
+
+    th:first-child,
+    td:first-child {
+        color: @white;
+        font-weight: 800;
+        text-align: left;
+    }
+}
+
+.patrocinioCta {
+    &__inner {
+        align-items: center;
+        background:
+            radial-gradient(circle at 100% 0, rgba(255, 213, 0, 0.12), transparent 32%),
+            linear-gradient(90deg, rgba(13, 15, 17, 0.96), rgba(13, 15, 17, 0.82));
+        border: 1px solid rgba(255, 213, 0, 0.45);
+        border-radius: 9px;
+        display: grid;
+        gap: 26px;
+        grid-template-columns: 150px minmax(0, 1fr) auto;
+        padding: 28px;
+
+        img {
+            display: block;
+            max-width: 150px;
+            width: 100%;
+        }
+
+        h2 {
+            margin-bottom: 10px;
+        }
+
+        p {
+            font-size: 16px;
+        }
+    }
+}
+
+@media @tablet {
+    .patrocinio {
+        padding-top: 104px;
+    }
+
+    .patrocinioHero {
+        h1 {
+            font-size: 52px;
+        }
+
+        &__image {
+            margin-top: 28px;
+
+            img {
+                height: 330px;
+            }
+        }
+    }
+
+    .patrocinioStats {
+        .col-6:nth-child(n+3) {
+            margin-top: 16px;
+        }
+    }
+
+    .patrocinioIntro,
+    .patrocinioReach,
+    .patrocinioPlans,
+    .patrocinioUniform,
+    .patrocinioCompare,
+    .patrocinioCta {
+        h2 {
+            font-size: 36px;
+        }
+    }
+
+    .patrocinioTextBox,
+    .patrocinioCompare .col-lg-8,
+    .patrocinioInsight {
+        margin-top: 18px;
+    }
+
+    .patrocinioPlans {
+        .col-lg-6 + .col-lg-6 {
+            margin-top: 18px;
+        }
+    }
+
+    .patrocinioCta__inner {
+        grid-template-columns: 120px 1fr;
+
+        .patrocinioButton {
+            grid-column: 1 / -1;
+            justify-self: start;
+        }
+    }
+}
+
+@media @tablet-small {
+    .patrocinioHero {
+        h1 {
+            font-size: 42px;
+        }
+
+        p {
+            font-size: 17px;
+        }
+    }
+
+    .patrocinioButton {
+        width: 100%;
+    }
+
+    .patrocinioStat {
+        padding: 22px 14px;
+
+        strong {
+            font-size: 38px;
+        }
+
+        span {
+            font-size: 13px;
+        }
+    }
+
+    .patrocinioIntro,
+    .patrocinioReach,
+    .patrocinioPlans,
+    .patrocinioUniform,
+    .patrocinioCompare,
+    .patrocinioCta {
+        h2 {
+            font-size: 30px;
+        }
+
+        p {
+            font-size: 16px;
+        }
+    }
+
+    .patrocinioTextBox,
+    .patrocinioCourt,
+    .patrocinioMetric,
+    .patrocinioPlan__head,
+    .patrocinioPlan ul {
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+
+    .patrocinioTable {
+        thead {
+            display: none;
+        }
+
+        tbody,
+        tr,
+        td {
+            display: block;
+            width: 100%;
+        }
+
+        tr {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 12px 0;
+        }
+
+        td {
+            align-items: center;
+            border-bottom: 0;
+            display: flex;
+            justify-content: space-between;
+            padding: 9px 16px;
+            text-align: right;
+        }
+
+        td:first-child {
+            background: rgba(255, 213, 0, 0.08);
+            margin-bottom: 6px;
+            text-align: left;
+        }
+
+        td:not(:first-child)::before {
+            color: rgba(255, 255, 255, 0.62);
+            content: attr(data-label);
+            font-size: 12px;
+            font-weight: 900;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+    }
+
+    .patrocinioCta__inner {
+        display: block;
+        padding: 24px 20px;
+        text-align: center;
+
+        img {
+            margin: 0 auto 22px;
+        }
+
+        .patrocinioButton {
+            margin-top: 22px;
+        }
+    }
+}

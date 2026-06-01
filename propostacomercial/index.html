@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Proposta de Patrocínio — MPG Academy</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&family=Barlow+Condensed:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --yellow: #F5C518;
+    --yellow-dim: rgba(245,197,24,0.12);
+    --yellow-border: rgba(245,197,24,0.25);
+    --black: #080808;
+    --dark: #101010;
+    --dark2: #181818;
+    --dark3: #202020;
+    --dark4: #282828;
+    --white: #FFFFFF;
+    --gray: rgba(255,255,255,0.55);
+    --gray2: rgba(255,255,255,0.35);
+    --gray3: rgba(255,255,255,0.12);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--black);
+    color: var(--white);
+    font-family: 'Barlow', sans-serif;
+    line-height: 1.5;
+  }
+
+  /* ─────────────────────────────────────── */
+  /* PÁGINA / PRINT                          */
+  /* ─────────────────────────────────────── */
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0 auto;
+    background: var(--black);
+    position: relative;
+    overflow: hidden;
+    page-break-after: always;
+  }
+
+  @media screen {
+    .page {
+      margin: 0 auto 4px;
+      box-shadow: 0 4px 40px rgba(0,0,0,0.8);
+    }
+    body { background: #050505; padding: 24px 0; }
+  }
+
+  @media print {
+    body { padding: 0; background: #000; }
+    .page { margin: 0; box-shadow: none; }
+    @page { size: A4; margin: 0; }
+  }
+
+  /* ─────────────────────────────────────── */
+  /* CAPA                                    */
+  /* ─────────────────────────────────────── */
+  .capa {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 60px 50px 50px;
+    min-height: 297mm;
+    background: var(--black);
+    position: relative;
+  }
+
+  .capa::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 55%, rgba(245,197,24,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .capa-top-bar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: var(--yellow);
+  }
+
+  .capa-bottom-bar {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: var(--dark3);
+    padding: 14px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid var(--gray3);
+  }
+  .capa-bottom-bar span {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--gray2);
+  }
+
+  .capa-logo {
+    width: 180px;
+    margin-bottom: 48px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .capa-badge {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    color: var(--yellow);
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .capa-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 100px;
+    line-height: 0.88;
+    letter-spacing: 2px;
+    position: relative;
+    z-index: 1;
+    margin-bottom: 14px;
+  }
+  .capa-title .w { color: var(--white); display: block; }
+  .capa-title .y { color: var(--yellow); display: block; }
+
+  .capa-sub {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    color: var(--gray2);
+    position: relative;
+    z-index: 1;
+    margin-bottom: 52px;
+  }
+
+  .capa-line {
+    width: 1px;
+    height: 56px;
+    background: linear-gradient(to bottom, var(--yellow), transparent);
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ─────────────────────────────────────── */
+  /* PÁGINAS INTERNAS                        */
+  /* ─────────────────────────────────────── */
+  .inner-page {
+    padding: 44px 44px 50px;
+    min-height: 297mm;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .page-topbar {
+    height: 3px;
+    background: var(--yellow);
+    position: absolute;
+    top: 0; left: 0; right: 0;
+  }
+  .page-footer {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: var(--dark3);
+    padding: 10px 44px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--gray3);
+  }
+  .page-footer span {
+    font-size: 8px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.2);
+  }
+
+  /* ─────────────────────────────────────── */
+  /* SECTION HEADER                          */
+  /* ─────────────────────────────────────── */
+  .sec-header { margin-bottom: 28px; }
+  .sec-tag {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    color: var(--yellow);
+    margin-bottom: 8px;
+  }
+  .sec-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 52px;
+    line-height: 1;
+    color: var(--white);
+    margin-bottom: 8px;
+  }
+  .sec-title .y { color: var(--yellow); }
+  .sec-desc {
+    font-size: 13px;
+    color: var(--gray);
+    line-height: 1.7;
+    max-width: 520px;
+  }
+  .sec-divider {
+    height: 1px;
+    background: rgba(245,197,24,0.15);
+    margin: 20px 0 24px;
+  }
+
+  /* ─────────────────────────────────────── */
+  /* CARDS GENÉRICOS                         */
+  /* ─────────────────────────────────────── */
+  .card {
+    background: var(--dark2);
+    border: 1px solid var(--gray3);
+    border-radius: 10px;
+    padding: 22px 20px;
+  }
+  .card-yellow-border {
+    border-color: var(--yellow-border);
+  }
+
+  /* ─────────────────────────────────────── */
+  /* PÁG 2 — QUEM SOMOS                      */
+  /* ─────────────────────────────────────── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .stat-card {
+    background: var(--dark2);
+    border: 1px solid var(--yellow-border);
+    border-radius: 10px;
+    padding: 20px 12px;
+    text-align: center;
+  }
+  .stat-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 46px;
+    color: var(--yellow);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .stat-lbl {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--gray2);
+  }
+
+  .info-box {
+    background: var(--dark2);
+    border-left: 3px solid var(--yellow);
+    border-radius: 0 10px 10px 0;
+    padding: 20px 24px;
+    font-size: 13px;
+    color: rgba(255,255,255,0.7);
+    line-height: 1.8;
+    margin-bottom: 20px;
+  }
+  .info-box strong { color: var(--white); font-weight: 700; }
+
+  .quadras-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 4px;
+  }
+  .quadra-card {
+    background: var(--dark3);
+    border-radius: 10px;
+    padding: 18px 18px;
+    border: 1px solid var(--gray3);
+  }
+  .quadra-dot {
+    display: inline-block;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    margin-right: 8px;
+    vertical-align: middle;
+    flex-shrink: 0;
+  }
+  .quadra-nome {
+    font-size: 13px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+  }
+  .quadra-end {
+    font-size: 11px;
+    color: var(--gray2);
+    margin-bottom: 10px;
+    padding-left: 18px;
+  }
+  .horario-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    padding-left: 18px;
+  }
+  .horario-tag {
+    background: var(--yellow-dim);
+    color: var(--yellow);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+  }
+
+  /* ─────────────────────────────────────── */
+  /* PÁG 3 — ALCANCE                         */
+  /* ─────────────────────────────────────── */
+  .alcance-metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .metric-card {
+    background: var(--dark2);
+    border: 1px solid var(--yellow-border);
+    border-radius: 10px;
+    padding: 18px 18px 16px;
+  }
+  .metric-badge {
+    display: inline-block;
+    background: var(--yellow-dim);
+    color: var(--yellow);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+  }
+  .metric-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 52px;
+    color: var(--yellow);
+    line-height: 1;
+    margin-bottom: 2px;
+  }
+  .metric-lbl {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--gray2);
+    margin-bottom: 8px;
+  }
+  .metric-detail {
+    font-size: 11px;
+    color: var(--gray);
+    line-height: 1.6;
+  }
+
+  .alcance-screenshot {
+    background: var(--dark2);
+    border: 1px solid var(--yellow-border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 14px;
+  }
+  .alcance-screenshot img {
+    width: 100%;
+    display: block;
+  }
+  .alcance-screenshot-caption {
+    padding: 10px 16px;
+    font-size: 10px;
+    color: var(--gray2);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-weight: 600;
+    border-top: 1px solid var(--gray3);
+    text-align: center;
+  }
+
+  .note-box {
+    background: var(--dark3);
+    border: 1px solid var(--yellow-border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    font-size: 12px;
+    color: var(--gray);
+    line-height: 1.7;
+  }
+  .note-box strong { color: var(--white); }
+
+  /* ─────────────────────────────────────── */
+  /* PÁG 4 — PLANOS                          */
+  /* ─────────────────────────────────────── */
+  .planos-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    flex: 1;
+  }
+  .plano-card {
+    background: var(--dark2);
+    border: 1px solid var(--gray3);
+    border-radius: 14px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .plano-card.gold {
+    border: 2px solid var(--yellow);
+  }
+  .gold-top {
+    background: var(--yellow);
+    color: var(--black);
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 7px;
+    text-align: center;
+  }
+  .plano-head {
+    padding: 22px 22px 16px;
+  }
+  .plano-tier {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--yellow);
+    margin-bottom: 6px;
+  }
+  .plano-nome {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 38px;
+    line-height: 1;
+    color: var(--white);
+    margin-bottom: 14px;
+  }
+  .plano-preco {
+    display: flex;
+    align-items: baseline;
+    gap: 3px;
+  }
+  .preco-rs { font-size: 14px; font-weight: 700; color: var(--gray2); }
+  .preco-val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 58px;
+    color: var(--yellow);
+    line-height: 1;
+  }
+  .preco-mes { font-size: 12px; color: var(--gray2); }
+
+  .plano-divider { height: 1px; background: var(--gray3); margin: 0 22px; }
+
+  .plano-body {
+    padding: 16px 22px 22px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  .benefits-title {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gray2);
+    margin-bottom: 12px;
+  }
+  .benefit {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 11px;
+  }
+  .benefit-dot {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    border: 1.5px solid var(--yellow);
+    background: var(--yellow-dim);
+    flex-shrink: 0;
+    margin-top: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .benefit-dot::after {
+    content: '';
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--yellow);
+  }
+  .benefit-text {
+    font-size: 12px;
+    color: rgba(255,255,255,0.7);
+    line-height: 1.5;
+  }
+  .benefit-text strong { color: var(--white); font-weight: 700; }
+
+  /* ─────────────────────────────────────── */
+  /* PÁG 5 — COMPARATIVO + CONTATO          */
+  /* ─────────────────────────────────────── */
+  .comp-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 24px;
+  }
+  .comp-table thead tr {
+    background: rgba(245,197,24,0.08);
+    border-bottom: 1px solid var(--yellow-border);
+  }
+  .comp-table th {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 12px 14px;
+    text-align: center;
+    color: rgba(255,255,255,0.6);
+  }
+  .comp-table th:first-child { text-align: left; }
+  .comp-table th.gold { color: var(--yellow); }
+  .comp-table td {
+    padding: 11px 14px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.65);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    text-align: center;
+  }
+  .comp-table td:first-child { text-align: left; color: rgba(255,255,255,0.85); font-size: 12px; }
+  .comp-table tr:nth-child(even) td { background: rgba(255,255,255,0.015); }
+  .check { color: var(--yellow); font-weight: 700; font-size: 16px; }
+  .dash { color: rgba(255,255,255,0.18); font-size: 14px; }
+  .pill {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .pill-yellow { background: var(--yellow-dim); color: var(--yellow); }
+  .pill-gray { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.3); }
+
+  .contato-box {
+    background: var(--dark2);
+    border: 1px solid var(--yellow-border);
+    border-radius: 14px;
+    padding: 36px 32px;
+    text-align: center;
+  }
+  .contato-logo {
+    width: 110px;
+    margin: 0 auto 22px;
+    display: block;
+  }
+  .contato-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 48px;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .contato-title .y { color: var(--yellow); }
+  .contato-sub {
+    font-size: 13px;
+    color: var(--gray);
+    margin-bottom: 28px;
+  }
+  .contato-items {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+  }
+  .contato-item {}
+  .contato-item-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--yellow);
+    margin-bottom: 3px;
+  }
+  .contato-item-val {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--white);
+  }
+  .cta-btn {
+    display: inline-block;
+    background: var(--yellow);
+    color: var(--black);
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 14px 36px;
+    border-radius: 8px;
+    text-decoration: none;
+  }
+
+  @media screen {
+    .sec-desc {
+      font-size: 15px;
+      line-height: 1.55;
+    }
+
+    .info-box {
+      font-size: 15px;
+      line-height: 1.65;
+    }
+
+    .quadra-end,
+    .metric-detail,
+    .benefit-text,
+    .comp-table td,
+    .comp-table td:first-child,
+    .contato-sub {
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .note-box {
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .stat-lbl,
+    .metric-lbl,
+    .horario-tag,
+    .alcance-screenshot-caption,
+    .benefits-title,
+    .pill,
+    .contato-item-label {
+      font-size: 11px;
+    }
+
+    .contato-item-val {
+      font-size: 16px;
+    }
+  }
+
+  @media screen and (max-width: 900px) {
+    body {
+      padding: 0;
+      background: var(--black);
+    }
+
+    .page {
+      width: 100%;
+      min-height: auto;
+      height: auto;
+      margin: 0;
+      box-shadow: none;
+      page-break-after: auto;
+      overflow: visible;
+    }
+
+    .capa {
+      min-height: 100svh;
+      height: auto;
+      padding: 42px 24px 84px;
+      justify-content: center;
+    }
+
+    .capa-logo {
+      width: min(170px, 54vw);
+      margin-bottom: 38px;
+    }
+
+    .capa-badge,
+    .capa-sub {
+      letter-spacing: 3px;
+    }
+
+    .capa-sub {
+      max-width: 420px;
+      line-height: 1.55;
+    }
+
+    .capa-bottom-bar {
+      padding: 12px 20px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .inner-page {
+      min-height: auto;
+      padding: 40px 22px 78px;
+      display: block;
+    }
+
+    .page-footer {
+      position: static;
+      margin: 34px -22px -78px;
+      padding: 14px 22px;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .sec-header {
+      margin-bottom: 22px;
+    }
+
+    .sec-tag {
+      letter-spacing: 3px;
+    }
+
+    .sec-divider {
+      margin: 18px 0 22px;
+    }
+
+    .stats-row,
+    .alcance-metrics,
+    .planos-grid {
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .quadras-grid {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .stat-card,
+    .metric-card,
+    .quadra-card,
+    .plano-head,
+    .plano-body,
+    .note-box,
+    .info-box {
+      padding-left: 18px;
+      padding-right: 18px;
+    }
+
+    .alcance-screenshot {
+      margin-bottom: 16px;
+    }
+
+    .alcance-screenshot img {
+      height: auto;
+    }
+
+    .plano-card {
+      min-height: 100%;
+    }
+
+    .benefit {
+      align-items: flex-start;
+    }
+
+    .comp-table {
+      display: block;
+      border-collapse: separate;
+      margin-bottom: 22px;
+    }
+
+    .comp-table thead {
+      display: none;
+    }
+
+    .comp-table tbody,
+    .comp-table tr,
+    .comp-table td {
+      display: block;
+      width: 100%;
+    }
+
+    .comp-table tr {
+      border: 1px solid var(--gray3);
+      border-radius: 10px;
+      background: rgba(255,255,255,0.025);
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+
+    .comp-table td {
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      padding: 11px 14px;
+      text-align: left;
+    }
+
+    .comp-table td:first-child {
+      background: rgba(245,197,24,0.08);
+      color: var(--white);
+      font-weight: 800;
+    }
+
+    .comp-table td:nth-child(2)::before,
+    .comp-table td:nth-child(3)::before {
+      display: inline-block;
+      min-width: 76px;
+      margin-right: 10px;
+      color: var(--gray2);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .comp-table td:nth-child(2)::before { content: "Bronze"; }
+    .comp-table td:nth-child(3)::before { content: "Gold"; }
+
+    .contato-box {
+      padding: 30px 20px;
+    }
+
+    .contato-items {
+      gap: 18px;
+    }
+  }
+
+  @media screen and (max-width: 560px) {
+    .capa-title {
+      font-size: 82px;
+      line-height: 0.9;
+    }
+
+    .sec-title {
+      font-size: 46px;
+      line-height: 0.95;
+    }
+
+    .stats-row,
+    .alcance-metrics,
+    .planos-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .stat-card {
+      padding: 18px;
+    }
+
+    .stat-num,
+    .metric-num {
+      font-size: 44px;
+    }
+
+    .plano-nome {
+      font-size: 36px;
+    }
+
+    .preco-val {
+      font-size: 54px;
+    }
+
+    .contato-title {
+      font-size: 42px;
+    }
+
+    .contato-items {
+      display: block;
+      text-align: center;
+    }
+
+    .contato-item + .contato-item {
+      margin-top: 16px;
+    }
+
+    .cta-btn {
+      width: 100%;
+      padding-left: 18px;
+      padding-right: 18px;
+      text-align: center;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- PÁGINA 1: CAPA                          -->
+<!-- ═══════════════════════════════════════ -->
+<div class="page">
+  <div class="capa">
+    <div class="capa-top-bar"></div>
+
+    <img src="https://www.mpgacademy.com.br/images/logo.png"
+         alt="MPG Academy"
+         class="capa-logo"
+         onerror="this.style.opacity='0'">
+
+    <div class="capa-badge">Proposta Comercial de Patrocínio · 2025</div>
+
+    <div class="capa-title">
+      <span class="w">SEJA</span>
+      <span class="y">PARCEIRO</span>
+      <span class="w">MPG</span>
+    </div>
+
+    <div class="capa-sub">Escola de Vôlei &nbsp;·&nbsp; Zona Norte &nbsp;·&nbsp; São Paulo</div>
+
+    <div class="capa-line"></div>
+
+    <div class="capa-bottom-bar">
+      <span>MPG Academy</span>
+      <span>mpgacademy.com.br</span>
+      <span>2025</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- PÁGINA 2: QUEM SOMOS                    -->
+<!-- ═══════════════════════════════════════ -->
+<div class="page">
+  <div class="inner-page">
+    <div class="page-topbar"></div>
+
+    <div class="sec-header">
+      <div class="sec-tag">Quem Somos</div>
+      <div class="sec-title">A <span class="y">MPG Academy</span></div>
+      <div class="sec-desc">Somos uma escola de vôlei adulto na Zona Norte de São Paulo, com turmas para todos os níveis — do iniciante ao avançado. Mais do que uma escola, somos uma comunidade em crescimento.</div>
+    </div>
+
+    <div class="sec-divider"></div>
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-num">18+</div>
+        <div class="stat-lbl">Faixa etária</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">2</div>
+        <div class="stat-lbl">Quadras</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">4</div>
+        <div class="stat-lbl">Turmas ativas</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">3+</div>
+        <div class="stat-lbl">Dias de treino</div>
+      </div>
+    </div>
+
+    <div class="info-box">
+      Nascemos da paixão pelo vôlei e do desejo de criar um espaço onde adultos possam <strong>aprender, evoluir e construir amizades</strong> através do esporte. Nossa metodologia é focada em evolução técnica, tática, física e mental — e nosso ambiente é saudável, acolhedor e motivador para todos os níveis.
+    </div>
+
+    <div class="quadras-grid">
+      <div class="quadra-card">
+        <div class="quadra-nome">
+          <span class="quadra-dot" style="background:#4A9EE0;"></span>
+          Esporte Clube Orion
+        </div>
+        <div class="quadra-end">Rua André Domingues, 40 &nbsp;—&nbsp; Zona Norte, SP</div>
+        <div class="horario-row">
+          <span class="horario-tag">Qua · 19h–21h</span>
+          <span class="horario-tag">Sex · 19h–21h</span>
+          <span class="horario-tag">Sáb · 8h–10h</span>
+        </div>
+      </div>
+      <div class="quadra-card">
+        <div class="quadra-nome">
+          <span class="quadra-dot" style="background:#E05A8A;"></span>
+          Garden Ball
+        </div>
+        <div class="quadra-end">Av. Cte. Antônio Paiva Sampaio, 300 &nbsp;—&nbsp; Tucuruvi, SP</div>
+        <div class="horario-row">
+          <span class="horario-tag">Sáb · 13h–14:30h</span>
+          <span class="horario-tag">Sáb · 14:30h–16h</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-footer">
+      <span>MPG Academy · Proposta de Patrocínio 2025</span>
+      <span>Quem Somos</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- PÁGINA 3: ALCANCE DIGITAL               -->
+<!-- ═══════════════════════════════════════ -->
+<div class="page">
+  <div class="inner-page">
+    <div class="page-topbar"></div>
+
+    <div class="sec-header">
+      <div class="sec-tag">Nosso Alcance</div>
+      <div class="sec-title">Presença <span class="y">Digital</span></div>
+      <div class="sec-desc">Dados reais dos últimos 3 dias no Instagram — e nossa base segue crescendo semana a semana.</div>
+    </div>
+
+    <div class="sec-divider"></div>
+
+    <div class="alcance-metrics">
+      <div class="metric-card">
+        <div class="metric-badge">Últimos 3 dias</div>
+        <div class="metric-num">3.884</div>
+        <div class="metric-lbl">Visualizações totais</div>
+        <div class="metric-detail">65,4% de não seguidores — alcance orgânico real além da nossa base já existente.</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-badge">Alcance real</div>
+        <div class="metric-num">1.575</div>
+        <div class="metric-lbl">Contas alcançadas</div>
+        <div class="metric-detail">Pessoas únicas que viram nosso conteúdo no período, incluindo público completamente novo.</div>
+      </div>
+    </div>
+
+    <div class="alcance-screenshot">
+      <img src="https://www.mpgacademy.com.br/images/instaAlcance.png"
+           alt="Dados de alcance Instagram MPG Academy">
+      <div class="alcance-screenshot-caption">Print real do Instagram Insights · MPG Academy · Mai/2025</div>
+    </div>
+
+    <div class="note-box">
+      📈 &nbsp;Os posts de divulgação de turmas atingiram <strong>512 visualizações individualmente em apenas 2 dias</strong>. Com campanha paga ativa no Meta Ads, a exposição da sua marca se multiplica diretamente para o público da nossa região.
+    </div>
+
+    <div class="page-footer">
+      <span>MPG Academy · Proposta de Patrocínio 2025</span>
+      <span>Alcance Digital</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- PÁGINA 4: PLANOS                        -->
+<!-- ═══════════════════════════════════════ -->
+<div class="page">
+  <div class="inner-page">
+    <div class="page-topbar"></div>
+
+    <div class="sec-header">
+      <div class="sec-tag">Planos de Patrocínio</div>
+      <div class="sec-title">Escolha seu <span class="y">Plano</span></div>
+      <div class="sec-desc">Dois níveis de parceria com benefícios exclusivos. Invista na visibilidade da sua marca e conecte-se com nossa comunidade.</div>
+    </div>
+
+    <div class="sec-divider"></div>
+
+    <div class="planos-grid">
+
+      <!-- BRONZE -->
+      <div class="plano-card">
+        <div class="plano-head">
+          <div class="plano-tier">Plano Parceiro</div>
+          <div class="plano-nome">Bronze</div>
+          <div class="plano-preco">
+            <span class="preco-rs">R$</span>
+            <span class="preco-val">300</span>
+            <span class="preco-mes">/mês</span>
+          </div>
+        </div>
+        <div class="plano-divider"></div>
+        <div class="plano-body">
+          <div class="benefits-title">Benefícios incluídos</div>
+          <div class="benefit">
+            <div class="benefit-dot"></div>
+            <div class="benefit-text"><strong>Divulgação no Instagram</strong> — posts e stories com menção à sua marca para nossa audiência</div>
+          </div>
+          <div class="benefit">
+            <div class="benefit-dot"></div>
+            <div class="benefit-text"><strong>Divulgação no Site MPG</strong> — logo e link da sua empresa na página oficial</div>
+          </div>
+          <div class="benefit">
+            <div class="benefit-dot"></div>
+            <div class="benefit-text"><strong>Nome no Uniforme</strong> — sua marca visível em todas as aulas e eventos da escola</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GOLD -->
+      <div class="plano-card gold">
+        <div class="gold-top">⭐ &nbsp;Recomendado &nbsp;⭐</div>
+        <div class="plano-head">
+          <div class="plano-tier">Plano Premium</div>
+          <div class="plano-nome">Gold</div>
+          <div class="plano-preco">
+            <span class="preco-rs">R$</span>
+            <span class="preco-val">500</span>
+            <span class="preco-mes">/mês</span>
+          </div>
+        </div>
+        <div class="plano-divider"></div>
+        <div class="plano-body">
+          <div class="benefits-title">Tudo do Bronze, mais:</div>
+          <div class="benefit">
+            <div class="benefit-dot"></div>
+            <div class="benefit-text"><strong>Divulgação no App MPG</strong> — visibilidade direta na plataforma acessada pelos alunos</div>
+          </div>
+          <div class="benefit">
+            <div class="benefit-dot"></div>
+            <div class="benefit-text"><strong>Campanha Paga Meta Ads</strong> — sua marca presente nos nossos anúncios pagos</div>
+          </div>
+          <div class="benefit">
+            <div class="benefit-dot"></div>
+            <div class="benefit-text"><strong>Loja Virtual MPG</strong> — cadastre e venda seus produtos para os alunos via site e app</div>
+          </div>
+          <div class="benefit">
+            <div class="benefit-dot"></div>
+            <div class="benefit-text"><strong>Venda nas Quadras</strong> — espaço para exposição e venda de produtos físicos</div>
+          </div>
+          <div class="benefit">
+            <div class="benefit-dot"></div>
+            <div class="benefit-text"><strong>Destaque no Uniforme</strong> — logo em posição de maior visibilidade e destaque</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /planos-grid -->
+
+    <div class="page-footer">
+      <span>MPG Academy · Proposta de Patrocínio 2025</span>
+      <span>Planos</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- PÁGINA 5: COMPARATIVO + CONTATO         -->
+<!-- ═══════════════════════════════════════ -->
+<div class="page">
+  <div class="inner-page">
+    <div class="page-topbar"></div>
+
+    <div class="sec-header">
+      <div class="sec-tag">Resumo Comparativo</div>
+      <div class="sec-title">Benefícios <span class="y">Lado a Lado</span></div>
+    </div>
+
+    <div class="sec-divider"></div>
+
+    <table class="comp-table">
+      <thead>
+        <tr>
+          <th>Benefício</th>
+          <th>Bronze · R$300/mês</th>
+          <th class="gold">Gold · R$500/mês</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Divulgação no Instagram</td>
+          <td><span class="check">✓</span></td>
+          <td><span class="check">✓</span></td>
+        </tr>
+        <tr>
+          <td>Divulgação no Site</td>
+          <td><span class="check">✓</span></td>
+          <td><span class="check">✓</span></td>
+        </tr>
+        <tr>
+          <td>Nome no Uniforme</td>
+          <td><span class="pill pill-gray">Padrão</span></td>
+          <td><span class="pill pill-yellow">Destaque</span></td>
+        </tr>
+        <tr>
+          <td>Divulgação no App MPG</td>
+          <td><span class="dash">—</span></td>
+          <td><span class="check">✓</span></td>
+        </tr>
+        <tr>
+          <td>Campanha Paga Meta Ads</td>
+          <td><span class="dash">—</span></td>
+          <td><span class="check">✓</span></td>
+        </tr>
+        <tr>
+          <td>Loja Virtual (site + app)</td>
+          <td><span class="dash">—</span></td>
+          <td><span class="check">✓</span></td>
+        </tr>
+        <tr>
+          <td>Venda de produtos nas quadras</td>
+          <td><span class="dash">—</span></td>
+          <td><span class="check">✓</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="contato-box">
+      <img src="https://www.mpgacademy.com.br/images/logo.png"
+           alt="MPG Academy"
+           class="contato-logo"
+           onerror="this.style.opacity='0'">
+      <div class="contato-title">Vamos <span class="y">Conversar?</span></div>
+      <div class="contato-sub">Entre em contato e vamos montar a parceria ideal para o seu negócio.</div>
+      <div class="contato-items">
+        <div class="contato-item">
+          <div class="contato-item-label">WhatsApp</div>
+          <div class="contato-item-val">(11) 97233-0097</div>
+        </div>
+        <div class="contato-item">
+          <div class="contato-item-label">Instagram</div>
+          <div class="contato-item-val">@mpgacademy</div>
+        </div>
+        <div class="contato-item">
+          <div class="contato-item-label">Site</div>
+          <div class="contato-item-val">mpgacademy.com.br</div>
+        </div>
+      </div>
+      <a href="https://wa.me/5511972330097" class="cta-btn">Falar no WhatsApp</a>
+    </div>
+
+    <div class="page-footer">
+      <span>MPG Academy · Proposta de Patrocínio 2025</span>
+      <span>Contato</span>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
