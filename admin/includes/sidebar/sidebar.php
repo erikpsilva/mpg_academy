@@ -79,6 +79,23 @@
             </li>
 
             <li class="sidebar__divider" aria-hidden="true"></li>
+            <li class="sidebar__section">Financeiro</li>
+
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/financeiro"
+                   class="sidebar__link <?= ($subRoute === 'financeiro') ? 'sidebar__link--active' : '' ?>">
+                    Dashboard
+                </a>
+            </li>
+
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/financeiro?aba=dividas"
+                   class="sidebar__link">
+                    Dívidas
+                </a>
+            </li>
+
+            <li class="sidebar__divider" aria-hidden="true"></li>
             <li class="sidebar__section">Administrativo</li>
 
             <li class="sidebar__item">

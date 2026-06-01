@@ -107,14 +107,24 @@ $body        = $result['body'];
 $status      = $body['status'] ?? '';
 
 if (in_array($status, ['approved', 'pending', 'in_process'], true)) {
-    // Atualiza mensalidade
+    // Atualiza mensalidade e cria lançamento financeiro imediatamente
     if ($status === 'approved') {
-        $stUp = $pdo->prepare("
+        $pdo->prepare("
             UPDATE mensalidades
             SET status = 'pago', data_pagamento = CURDATE(), atualizado_em = NOW()
             WHERE id = ?
-        ");
-        $stUp->execute([$mensalidadeId]);
+        ")->execute([$mensalidadeId]);
+
+        // Registra receita no livro-caixa (sem duplicar se já existir)
+        $competencia = date('Y-m');
+        $descLanc    = 'Mensalidade ' . $refLabel . ' — ' . $mens['aluno_nome'] . ' (via MP)';
+        try {
+            $pdo->prepare("
+                INSERT IGNORE INTO lancamentos_financeiros
+                    (competencia, data, tipo, categoria, descricao, valor, origem, referencia_tipo, referencia_id)
+                VALUES (?, CURDATE(), 'receita', 'mensalidade', ?, ?, 'auto', 'mensalidade', ?)
+            ")->execute([$competencia, $descLanc, $total, $mensalidadeId]);
+        } catch (PDOException) {}
     }
 
     echo json_encode([
