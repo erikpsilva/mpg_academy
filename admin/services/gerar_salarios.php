@@ -47,7 +47,7 @@ foreach ($professores as $p) {
     try {
         $stIns->execute([$competencia, $data, $desc, (float)$p['salario'], $p['id']]);
         $gerados++;
-    } catch (PDOException) { /* já existe */ }
+    } catch (PDOException $e) { /* já existe */ }
 }
 
 echo json_encode([

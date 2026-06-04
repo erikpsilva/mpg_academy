@@ -83,7 +83,7 @@ foreach ($ativos as $ta) {
     try {
         $stInsert->execute([$ta['aluno_id'], $ta['turma_id'], $referencia, $valor, $vencimento]);
         $geradas++;
-    } catch (PDOException) {
+    } catch (PDOException $e) {
         $erros++;
     }
 }

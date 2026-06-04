@@ -55,7 +55,13 @@ if ($email) {
 }
 
 // Verifica se a turma existe e está ativa
-$turmaStmt = $pdo->prepare("SELECT max_alunos, nome FROM turmas WHERE id = ? AND status = 'ativa'");
+$turmaStmt = $pdo->prepare("
+    SELECT t.max_alunos, t.nome,
+           q.nome AS quadra_nome, q.rua, q.numero, q.bairro, q.complemento, q.cidade, q.estado
+    FROM turmas t
+    LEFT JOIN quadras q ON q.id = t.quadra_id
+    WHERE t.id = ? AND t.status = 'ativa'
+");
 $turmaStmt->execute([$turmaId]);
 $turmaData = $turmaStmt->fetch(PDO::FETCH_ASSOC);
 
@@ -129,8 +135,15 @@ try {
             ? 'das ' . substr($horario['hora_inicio'], 0, 5) . 'h às ' . substr($horario['hora_fim'], 0, 5) . 'h'
             : 'a confirmar';
 
+        $endFmt = '';
+        if (!empty($turmaData['rua'])) {
+            $endFmt = $turmaData['rua'] . ', ' . $turmaData['numero'];
+            if (!empty($turmaData['complemento'])) $endFmt .= ' - ' . $turmaData['complemento'];
+            $endFmt .= ' - ' . $turmaData['bairro'] . ', ' . $turmaData['cidade'] . '/' . $turmaData['estado'];
+        }
+
         require_once dirname(__FILE__, 3) . '/services/site/email_template.php';
-        sendMpgTesteConfirmation($email, $nome, $turmaData['nome'], $dataFmt, $horarioFmt);
+        sendMpgTesteConfirmation($email, $nome, $turmaData['nome'], $dataFmt, $horarioFmt, $endFmt);
     }
 
     echo json_encode([

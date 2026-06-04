@@ -126,7 +126,7 @@ if (in_array($status, ['approved', 'pending', 'in_process'], true)) {
                     (competencia, data, tipo, categoria, descricao, valor, origem, referencia_tipo, referencia_id)
                 VALUES (?, CURDATE(), 'receita', 'mensalidade', ?, ?, 'auto', 'mensalidade', ?)
             ")->execute([$competencia, $descLanc, $total, $mensalidadeId]);
-        } catch (PDOException) {}
+        } catch (PDOException $e) {}
     }
 
     echo json_encode([

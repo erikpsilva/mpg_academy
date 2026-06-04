@@ -147,11 +147,12 @@ function sendMpgSignupConfirmation(string $to, string $nome): bool {
 
 // ── Email: confirmação de aula experimental ───────────────────────────────────
 
-function buildMpgTesteEmail(string $nome, string $turma, string $dataFormatada, string $horario): string {
-    $safeName   = htmlspecialchars($nome,          ENT_QUOTES, 'UTF-8');
-    $safeTurma  = htmlspecialchars($turma,         ENT_QUOTES, 'UTF-8');
-    $safeData   = htmlspecialchars($dataFormatada, ENT_QUOTES, 'UTF-8');
-    $safeHora   = htmlspecialchars($horario,       ENT_QUOTES, 'UTF-8');
+function buildMpgTesteEmail(string $nome, string $turma, string $dataFormatada, string $horario, string $endereco = ''): string {
+    $safeName     = htmlspecialchars($nome,          ENT_QUOTES, 'UTF-8');
+    $safeTurma    = htmlspecialchars($turma,         ENT_QUOTES, 'UTF-8');
+    $safeData     = htmlspecialchars($dataFormatada, ENT_QUOTES, 'UTF-8');
+    $safeHora     = htmlspecialchars($horario,       ENT_QUOTES, 'UTF-8');
+    $safeEndereco = htmlspecialchars($endereco ?: 'a confirmar', ENT_QUOTES, 'UTF-8');
 
     return '
 <!DOCTYPE html>
@@ -192,9 +193,15 @@ function buildMpgTesteEmail(string $nome, string $turma, string $dataFormatada, 
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td style="padding:18px 22px;">
+                                    <td style="padding:18px 22px;border-bottom:1px solid #2e2e34;">
                                         <p style="margin:0 0 4px;color:#ffd500;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">Horario</p>
                                         <p style="margin:0;color:#ffffff;font-size:16px;font-weight:700;">' . $safeHora . '</p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:18px 22px;">
+                                        <p style="margin:0 0 4px;color:#ffd500;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">Local</p>
+                                        <p style="margin:0;color:#ffffff;font-size:16px;font-weight:700;">' . $safeEndereco . '</p>
                                     </td>
                                 </tr>
                             </table>
@@ -224,10 +231,10 @@ function buildMpgTesteEmail(string $nome, string $turma, string $dataFormatada, 
 </html>';
 }
 
-function sendMpgTesteConfirmation(string $to, string $nome, string $turma, string $dataFormatada, string $horario): bool {
+function sendMpgTesteConfirmation(string $to, string $nome, string $turma, string $dataFormatada, string $horario, string $endereco = ''): bool {
     $config  = getMpgMailConfig();
     $subject = 'Aula experimental confirmada - MPG Academy';
-    $body    = buildMpgTesteEmail($nome, $turma, $dataFormatada, $horario);
+    $body    = buildMpgTesteEmail($nome, $turma, $dataFormatada, $horario, $endereco);
 
     $host    = $_SERVER['HTTP_HOST'] ?? '';
     $isLocal = strpos($host, 'localhost') !== false || strpos($host, '127.0.0.1') !== false;

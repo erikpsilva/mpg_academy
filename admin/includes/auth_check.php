@@ -54,7 +54,7 @@ if (empty($_SESSION['_mens_auto']) || $_SESSION['_mens_auto'] !== $_hoje) {
                 : $__base;
 
             try { $__ins->execute([$__ta['aluno_id'], $__ta['turma_id'], $__ref, $__valor, $__venc]); }
-            catch (PDOException) { /* ignora duplicatas */ }
+            catch (PDOException $__dup) { /* ignora duplicatas */ }
         }
 
         $_SESSION['_mens_auto'] = $_hoje;

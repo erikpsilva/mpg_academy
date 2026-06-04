@@ -69,7 +69,7 @@ function syncMensalidades(PDO $pdo): void {
         $refLabel    = ($meses[$me] ?? $me) . '/' . $a;
         $desc = 'Mensalidade ' . $refLabel . ' — ' . $m['aluno_nome'] . ' (' . $m['turma_nome'] . ')';
         try { $ins->execute([$competencia, $m['data_pagamento'], $desc, $m['valor'], $m['id']]); }
-        catch (PDOException) {}
+        catch (PDOException $e) {}
     }
 }
 

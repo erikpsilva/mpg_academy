@@ -82,7 +82,7 @@ try {
                         (competencia,data,tipo,categoria,descricao,valor,origem,referencia_tipo,referencia_id)
                     VALUES (?,CURDATE(),'receita','patrocinio',?,?,'auto','patrocinador',?)
                 ")->execute([$competencia,$desc,$valor,$id]);
-            } catch (PDOException) {}
+            } catch (PDOException $e) {}
         }
     }
     echo json_encode(['success'=>true,'id'=>$id]);

@@ -177,16 +177,26 @@ if ($turmaData && $turmaData['valor_mensalidade'] !== null) {
 try {
     $pdo->beginTransaction();
 
+    // INSERT com ON DUPLICATE KEY UPDATE para permitir re-adicionar aluno
+    // que já foi removido (UNIQUE KEY uk_turma_aluno)
     $stmt = $pdo->prepare("
         INSERT INTO turma_alunos
-            (turma_id, aluno_id, data_entrada, desconto, desconto_tipo, desconto_inicio, desconto_fim, desconto_vitalicio)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            (turma_id, aluno_id, data_entrada, desconto, desconto_tipo, desconto_inicio, desconto_fim, desconto_vitalicio, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'ativo')
+        ON DUPLICATE KEY UPDATE
+            data_entrada     = VALUES(data_entrada),
+            desconto         = VALUES(desconto),
+            desconto_tipo    = VALUES(desconto_tipo),
+            desconto_inicio  = VALUES(desconto_inicio),
+            desconto_fim     = VALUES(desconto_fim),
+            desconto_vitalicio = VALUES(desconto_vitalicio),
+            status           = 'ativo'
     ");
     $stmt->execute([$turmaId, $alunoId, $dataInicio, $desconto, $descontoTipo, $descontoInicio, $descontoFim, $descontoVitalicio]);
 
     if (!empty($mensalidadesParaGerar)) {
         $stmtMens = $pdo->prepare("
-            INSERT INTO mensalidades (aluno_id, turma_id, referencia, valor, vencimento, status)
+            INSERT IGNORE INTO mensalidades (aluno_id, turma_id, referencia, valor, vencimento, status)
             VALUES (?, ?, ?, ?, ?, 'pendente')
         ");
         foreach ($mensalidadesParaGerar as $m) {
@@ -220,12 +230,7 @@ try {
     echo json_encode(['success' => true, 'aluno' => $aluno, 'aluno_turma' => $turma]);
 
 } catch (PDOException $e) {
-    $pdo->rollBack();
-    if ($e->getCode() === '23000') {
-        http_response_code(409);
-        echo json_encode(['success' => false, 'message' => 'O aluno já faz parte dessa turma.']);
-    } else {
-        http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Erro ao adicionar aluno.']);
-    }
+    if ($pdo->inTransaction()) $pdo->rollBack();
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Erro ao adicionar aluno: ' . $e->getMessage()]);
 }

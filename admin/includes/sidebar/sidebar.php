@@ -72,6 +72,13 @@
                 </a>
             </li>
 
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/emailcadastro"
+                   class="sidebar__link <?= ($subRoute === 'emailcadastro') ? 'sidebar__link--active' : '' ?>">
+                    Enviar Email de Cadastro
+                </a>
+            </li>
+
             <li class="sidebar__divider" aria-hidden="true"></li>
             <li class="sidebar__section">Administrativo</li>
 

@@ -92,7 +92,7 @@ if (in_array($status, ['approved','pending','in_process'], true)) {
         try {
             $pdo->prepare("INSERT IGNORE INTO lancamentos_financeiros (competencia,data,tipo,categoria,descricao,valor,origem,referencia_tipo,referencia_id) VALUES (?,CURDATE(),'receita','mensalidade',?,?,'auto','mensalidade',?)")
                 ->execute([date('Y-m'), 'Mensalidade ' . $refLabel . ' — ' . $aluno['nome'], $total, $mensalidadeId]);
-        } catch (PDOException) {}
+        } catch (PDOException $e) {}
     }
     echo json_encode(['success'=>true,'status'=>$status,'payment_id'=>$body['id']??null]);
 } else {
