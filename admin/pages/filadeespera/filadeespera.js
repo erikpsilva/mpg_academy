@@ -10,7 +10,7 @@ const renderFila = (turmas) => {
     const body = $('#adminFilaBody');
 
     if (!turmas.length) {
-        body.html('<p class="adminFila__empty">Nenhum aluno em fila de espera no momento.</p>');
+        body.html('<p class="adminFila__empty">Nenhum aluno teste em fila de espera no momento.</p>');
         return;
     }
 
@@ -25,14 +25,15 @@ const renderFila = (turmas) => {
                 '<span class="adminFilaItem__pos">' + (idx + 1) + 'º</span>' +
                 '<div class="adminFilaItem__info">' +
                     '<strong>' + $('<span>').text(f.nome).html() + '</strong>' +
-                    '<span>' + $('<span>').text(f.email).html() + '</span>' +
+                    '<span>' + (f.email ? $('<span>').text(f.email).html() : '<em>Sem e-mail</em>') + '</span>' +
                 '</div>' +
                 '<span class="adminFilaItem__data">' + fmtData(f.criado_em) + '</span>' +
-                '<button class="btn btn--sm btn--promover ' + (temVaga ? '' : 'is-disabled') + '" ' +
-                    'data-fila-id="' + f.id + '" ' +
-                    (temVaga ? '' : 'disabled title="Sem vagas disponíveis"') + '>' +
-                    'Promover' +
-                '</button>' +
+                (temVaga
+                    ? '<button class="btn btn--sm btn--promover" data-fila-id="' + f.id + '">' +
+                        (f.email ? 'Enviar email de cadastro' : 'Promover (sem email)') +
+                      '</button>'
+                    : '<span class="adminFilaItem__semVaga">Aguardando vaga</span>'
+                ) +
             '</div>'
         ).join('');
 
@@ -96,9 +97,9 @@ const promover = (filaId, btn) => {
 $(document).ready(() => {
     carregarFila();
 
-    $(document).on('click', '.btn--promover:not(.is-disabled)', function () {
+    $(document).on('click', '.btn--promover', function () {
         const filaId = parseInt($(this).data('fila-id'));
-        if (confirm('Deseja promover este aluno para a turma?')) {
+        if (confirm('Vaga disponível! Deseja enviar o email de cadastro para este aluno?')) {
             promover(filaId, $(this));
         }
     });

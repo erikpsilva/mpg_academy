@@ -57,7 +57,43 @@ try {
     }
 
     $pdo->commit();
-    echo json_encode(['success'=>true, 'id'=>$dividaId]);
+
+    // ── Processa anexos enviados junto com a criação ──────────────────────────
+    $anexosErros = [];
+    $files = $_FILES['anexos'] ?? [];
+    if (!empty($files['name'][0])) {
+        $allowedMimes = [
+            'application/pdf',
+            'image/jpeg','image/png','image/webp','image/gif',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.ms-excel',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'text/plain',
+        ];
+        $uploadDir = dirname(__FILE__, 3) . '/uploads/dividas/' . $dividaId . '/';
+        if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
+
+        $count = count($files['name']);
+        for ($i = 0; $i < $count; $i++) {
+            if ($files['error'][$i] !== UPLOAD_ERR_OK) continue;
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mime  = finfo_file($finfo, $files['tmp_name'][$i]);
+            finfo_close($finfo);
+            if (!in_array($mime, $allowedMimes) || $files['size'][$i] > 10 * 1024 * 1024) {
+                $anexosErros[] = $files['name'][$i];
+                continue;
+            }
+            $ext      = pathinfo($files['name'][$i], PATHINFO_EXTENSION);
+            $filename = uniqid('anx_') . ($ext ? '.' . strtolower($ext) : '');
+            if (move_uploaded_file($files['tmp_name'][$i], $uploadDir . $filename)) {
+                $pdo->prepare("INSERT INTO dividas_anexos (divida_id, nome_original, caminho, tipo_mime, tamanho) VALUES (?,?,?,?,?)")
+                    ->execute([$dividaId, $files['name'][$i], 'uploads/dividas/' . $dividaId . '/' . $filename, $mime, $files['size'][$i]]);
+            }
+        }
+    }
+
+    echo json_encode(['success'=>true, 'id'=>$dividaId, 'anexos_erros'=>$anexosErros]);
 } catch (Throwable $e) {
     $pdo->rollBack();
     http_response_code(500);

@@ -15,26 +15,6 @@ $emailsNotificacao = $stEmails->fetchAll();
 <head>
 <title>MPG Academy - Admin - Configurações</title>
 <?php include ROOT . '/admin/includes/assets.php'; ?>
-<style>
-.configSection { margin-bottom: 32px; }
-.configSection h3 { font-size: 14px; text-transform: uppercase; letter-spacing: .08em; color: #888; margin-bottom: 16px; }
-.configCard { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 10px; overflow: hidden; }
-.configRow { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; border-bottom: 1px solid #222; gap: 24px; }
-.configRow:last-child { border-bottom: none; }
-.configRow__info strong { display: block; font-size: 15px; margin-bottom: 4px; color: #eee; }
-.configRow__info p { font-size: 13px; color: #888; margin: 0; }
-.configBadge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; letter-spacing: .05em; margin-top: 6px; }
-.configBadge--test { background: #2a2a00; color: #cccc00; border: 1px solid #666600; }
-.configBadge--prod { background: #002a00; color: #00cc44; border: 1px solid #006622; }
-
-/* Toggle Switch */
-.toggle { position: relative; display: inline-block; width: 52px; height: 28px; flex-shrink: 0; }
-.toggle input { opacity: 0; width: 0; height: 0; }
-.toggle__slider { position: absolute; inset: 0; background: #333; border-radius: 28px; cursor: pointer; transition: .25s; }
-.toggle__slider::before { content: ''; position: absolute; left: 4px; top: 4px; width: 20px; height: 20px; background: #666; border-radius: 50%; transition: .25s; }
-.toggle input:checked + .toggle__slider { background: #1a1a00; border: 1px solid #e5c200; }
-.toggle input:checked + .toggle__slider::before { background: #e5c200; transform: translateX(24px); }
-</style>
 </head>
 <body>
 
@@ -53,7 +33,7 @@ $emailsNotificacao = $stEmails->fetchAll();
             </div>
 
             <!-- ── Pagamentos ───────────────────────────────────────── -->
-            <div class="configSection" style="margin-top:28px;">
+            <div class="configSection configSection--first">
                 <h3>Pagamentos — Mercado Pago</h3>
                 <div class="configCard">
 
@@ -76,9 +56,9 @@ $emailsNotificacao = $stEmails->fetchAll();
                             <strong>Credenciais ativas</strong>
                             <p id="credDesc">
                                 <?php if ($modoTeste): ?>
-                                    Public Key de teste: <code style="font-size:11px;color:#aaa;"><?= substr(MP_PUBLIC_KEY_TEST, 0, 24) ?>…</code>
+                                    Public Key de teste: <code><?= substr(MP_PUBLIC_KEY_TEST, 0, 24) ?>…</code>
                                 <?php else: ?>
-                                    Public Key de produção: <code style="font-size:11px;color:#aaa;"><?= substr(MP_PUBLIC_KEY_PROD, 0, 24) ?>…</code>
+                                    Public Key de produção: <code><?= substr(MP_PUBLIC_KEY_PROD, 0, 24) ?>…</code>
                                 <?php endif; ?>
                             </p>
                         </div>
@@ -87,52 +67,48 @@ $emailsNotificacao = $stEmails->fetchAll();
                 </div>
             </div>
 
-            <div id="saveMsg" style="display:none;margin-top:12px;font-size:13px;color:#7ecf7e;"></div>
+            <div id="saveMsg" class="configMsg"></div>
 
             <!-- ── E-mails de Notificação ───────────────────────────── -->
-            <div class="configSection" style="margin-top:36px;">
+            <div class="configSection">
                 <h3>E-mails de Notificação de Atraso</h3>
                 <div class="configCard">
 
-                    <div class="configRow" style="flex-direction:column;align-items:flex-start;gap:16px;">
+                    <div class="configRow configRow--stack">
                         <div class="configRow__info">
                             <strong>Destinatários internos</strong>
                             <p>Esses e-mails receberão uma cópia sempre que um aluno for notificado de mensalidade em atraso (25+ dias).</p>
                         </div>
 
                         <!-- Lista de emails cadastrados -->
-                        <div id="emailNotifList" style="width:100%;">
+                        <div id="emailNotifList" class="emailNotifList">
                             <?php if (empty($emailsNotificacao)): ?>
-                            <p style="color:#666;font-size:13px;" id="emailNotifVazio">Nenhum e-mail cadastrado.</p>
+                            <p class="emailNotifEmpty" id="emailNotifVazio">Nenhum e-mail cadastrado.</p>
                             <?php else: ?>
                             <?php foreach ($emailsNotificacao as $en): ?>
-                            <div class="emailNotifRow" id="emailRow<?= $en['id'] ?>"
-                                 style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #1e1e1e;">
-                                <div style="flex:1;min-width:0;">
-                                    <strong style="font-size:13px;color:#eee;"><?= htmlspecialchars($en['email']) ?></strong>
+                            <div class="emailNotifRow" id="emailRow<?= $en['id'] ?>">
+                                <div class="emailNotifRow__info">
+                                    <strong><?= htmlspecialchars($en['email']) ?></strong>
                                     <?php if ($en['nome']): ?>
-                                    <span style="font-size:12px;color:#888;margin-left:8px;"><?= htmlspecialchars($en['nome']) ?></span>
+                                    <span><?= htmlspecialchars($en['nome']) ?></span>
                                     <?php endif; ?>
                                 </div>
                                 <button class="btn btn--sm btn--error btnRemoverEmail"
-                                        data-id="<?= $en['id'] ?>"
-                                        style="padding:4px 12px;font-size:12px;">Remover</button>
+                                        data-id="<?= $en['id'] ?>">Remover</button>
                             </div>
                             <?php endforeach; ?>
                             <?php endif; ?>
                         </div>
 
                         <!-- Formulário para adicionar -->
-                        <div style="display:flex;gap:10px;flex-wrap:wrap;width:100%;margin-top:4px;">
+                        <div class="emailNotifForm">
                             <input type="email" id="novoEmailNotif" class="input"
-                                   placeholder="email@exemplo.com"
-                                   style="flex:1;min-width:200px;">
+                                   placeholder="email@exemplo.com">
                             <input type="text" id="novoNomeNotif" class="input"
-                                   placeholder="Nome (opcional)"
-                                   style="width:180px;">
+                                   placeholder="Nome (opcional)">
                             <button class="btn btn--primary" id="btnAdicionarEmail">Adicionar</button>
                         </div>
-                        <div id="emailNotifMsg" style="display:none;font-size:13px;"></div>
+                        <div id="emailNotifMsg" class="configMsg"></div>
                     </div>
 
                 </div>
@@ -160,7 +136,8 @@ var PK_PROD = "<?= substr(MP_PUBLIC_KEY_PROD, 0, 24) ?>";
 
     toggle.addEventListener('change', function () {
         var isTeste = this.checked;
-        msg.style.display = 'none';
+        msg.className = 'configMsg';
+        msg.textContent = '';
 
         var body = new URLSearchParams({ chave: 'pagamento_modo_teste', valor: isTeste ? '1' : '0' });
         fetch(ADMIN_BASE_URL + '/services/save_configuracao.php', {
@@ -175,23 +152,20 @@ var PK_PROD = "<?= substr(MP_PUBLIC_KEY_PROD, 0, 24) ?>";
                 badge.textContent     = isTeste ? 'SANDBOX — TESTE' : 'PRODUÇÃO — REAL';
                 badge.className       = 'configBadge ' + (isTeste ? 'configBadge--test' : 'configBadge--prod');
                 credDesc.innerHTML    = isTeste
-                    ? 'Public Key de teste: <code style="font-size:11px;color:#aaa;">' + PK_TEST + '</code>'
-                    : 'Public Key de produção: <code style="font-size:11px;color:#aaa;">' + PK_PROD + '</code>';
+                    ? 'Public Key de teste: <code>' + PK_TEST + '</code>'
+                    : 'Public Key de produção: <code>' + PK_PROD + '</code>';
                 msg.textContent       = 'Configuração salva.';
-                msg.style.color       = '#7ecf7e';
-                msg.style.display     = '';
+                msg.className         = 'configMsg is-success';
             } else {
                 toggle.checked = !isTeste;
                 msg.textContent   = 'Erro ao salvar: ' + (data.message || '');
-                msg.style.color   = '#cf7e7e';
-                msg.style.display = '';
+                msg.className     = 'configMsg is-error';
             }
         })
         .catch(function () {
             toggle.checked = !isTeste;
             msg.textContent   = 'Erro de comunicação.';
-            msg.style.color   = '#cf7e7e';
-            msg.style.display = '';
+            msg.className     = 'configMsg is-error';
         });
     });
 }());
@@ -206,9 +180,8 @@ var PK_PROD = "<?= substr(MP_PUBLIC_KEY_PROD, 0, 24) ?>";
 
     function showMsg(texto, ok) {
         msgEl.textContent   = texto;
-        msgEl.style.color   = ok ? '#7ecf7e' : '#cf7e7e';
-        msgEl.style.display = '';
-        setTimeout(function () { msgEl.style.display = 'none'; }, 3500);
+        msgEl.className     = 'configMsg ' + (ok ? 'is-success' : 'is-error');
+        setTimeout(function () { msgEl.className = 'configMsg'; }, 3500);
     }
 
     function bindRemover(btn) {
@@ -227,7 +200,7 @@ var PK_PROD = "<?= substr(MP_PUBLIC_KEY_PROD, 0, 24) ?>";
                     var row = document.getElementById('emailRow' + id);
                     if (row) row.remove();
                     if (!lista.querySelector('.emailNotifRow')) {
-                        lista.innerHTML = '<p style="color:#666;font-size:13px;">Nenhum e-mail cadastrado.</p>';
+                        lista.innerHTML = '<p class="emailNotifEmpty" id="emailNotifVazio">Nenhum e-mail cadastrado.</p>';
                     }
                 } else {
                     showMsg(data.message || 'Erro ao remover.', false);
@@ -262,12 +235,11 @@ var PK_PROD = "<?= substr(MP_PUBLIC_KEY_PROD, 0, 24) ?>";
                 var div = document.createElement('div');
                 div.className = 'emailNotifRow';
                 div.id = 'emailRow' + data.id;
-                div.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #1e1e1e;';
-                div.innerHTML = '<div style="flex:1;min-width:0;">'
-                    + '<strong style="font-size:13px;color:#eee;">' + data.email + '</strong>'
-                    + (data.nome ? '<span style="font-size:12px;color:#888;margin-left:8px;">' + data.nome + '</span>' : '')
+                div.innerHTML = '<div class="emailNotifRow__info">'
+                    + '<strong>' + data.email + '</strong>'
+                    + (data.nome ? '<span>' + data.nome + '</span>' : '')
                     + '</div>'
-                    + '<button class="btn btn--sm btn--error btnRemoverEmail" data-id="' + data.id + '" style="padding:4px 12px;font-size:12px;">Remover</button>';
+                    + '<button class="btn btn--sm btn--error btnRemoverEmail" data-id="' + data.id + '">Remover</button>';
                 lista.appendChild(div);
                 bindRemover(div.querySelector('.btnRemoverEmail'));
 

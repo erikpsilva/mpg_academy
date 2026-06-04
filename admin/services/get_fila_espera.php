@@ -16,7 +16,7 @@ if (empty($_SESSION['usuario'])) {
 require_once dirname(__FILE__, 3) . '/config/database.php';
 $pdo = getDbConnection();
 
-// Turmas que têm fila aguardando
+// Turmas com fila de alunos teste aguardando
 $stmt = $pdo->prepare("
     SELECT
         t.id AS turma_id, t.nome AS turma_nome, t.nivel, t.genero, t.max_alunos,
@@ -25,7 +25,8 @@ $stmt = $pdo->prepare("
     FROM turmas t
     JOIN quadras q ON q.id = t.quadra_id
     WHERE EXISTS (
-        SELECT 1 FROM fila_espera fe WHERE fe.turma_id = t.id AND fe.status = 'aguardando'
+        SELECT 1 FROM fila_espera fe
+        WHERE fe.turma_id = t.id AND fe.status = 'aguardando' AND fe.aluno_teste_id IS NOT NULL
     )
     ORDER BY q.nome ASC, t.nome ASC
 ");
@@ -40,14 +41,16 @@ foreach ($turmas as &$turma) {
         : null;
 
     $filaStmt = $pdo->prepare("
-        SELECT fe.id, fe.aluno_id, fe.criado_em, a.nome, a.email, a.celular
+        SELECT fe.id, fe.aluno_teste_id, fe.criado_em,
+               at.nome, at.email, at.celular
         FROM fila_espera fe
-        JOIN alunos a ON a.id = fe.aluno_id
-        WHERE fe.turma_id = ? AND fe.status = 'aguardando'
+        JOIN alunos_teste at ON at.id = fe.aluno_teste_id
+        WHERE fe.turma_id = ? AND fe.status = 'aguardando' AND fe.aluno_teste_id IS NOT NULL
         ORDER BY fe.criado_em ASC
     ");
     $filaStmt->execute([$turma['turma_id']]);
     $turma['fila'] = $filaStmt->fetchAll(PDO::FETCH_ASSOC);
 }
+unset($turma);
 
 echo json_encode(['success' => true, 'turmas' => $turmas]);

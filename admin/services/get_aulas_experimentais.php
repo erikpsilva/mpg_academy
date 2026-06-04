@@ -85,18 +85,21 @@ foreach ($rows as $r) {
 }
 
 // Busca realizados (lista plana, ordenada mais recente primeiro)
+// ja_aluno = 1 se o email do aluno_teste já existe em alunos (status ativo)
 $stmtReal = $pdo->prepare("
     SELECT
         ae.id, ae.criado_em,
         at.id AS aluno_teste_id, at.nome, at.email, at.celular,
         t.nome AS turma_nome,
-        q.nome AS quadra_nome
+        q.nome AS quadra_nome,
+        CASE WHEN a.id IS NOT NULL THEN 1 ELSE 0 END AS ja_aluno
     FROM aulas_experimentais ae
-    JOIN alunos_teste at ON at.id = ae.aluno_teste_id
-    JOIN turmas t        ON t.id  = ae.turma_id
-    JOIN quadras q       ON q.id  = t.quadra_id
+    JOIN alunos_teste at  ON at.id = ae.aluno_teste_id
+    JOIN turmas t         ON t.id  = ae.turma_id
+    JOIN quadras q        ON q.id  = t.quadra_id
+    LEFT JOIN alunos a    ON a.email = at.email AND a.status = 'ativo'
     WHERE ae.status = 'realizada'
-    ORDER BY ae.criado_em DESC
+    ORDER BY ja_aluno ASC, ae.criado_em DESC
 ");
 $stmtReal->execute();
 $realizados = $stmtReal->fetchAll(PDO::FETCH_ASSOC);
@@ -104,6 +107,7 @@ $realizados = $stmtReal->fetchAll(PDO::FETCH_ASSOC);
 foreach ($realizados as &$r) {
     $r['id']             = (int) $r['id'];
     $r['aluno_teste_id'] = (int) $r['aluno_teste_id'];
+    $r['ja_aluno']       = (int) $r['ja_aluno'];
 }
 
 echo json_encode([

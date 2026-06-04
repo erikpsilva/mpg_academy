@@ -12,7 +12,7 @@
     <?php include ROOT . '/admin/includes/sidebar/sidebar.php'; ?>
     <main class="adminLayout__content">
 
-        <section class="alunos">
+        <section class="emailCadastro">
             <div class="row alunos__header">
                 <div class="col-md-8">
                     <h2>Enviar Email de <span>Cadastro</span></h2>
@@ -20,52 +20,49 @@
                 </div>
             </div>
 
-            <div style="max-width:560px;margin-top:28px;">
-
-                <!-- Formulário -->
-                <div class="alunos__detalheCard" style="padding:28px 32px;">
+            <div class="emailCadastro__grid">
+                <div class="emailCadastro__card">
                     <form id="formEnviarCadastro">
 
-                        <div style="margin-bottom:18px;">
-                            <label style="display:block;font-size:13px;color:#aaa;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;">
-                                Nome do aluno <span style="color:#e53535;">*</span>
+                        <div class="emailCadastro__field">
+                            <label for="nomeAluno">
+                                Nome do aluno <span>*</span>
                             </label>
                             <input type="text" id="nomeAluno" name="nome" class="input"
-                                   placeholder="Ex: João Silva" required style="width:100%;">
+                                   placeholder="Ex: João Silva" required>
                         </div>
 
-                        <div style="margin-bottom:18px;">
-                            <label style="display:block;font-size:13px;color:#aaa;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;">
-                                E-mail do aluno <span style="color:#e53535;">*</span>
+                        <div class="emailCadastro__field">
+                            <label for="emailAluno">
+                                E-mail do aluno <span>*</span>
                             </label>
                             <input type="email" id="emailAluno" name="email" class="input"
-                                   placeholder="aluno@exemplo.com" required style="width:100%;">
+                                   placeholder="aluno@exemplo.com" required>
                         </div>
 
-                        <div style="margin-bottom:24px;">
-                            <label style="display:block;font-size:13px;color:#aaa;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;">
-                                Mensagem personalizada <small style="text-transform:none;font-size:11px;">(opcional)</small>
+                        <div class="emailCadastro__field">
+                            <label for="mensagemExtra">
+                                Mensagem personalizada <small>(opcional)</small>
                             </label>
                             <textarea id="mensagemExtra" name="mensagem" class="input"
                                       placeholder="Ex: Bem-vindo à MPG Academy! Sua vaga está confirmada na turma de Sábado."
-                                      rows="3" style="width:100%;resize:vertical;"></textarea>
+                                      rows="4"></textarea>
                         </div>
 
-                        <div style="background:rgba(229,194,0,.07);border:1px solid rgba(229,194,0,.25);border-radius:8px;padding:12px 16px;margin-bottom:20px;font-size:13px;color:#ccc;">
-                            <strong style="color:#e5c200;">Link que será enviado:</strong><br>
-                            <span style="color:#888;font-size:12px;word-break:break-all;"><?= BASE_URL ?>/cadastro</span>
+                        <div class="emailCadastro__preview">
+                            <strong>Link que será enviado:</strong>
+                            <span><?= BASE_URL ?>/cadastro</span>
                         </div>
 
-                        <button type="submit" class="btn btn--primary" id="btnEnviar" style="width:100%;">
+                        <button type="submit" class="btn btn--primary emailCadastro__submit" id="btnEnviar">
                             Enviar e-mail de cadastro
                         </button>
                     </form>
 
-                    <div id="resultMsg" style="display:none;margin-top:16px;padding:12px 16px;border-radius:8px;font-size:14px;"></div>
+                    <div id="resultMsg" class="emailCadastro__feedback"></div>
                 </div>
 
-                <!-- Histórico de envios recentes (opcional futuro) -->
-                <p style="color:#555;font-size:12px;margin-top:16px;text-align:center;">
+                <p class="emailCadastro__note">
                     O aluno receberá um e-mail com o link para criar sua conta na plataforma MPG Academy.
                 </p>
             </div>
@@ -90,7 +87,8 @@ document.getElementById('formEnviarCadastro').addEventListener('submit', functio
 
     btn.disabled    = true;
     btn.textContent = 'Enviando...';
-    msg.style.display = 'none';
+    msg.className   = 'emailCadastro__feedback';
+    msg.textContent = '';
 
     var fd = new FormData();
     fd.append('nome',     nome);
@@ -104,10 +102,7 @@ document.getElementById('formEnviarCadastro').addEventListener('submit', functio
     })
     .then(function (r) { return r.json(); })
     .then(function (data) {
-        msg.style.display      = '';
-        msg.style.background   = data.success ? 'rgba(46,182,16,0.12)' : 'rgba(255,45,45,0.12)';
-        msg.style.border       = '1px solid ' + (data.success ? '#79ff45' : '#ff5a5a');
-        msg.style.color        = data.success ? '#79ff45' : '#ff5a5a';
+        msg.className          = 'emailCadastro__feedback ' + (data.success ? 'emailCadastro__feedback--success' : 'emailCadastro__feedback--error');
         msg.textContent        = data.message;
         if (data.success) {
             document.getElementById('nomeAluno').value     = '';
@@ -116,10 +111,7 @@ document.getElementById('formEnviarCadastro').addEventListener('submit', functio
         }
     })
     .catch(function () {
-        msg.style.display    = '';
-        msg.style.background = 'rgba(255,45,45,0.12)';
-        msg.style.border     = '1px solid #ff5a5a';
-        msg.style.color      = '#ff5a5a';
+        msg.className        = 'emailCadastro__feedback emailCadastro__feedback--error';
         msg.textContent      = 'Erro de comunicação.';
     })
     .finally(function () {

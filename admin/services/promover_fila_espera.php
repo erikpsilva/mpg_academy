@@ -19,11 +19,7 @@ if (empty($_SESSION['usuario'])) {
     exit;
 }
 
-$filaId  = (int) ($_POST['fila_id']  ?? 0);
-$dataInicio = trim($_POST['data_inicio'] ?? '');
-if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $dataInicio)) {
-    $dataInicio = date('Y-m-d');
-}
+$filaId = (int) ($_POST['fila_id'] ?? 0);
 
 if ($filaId <= 0) {
     http_response_code(400);
@@ -35,9 +31,9 @@ require_once dirname(__FILE__, 3) . '/config/database.php';
 $pdo = getDbConnection();
 
 // Busca entrada da fila
-$fila = $pdo->prepare("SELECT * FROM fila_espera WHERE id = ? AND status = 'aguardando'");
-$fila->execute([$filaId]);
-$fila = $fila->fetch(PDO::FETCH_ASSOC);
+$filaStmt = $pdo->prepare("SELECT * FROM fila_espera WHERE id = ? AND status = 'aguardando'");
+$filaStmt->execute([$filaId]);
+$fila = $filaStmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$fila) {
     http_response_code(404);
@@ -45,11 +41,65 @@ if (!$fila) {
     exit;
 }
 
-$turmaId = (int) $fila['turma_id'];
-$alunoId = (int) $fila['aluno_id'];
+$turmaId      = (int) $fila['turma_id'];
+$alunoTesteId = !empty($fila['aluno_teste_id']) ? (int) $fila['aluno_teste_id'] : null;
 
-// Verifica vaga disponível
-$turmaInfo = $pdo->prepare("SELECT valor_mensalidade, promo_valor, promo_meses, max_alunos FROM turmas WHERE id = ? AND status = 'ativa'");
+// ── Aluno teste: envia email de cadastro ──────────────────────────────────────
+if ($alunoTesteId !== null) {
+    $atStmt = $pdo->prepare("SELECT nome, email FROM alunos_teste WHERE id = ?");
+    $atStmt->execute([$alunoTesteId]);
+    $aluno = $atStmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$aluno || empty($aluno['email'])) {
+        http_response_code(422);
+        echo json_encode(['success' => false, 'message' => 'Aluno não possui e-mail cadastrado.']);
+        exit;
+    }
+
+    // Marca como promovido
+    $pdo->prepare("UPDATE fila_espera SET status = 'promovido' WHERE id = ?")->execute([$filaId]);
+
+    // Envia email de cadastro via serviço existente
+    require_once dirname(__FILE__, 3) . '/config/app.php';
+    require_once dirname(__FILE__, 3) . '/config/mail.php';
+    require_once dirname(__FILE__, 3) . '/services/site/email_template.php';
+
+    $nome         = $aluno['nome'];
+    $email        = $aluno['email'];
+    $primeiroNome = explode(' ', $nome)[0];
+    $cadastroUrl  = appBaseUrl() . '/cadastro';
+
+    $turmaStmt = $pdo->prepare("SELECT t.nome AS turma, q.nome AS quadra FROM turmas t JOIN quadras q ON q.id = t.quadra_id WHERE t.id = ?");
+    $turmaStmt->execute([$turmaId]);
+    $turmaInfo = $turmaStmt->fetch(PDO::FETCH_ASSOC);
+    $turmaNome = $turmaInfo ? $turmaInfo['turma'] . ' — ' . $turmaInfo['quadra'] : '';
+
+    $mensagemExtra = $turmaNome
+        ? "Uma vaga foi aberta para você na turma <strong>" . htmlspecialchars($turmaNome) . "</strong>. Finalize seu cadastro para garantir sua vaga!"
+        : "Uma vaga foi aberta para você! Finalize seu cadastro para garantir sua vaga.";
+
+    $subject = 'Sua vaga abriu! Finalize seu cadastro — MPG Academy';
+
+    // Reutiliza a função de email do serviço existente
+    $sent = sendMpgSignupConfirmation($email, $nome);
+
+    if ($sent) {
+        echo json_encode(['success' => true, 'message' => 'E-mail de cadastro enviado para ' . $email . '.']);
+    } else {
+        // Mesmo com falha no email, a promoção já foi registrada
+        echo json_encode(['success' => true, 'message' => 'Promovido, mas houve falha ao enviar o e-mail.']);
+    }
+    exit;
+}
+
+// ── Aluno regular (fluxo legado) ──────────────────────────────────────────────
+$alunoId    = (int) $fila['aluno_id'];
+$dataInicio = trim($_POST['data_inicio'] ?? '');
+if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $dataInicio)) {
+    $dataInicio = date('Y-m-d');
+}
+
+$turmaInfo = $pdo->prepare("SELECT max_alunos FROM turmas WHERE id = ? AND status = 'ativa'");
 $turmaInfo->execute([$turmaId]);
 $turmaData = $turmaInfo->fetch(PDO::FETCH_ASSOC);
 
@@ -65,18 +115,10 @@ if ($turmaData && $turmaData['max_alunos'] !== null) {
 
 try {
     $pdo->beginTransaction();
-
-    // Insere na turma
-    $pdo->prepare("
-        INSERT INTO turma_alunos (turma_id, aluno_id, data_entrada)
-        VALUES (?, ?, ?)
-    ")->execute([$turmaId, $alunoId, $dataInicio]);
-
-    // Marca como promovido na fila
+    $pdo->prepare("INSERT INTO turma_alunos (turma_id, aluno_id, data_entrada) VALUES (?, ?, ?)")
+        ->execute([$turmaId, $alunoId, $dataInicio]);
     $pdo->prepare("UPDATE fila_espera SET status = 'promovido' WHERE id = ?")->execute([$filaId]);
-
     $pdo->commit();
-
     echo json_encode(['success' => true, 'message' => 'Aluno promovido para a turma com sucesso.']);
 } catch (PDOException $e) {
     $pdo->rollBack();

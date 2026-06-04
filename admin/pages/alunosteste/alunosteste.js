@@ -113,15 +113,30 @@ const renderPage = (turmas, realizados) => {
 const renderRealizados = (lista) => {
     if (!lista.length) return '';
 
-    const rows = lista.map(r =>
-        '<tr>' +
+    const rows = lista.map(r => {
+        let acaoCol;
+        if (r.ja_aluno) {
+            acaoCol = '<span class="badge badge--aluno">✓ Já é aluno</span>';
+        } else if (r.email) {
+            acaoCol = '<button class="btn--testeAcao btn--enviarEmailCadastro" ' +
+                'data-nome="' + $('<span>').text(r.nome).html() + '" ' +
+                'data-email="' + $('<span>').text(r.email).html() + '" ' +
+                'data-id="' + r.id + '">' +
+                'Enviar email de cadastro' +
+            '</button>';
+        } else {
+            acaoCol = '<em style="color:#aaa">Sem e-mail</em>';
+        }
+
+        return '<tr' + (r.ja_aluno ? ' class="row--ja-aluno"' : '') + '>' +
             '<td>' + $('<span>').text(r.nome).html() + '</td>' +
             '<td>' + (r.email   ? $('<span>').text(r.email).html()   : '<em>—</em>') + '</td>' +
             '<td>' + (r.celular ? $('<span>').text(r.celular).html() : '<em>—</em>') + '</td>' +
             '<td>' + $('<span>').text(r.turma_nome + ' · ' + r.quadra_nome).html() + '</td>' +
             '<td>' + fmtDataCriado(r.criado_em) + '</td>' +
-        '</tr>'
-    ).join('');
+            '<td>' + acaoCol + '</td>' +
+        '</tr>';
+    }).join('');
 
     return '<div class="adminTesteRealizados" id="adminTesteRealizados">' +
         '<div class="adminTesteRealizados__head">' +
@@ -132,7 +147,7 @@ const renderRealizados = (lista) => {
         '<div class="adminTesteRealizados__body" id="realizadosBody">' +
             '<table class="adminTesteRealizados__table">' +
                 '<thead><tr>' +
-                    '<th>Nome</th><th>E-mail</th><th>Celular</th><th>Turma</th><th>Data</th>' +
+                    '<th>Nome</th><th>E-mail</th><th>Celular</th><th>Turma</th><th>Data</th><th>Ação</th>' +
                 '</tr></thead>' +
                 '<tbody>' + rows + '</tbody>' +
             '</table>' +
@@ -311,5 +326,26 @@ $(document).ready(() => {
             $(this).data('label', $(this).text());
             atualizar(id, 'promover', $(this));
         }
+    });
+
+    $(document).on('click', '.btn--enviarEmailCadastro', function () {
+        const btn   = $(this);
+        const nome  = btn.data('nome');
+        const email = btn.data('email');
+        if (!confirm('Enviar email de cadastro para ' + nome + ' (' + email + ')?')) return;
+
+        btn.prop('disabled', true).text('Enviando...');
+
+        $.post(ADMIN_BASE_URL + '/services/enviar_email_cadastro.php', { nome, email }, (res) => {
+            if (res.success) {
+                btn.text('✓ Enviado').css('opacity', '0.6');
+            } else {
+                btn.prop('disabled', false).text('Enviar email de cadastro');
+                alert(res.message || 'Erro ao enviar e-mail.');
+            }
+        }, 'json').fail(() => {
+            btn.prop('disabled', false).text('Enviar email de cadastro');
+            alert('Erro ao comunicar com o servidor.');
+        });
     });
 });

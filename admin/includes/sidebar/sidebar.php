@@ -44,14 +44,7 @@
                 </a>
             </li>
 
-            <li class="sidebar__item">
-                <a href="<?= BASE_URL ?>/admin/interessados"
-                   class="sidebar__link <?= ($subRoute === 'interessados') ? 'sidebar__link--active' : '' ?>">
-                    Consultar Interessados
-                </a>
-            </li>
-
-            <li class="sidebar__item">
+<li class="sidebar__item">
                 <a href="<?= BASE_URL ?>/admin/filadeespera"
                    class="sidebar__link <?= ($subRoute === 'filadeespera') ? 'sidebar__link--active' : '' ?>">
                     Fila de Espera
@@ -62,6 +55,13 @@
                 <a href="<?= BASE_URL ?>/admin/alunosteste"
                    class="sidebar__link <?= ($subRoute === 'alunosteste') ? 'sidebar__link--active' : '' ?>">
                     Alunos Teste
+                </a>
+            </li>
+
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/todosalunos-teste"
+                   class="sidebar__link <?= ($subRoute === 'todosalunos-teste') ? 'sidebar__link--active' : '' ?>">
+                    Todos Alunos Teste
                 </a>
             </li>
 

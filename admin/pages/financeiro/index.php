@@ -146,6 +146,7 @@ if ($aba === 'dividas') {
 // ── Dívida: detalhe ───────────────────────────────────────────────────────────
 $dividaDetalhe = null;
 $parcelas      = [];
+$dividaAnexos  = [];
 if ($aba === 'divida') {
     $divId = (int)($_GET['id'] ?? 0);
     $stD = $pdo->prepare("SELECT * FROM dividas WHERE id = ?");
@@ -155,6 +156,11 @@ if ($aba === 'divida') {
     $stP = $pdo->prepare("SELECT * FROM parcelas_dividas WHERE divida_id = ? ORDER BY numero");
     $stP->execute([$divId]);
     $parcelas = $stP->fetchAll();
+    try {
+        $stA = $pdo->prepare("SELECT * FROM dividas_anexos WHERE divida_id = ? ORDER BY criado_em ASC");
+        $stA->execute([$divId]);
+        $dividaAnexos = $stA->fetchAll();
+    } catch (Exception $e) { $dividaAnexos = []; }
 }
 ?>
 <!DOCTYPE html>
@@ -163,6 +169,15 @@ if ($aba === 'divida') {
 <title>MPG Academy - Admin - Financeiro</title>
 <?php include ROOT . '/admin/includes/assets.php'; ?>
 <style>
+/* ── Anexos ── */
+.dividaAnexoFila { display:inline-flex; align-items:center; gap:6px; background:rgba(229,194,0,.07); border:1px dashed rgba(229,194,0,.25); border-radius:8px; padding:5px 10px; font-size:13px; }
+.dividaAnexoItem { display:inline-flex; align-items:center; gap:6px; background:#1a1a1a; border:1px solid #2e2e2e; border-radius:8px; padding:6px 10px; font-size:13px; }
+.dividaAnexoItem__link { color:#ccc; text-decoration:none; display:flex; align-items:center; gap:6px; max-width:220px; }
+.dividaAnexoItem__link span:last-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dividaAnexoItem__link:hover { color:#e5c200; }
+.dividaAnexoItem__del { background:none; border:none; color:#555; cursor:pointer; font-size:14px; line-height:1; padding:0 2px; }
+.dividaAnexoItem__del:hover { color:#ff5a5a; }
+
 /* ── Tabs ── */
 .finTabs { display:flex; gap:4px; margin-bottom:28px; border-bottom:2px solid #1e1e1e; padding-bottom:0; }
 .finTab  { padding:10px 20px; border-radius:8px 8px 0 0; font-size:13px; font-weight:700;
@@ -235,26 +250,47 @@ if ($aba === 'divida') {
 
 /* ── Modal ── */
 .finModal { display:none; position:fixed; inset:0; z-index:9000; align-items:center;
-            justify-content:center; background:rgba(0,0,0,.7); backdrop-filter:blur(4px); padding:16px; }
+            justify-content:center; background:rgba(0,0,0,.74); backdrop-filter:blur(5px); padding:16px; }
 .finModal.open { display:flex; }
-.finModal__box { background:#141414; border:1px solid #2a2a2a; border-radius:12px;
-                 width:100%; max-width:520px; max-height:90vh; overflow-y:auto; }
+.finModal__box { background:radial-gradient(circle at 100% 0, rgba(229,194,0,.08), transparent 34%), #141414;
+                 border:1px solid #2a2a2a; border-radius:12px; box-shadow:0 22px 70px rgba(0,0,0,.45);
+                 width:100%; max-width:560px; max-height:90vh; overflow-y:auto; }
 .finModal__head { display:flex; align-items:center; justify-content:space-between;
                   padding:18px 22px; border-bottom:1px solid #1e1e1e; }
 .finModal__head h3 { margin:0; font-size:17px; }
-.finModal__head button { background:none; border:none; color:#666; font-size:22px;
-                         cursor:pointer; line-height:1; padding:0; }
-.finModal__head button:hover { color:#eee; }
+.finModal__head button { align-items:center; background:rgba(255,255,255,.04); border:1px solid transparent;
+                         border-radius:8px; color:#777; cursor:pointer; display:flex; font-size:22px;
+                         height:32px; justify-content:center; line-height:1; padding:0; width:32px; }
+.finModal__head button:hover { background:rgba(255,255,255,.08); border-color:rgba(255,255,255,.1); color:#eee; }
 .finModal__body { padding:22px; }
 .finField { margin-bottom:16px; }
+.finField--full { grid-column:1/-1; }
 .finField label { display:block; font-size:12px; color:#888; margin-bottom:6px;
                   text-transform:uppercase; letter-spacing:.05em; }
 .finField label span { color:#e53535; }
-.finField .input { width:100%; }
+.finField .input { background:rgba(255,255,255,.055); border:1px solid rgba(255,255,255,.16);
+                   border-radius:7px; color:#eee; font-family:inherit; font-size:14px; height:46px;
+                   line-height:46px; margin:0; padding:0 14px; transition:.2s all; width:100%; }
+.finField .input::placeholder { color:rgba(255,255,255,.38); }
+.finField .input:focus { border-color:#e5c200; box-shadow:0 0 0 3px rgba(229,194,0,.12); outline:none; }
+.finField .input[readonly] { background:rgba(229,194,0,.07); border-color:rgba(229,194,0,.22); color:#e5c200; }
+.finField select.input { -webkit-appearance:none; appearance:none;
+                         background-image:linear-gradient(45deg, transparent 50%, #e5c200 50%),
+                                          linear-gradient(135deg, #e5c200 50%, transparent 50%);
+                         background-position:calc(100% - 18px) 20px, calc(100% - 12px) 20px;
+                         background-repeat:no-repeat; background-size:6px 6px, 6px 6px; padding-right:42px; }
+.finField select.input option { background:#1a1a1a; color:#eee; }
+.finField input[type="date"].input { color-scheme:dark; }
 .finRow2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
 .finRow3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; }
 .finModalActions { display:flex; gap:10px; justify-content:flex-end; padding:16px 22px;
                    border-top:1px solid #1e1e1e; }
+@media (max-width:640px) {
+    .finModal__box { max-width:100%; }
+    .finRow2, .finRow3 { grid-template-columns:1fr; gap:0; }
+    .finModalActions { flex-direction:column-reverse; }
+    .finModalActions .btn { width:100%; }
+}
 
 /* ── Barra de info dívida ── */
 .dividaInfo { background:#111; border:1px solid #2a2a2a; border-radius:10px;
@@ -274,17 +310,30 @@ if ($aba === 'divida') {
     <!-- ── DETALHE DA DÍVIDA ──────────────────────────────────────────────── -->
     <section class="alunos">
         <div class="alunos__header row" style="margin-bottom:20px;">
-            <div class="col-md-12">
+            <div class="col-md-8">
                 <a href="<?= ADMIN_BASE_URL ?>/financeiro?aba=dividas" class="alunos__back">&#8592; Voltar para Dívidas</a>
-                <h2><?= htmlspecialchars($dividaDetalhe['descricao']) ?></h2>
+                <h2 id="dividaDescricaoTitulo"><?= htmlspecialchars($dividaDetalhe['descricao']) ?></h2>
+            </div>
+            <div class="col-md-4" style="display:flex;align-items:flex-end;justify-content:flex-end;gap:8px;padding-bottom:4px;">
+                <button class="btn btn--gray btn--sm" id="btnEditarDivida"
+                        data-id="<?= $dividaDetalhe['id'] ?>"
+                        data-descricao="<?= htmlspecialchars($dividaDetalhe['descricao']) ?>"
+                        data-credor="<?= htmlspecialchars($dividaDetalhe['credor'] ?? '') ?>"
+                        data-categoria="<?= htmlspecialchars($dividaDetalhe['categoria']) ?>"
+                        data-observacao="<?= htmlspecialchars($dividaDetalhe['observacao'] ?? '') ?>">
+                    ✏️ Editar dados
+                </button>
             </div>
         </div>
 
-        <dl class="dividaInfo">
-            <div><dt>Credor</dt><dd><?= htmlspecialchars($dividaDetalhe['credor'] ?: '—') ?></dd></div>
+        <dl class="dividaInfo" id="dividaInfoDl">
+            <div><dt>Credor</dt><dd id="dividaCredorDd"><?= htmlspecialchars($dividaDetalhe['credor'] ?: '—') ?></dd></div>
             <div><dt>Valor total</dt><dd><?= fmtR((float)$dividaDetalhe['valor_total']) ?></dd></div>
             <div><dt>Parcelas</dt><dd><?= count($parcelas) ?>x de <?= fmtR((float)$dividaDetalhe['valor_parcela']) ?></dd></div>
             <div><dt>Status</dt><dd><?= $dividaDetalhe['status'] === 'quitado' ? '✅ Quitada' : '⏳ Em aberto' ?></dd></div>
+            <?php if ($dividaDetalhe['observacao']): ?>
+            <div><dt>Observação</dt><dd id="dividaObsDd"><?= htmlspecialchars($dividaDetalhe['observacao']) ?></dd></div>
+            <?php endif; ?>
         </dl>
 
         <div class="finTable__wrap">
@@ -335,6 +384,53 @@ if ($aba === 'divida') {
                 </tbody>
             </table>
         </div>
+
+        <!-- ── Anexos ─────────────────────────────────────────────────────── -->
+        <div style="margin-top:28px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                <h3 style="margin:0;font-size:15px;color:#eee;">Anexos</h3>
+            </div>
+
+            <div id="dividaAnexosLista" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+                <?php if (empty($dividaAnexos)): ?>
+                <span style="color:#555;font-size:13px;" id="dividaAnexosVazio">Nenhum anexo ainda.</span>
+                <?php else: ?>
+                <?php foreach ($dividaAnexos as $ax): ?>
+                <div class="dividaAnexoItem" data-id="<?= $ax['id'] ?>">
+                    <a href="<?= BASE_URL . '/' . htmlspecialchars($ax['caminho']) ?>" target="_blank" class="dividaAnexoItem__link">
+                        <?php
+                            $icone = '📎';
+                            if (str_starts_with($ax['tipo_mime'], 'image/')) $icone = '🖼️';
+                            elseif ($ax['tipo_mime'] === 'application/pdf') $icone = '📄';
+                            elseif (str_contains($ax['tipo_mime'], 'word')) $icone = '📝';
+                            elseif (str_contains($ax['tipo_mime'], 'excel') || str_contains($ax['tipo_mime'], 'sheet')) $icone = '📊';
+                        ?>
+                        <span><?= $icone ?></span>
+                        <span><?= htmlspecialchars($ax['nome_original']) ?></span>
+                    </a>
+                    <button class="dividaAnexoItem__del btnDeleteAnexo" data-id="<?= $ax['id'] ?>" title="Remover">✕</button>
+                </div>
+                <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+
+            <div id="formAnexo">
+                <input type="hidden" id="anexoDividaId" value="<?= $dividaDetalhe['id'] ?>">
+                <!-- input oculto — só serve para abrir o seletor de arquivos -->
+                <input type="file" id="inputAnexos" multiple style="display:none"
+                       accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.doc,.docx,.xls,.xlsx,.txt">
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                    <button type="button" class="btn btn--gray" id="btnSelecionarAnexo">+ Adicionar arquivo(s)</button>
+                    <button type="button" class="btn btn--primary" id="btnEnviarAnexo" style="display:none">
+                        Enviar <span id="anexoCount">0</span> arquivo(s)
+                    </button>
+                    <span id="anexoMsg" style="font-size:13px;"></span>
+                </div>
+                <!-- fila visual de arquivos aguardando envio -->
+                <div id="filaAnexosPendentes" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;"></div>
+            </div>
+        </div>
+
     </section>
 
     <?php else: ?>
@@ -635,6 +731,49 @@ if ($aba === 'divida') {
     </div>
 </div>
 
+<!-- ── Modal: Editar Dívida ────────────────────────────────────────────────── -->
+<div class="finModal" id="modalEditarDivida">
+    <div class="finModal__box">
+        <div class="finModal__head">
+            <h3>Editar Dívida</h3>
+            <button id="closeModalEditarDivida">&times;</button>
+        </div>
+        <form id="formEditarDivida">
+            <input type="hidden" name="id" id="editDividaId">
+            <div class="finModal__body">
+                <div class="finField finField--full">
+                    <label>Descrição <span>*</span></label>
+                    <input type="text" name="descricao" id="editDividaDescricao" class="input" required>
+                </div>
+                <div class="finRow2">
+                    <div class="finField">
+                        <label>Credor</label>
+                        <input type="text" name="credor" id="editDividaCredor" class="input" placeholder="Nome do fornecedor">
+                    </div>
+                    <div class="finField">
+                        <label>Categoria</label>
+                        <select name="categoria" id="editDividaCategoria" class="input">
+                            <option value="outros">Outros</option>
+                            <option value="equipamento">Equipamento</option>
+                            <option value="reforma">Reforma</option>
+                            <option value="aluguel">Aluguel</option>
+                            <option value="administrativo">Administrativo</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="finField finField--full">
+                    <label>Observação</label>
+                    <input type="text" name="observacao" id="editDividaObs" class="input" placeholder="Opcional">
+                </div>
+            </div>
+            <div class="finModalActions">
+                <button type="button" class="btn btn--gray" id="cancelarEditarDivida">Cancelar</button>
+                <button type="submit" class="btn btn--primary">Salvar alterações</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <!-- ── Modal: Nova Dívida ──────────────────────────────────────────────────── -->
 <div class="finModal" id="modalDivida">
     <div class="finModal__box">
@@ -645,7 +784,7 @@ if ($aba === 'divida') {
         <form id="formDivida">
             <div class="finModal__body">
                 <div class="finRow2">
-                    <div class="finField" style="grid-column:1/-1;">
+                    <div class="finField finField--full">
                         <label>Descrição <span>*</span></label>
                         <input type="text" name="descricao" class="input" placeholder="Ex: Compra de equipamentos" required>
                     </div>
@@ -677,7 +816,7 @@ if ($aba === 'divida') {
                     </div>
                     <div class="finField">
                         <label>Parcela aprox.</label>
-                        <input type="text" id="divPreviewParcela" class="input" readonly style="color:#e5c200;background:#1a1a1a;">
+                        <input type="text" id="divPreviewParcela" class="input" readonly>
                     </div>
                 </div>
                 <div class="finField">
@@ -687,6 +826,14 @@ if ($aba === 'divida') {
                 <div class="finField">
                     <label>Observação</label>
                     <input type="text" name="observacao" class="input" placeholder="Opcional">
+                </div>
+                <div class="finField">
+                    <label>Anexos <span style="font-weight:400;color:#666;">(opcional — PDF, imagem, Word, Excel · máx 10 MB cada)</span></label>
+                    <input type="file" id="inputAnexosModal" multiple style="display:none"
+                           accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.doc,.docx,.xls,.xlsx,.txt">
+                    <button type="button" class="btn btn--gray btn--sm" id="btnSelecionarAnexoModal"
+                            style="margin-bottom:8px;">+ Adicionar arquivo(s)</button>
+                    <div id="filaAnexosModal" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
                 </div>
             </div>
             <div class="finModalActions">
@@ -714,6 +861,7 @@ if ($aba === 'divida') {
 
 <script>
 var ADMIN_BASE_URL = "<?= ADMIN_BASE_URL ?>";
+var BASE_URL       = "<?= BASE_URL ?>";
 var ABA_ATUAL     = "<?= $aba ?>";
 var MES_ATUAL     = "<?= $mes ?>";
 
@@ -753,6 +901,166 @@ if (btnNovoLanc) {
     });
 }
 
+// ── Editar dívida ─────────────────────────────────────────────────────────────
+var btnEditarDivida = document.getElementById('btnEditarDivida');
+if (btnEditarDivida) {
+    btnEditarDivida.addEventListener('click', function () {
+        document.getElementById('editDividaId').value         = this.dataset.id;
+        document.getElementById('editDividaDescricao').value  = this.dataset.descricao;
+        document.getElementById('editDividaCredor').value     = this.dataset.credor;
+        document.getElementById('editDividaObs').value        = this.dataset.observacao;
+        var sel = document.getElementById('editDividaCategoria');
+        sel.value = this.dataset.categoria || 'outros';
+        openModal('modalEditarDivida');
+    });
+    document.getElementById('closeModalEditarDivida').addEventListener('click', function () { closeModal('modalEditarDivida'); });
+    document.getElementById('cancelarEditarDivida').addEventListener('click',   function () { closeModal('modalEditarDivida'); });
+
+    document.getElementById('formEditarDivida').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var btn = this.querySelector('[type=submit]');
+        btn.disabled = true; btn.textContent = 'Salvando...';
+        fetch(ADMIN_BASE_URL + '/services/update_divida.php', {
+            method: 'POST', credentials: 'same-origin', body: new FormData(this),
+        }).then(r => r.json()).then(d => {
+            if (d.success) {
+                closeModal('modalEditarDivida');
+                var desc = document.getElementById('editDividaDescricao').value;
+                var cred = document.getElementById('editDividaCredor').value;
+                document.getElementById('dividaDescricaoTitulo').textContent = desc;
+                document.getElementById('dividaCredorDd').textContent        = cred || '—';
+                btnEditarDivida.dataset.descricao  = desc;
+                btnEditarDivida.dataset.credor     = cred;
+                btnEditarDivida.dataset.observacao = document.getElementById('editDividaObs').value;
+                btnEditarDivida.dataset.categoria  = document.getElementById('editDividaCategoria').value;
+                btn.disabled = false; btn.textContent = 'Salvar alterações';
+            } else {
+                alert(d.message || 'Erro ao salvar.');
+                btn.disabled = false; btn.textContent = 'Salvar alterações';
+            }
+        });
+    });
+}
+
+// ── Anexos: fila acumulada ─────────────────────────────────────────────────────
+var formAnexo = document.getElementById('formAnexo');
+if (formAnexo) {
+    var filaAnexos = []; // Array de File objects acumulados
+
+    var inputAnexos      = document.getElementById('inputAnexos');
+    var btnSelecionar    = document.getElementById('btnSelecionarAnexo');
+    var btnEnviar        = document.getElementById('btnEnviarAnexo');
+    var filaEl           = document.getElementById('filaAnexosPendentes');
+    var anexoMsg         = document.getElementById('anexoMsg');
+    var anexoCountEl     = document.getElementById('anexoCount');
+
+    // Abre o seletor ao clicar em "+ Adicionar arquivo(s)"
+    btnSelecionar.addEventListener('click', function () { inputAnexos.click(); });
+
+    // Cada vez que o usuário seleciona arquivos, ACUMULA (não substitui)
+    inputAnexos.addEventListener('change', function () {
+        Array.from(this.files).forEach(function (f) {
+            // Evita duplicatas pelo nome
+            if (!filaAnexos.find(function (x) { return x.name === f.name; })) {
+                filaAnexos.push(f);
+            }
+        });
+        this.value = ''; // Limpa o input para permitir re-selecionar o mesmo arquivo
+        renderFilaPendentes();
+    });
+
+    function renderFilaPendentes() {
+        filaEl.innerHTML = filaAnexos.map(function (f, i) {
+            return '<div class="dividaAnexoFila" data-idx="' + i + '">' +
+                '<span style="font-size:13px;color:#ccc;">📎 ' + f.name + '</span>' +
+                '<button type="button" class="dividaAnexoItem__del btnRemoverFila" data-idx="' + i + '" title="Remover da fila">✕</button>' +
+            '</div>';
+        }).join('');
+        anexoCountEl.textContent = filaAnexos.length;
+        btnEnviar.style.display  = filaAnexos.length ? '' : 'none';
+        anexoMsg.textContent     = '';
+    }
+
+    // Remove da fila antes de enviar
+    filaEl.addEventListener('click', function (e) {
+        var btn = e.target.closest('.btnRemoverFila');
+        if (!btn) return;
+        filaAnexos.splice(parseInt(btn.dataset.idx), 1);
+        renderFilaPendentes();
+    });
+
+    // Envia todos os arquivos acumulados
+    btnEnviar.addEventListener('click', function () {
+        if (!filaAnexos.length) return;
+        btnEnviar.disabled = true; btnEnviar.textContent = 'Enviando...';
+        anexoMsg.textContent = '';
+
+        var fd = new FormData();
+        fd.append('divida_id', document.getElementById('anexoDividaId').value);
+        filaAnexos.forEach(function (f) { fd.append('anexos[]', f); });
+
+        fetch(ADMIN_BASE_URL + '/services/save_divida_anexo.php', {
+            method: 'POST', credentials: 'same-origin', body: fd,
+        }).then(function (r) { return r.json(); }).then(function (d) {
+            btnEnviar.disabled = false; btnEnviar.textContent = 'Enviar ';
+            btnEnviar.appendChild(anexoCountEl); // reconecta o span
+
+            if (d.salvos && d.salvos.length) {
+                var lista = document.getElementById('dividaAnexosLista');
+                var vazio = document.getElementById('dividaAnexosVazio');
+                if (vazio) vazio.remove();
+                d.salvos.forEach(function (a) {
+                    var icone = '📎';
+                    if (a.tipo_mime.startsWith('image/')) icone = '🖼️';
+                    else if (a.tipo_mime === 'application/pdf') icone = '📄';
+                    else if (a.tipo_mime.includes('word')) icone = '📝';
+                    else if (a.tipo_mime.includes('excel') || a.tipo_mime.includes('sheet')) icone = '📊';
+                    var div = document.createElement('div');
+                    div.className = 'dividaAnexoItem';
+                    div.dataset.id = a.id;
+                    div.innerHTML = '<a href="' + BASE_URL + '/' + a.caminho + '" target="_blank" class="dividaAnexoItem__link">' +
+                        '<span>' + icone + '</span><span>' + a.nome_original + '</span></a>' +
+                        '<button class="dividaAnexoItem__del btnDeleteAnexo" data-id="' + a.id + '" title="Remover">✕</button>';
+                    lista.appendChild(div);
+                });
+                filaAnexos = [];
+                renderFilaPendentes();
+                anexoMsg.textContent = d.salvos.length + ' arquivo(s) enviado(s).';
+                anexoMsg.style.color = '#79ff45';
+            }
+            if (d.erros && d.erros.length) {
+                anexoMsg.textContent += (anexoMsg.textContent ? ' | ' : '') + 'Erros: ' + d.erros.join(', ');
+                anexoMsg.style.color = '#ff7070';
+            }
+        });
+    });
+
+    // ── Excluir anexo já salvo ─────────────────────────────────────────────────
+    document.getElementById('dividaAnexosLista').addEventListener('click', function (e) {
+        var btn = e.target.closest('.btnDeleteAnexo');
+        if (!btn) return;
+        if (!confirm('Remover este anexo?')) return;
+        var id   = btn.dataset.id;
+        var item = btn.closest('.dividaAnexoItem');
+        btn.disabled = true;
+        var fd = new FormData(); fd.append('id', id);
+        fetch(ADMIN_BASE_URL + '/services/delete_divida_anexo.php', {
+            method: 'POST', credentials: 'same-origin', body: fd,
+        }).then(function (r) { return r.json(); }).then(function (d) {
+            if (d.success) {
+                item.remove();
+                var lista = document.getElementById('dividaAnexosLista');
+                if (!lista.querySelector('.dividaAnexoItem')) {
+                    lista.innerHTML = '<span style="color:#555;font-size:13px;" id="dividaAnexosVazio">Nenhum anexo ainda.</span>';
+                }
+            } else {
+                btn.disabled = false;
+                alert(d.message || 'Erro ao remover.');
+            }
+        });
+    });
+}
+
 // ── Dívida modal ──────────────────────────────────────────────────────────────
 var btnNovaDivida = document.getElementById('btnNovaDivida');
 if (btnNovaDivida) {
@@ -775,7 +1083,46 @@ if (btnNovaDivida) {
     divValorTotalEl.addEventListener('input', atualizarPreviewParcela);
     divNumParcelasEl.addEventListener('input', atualizarPreviewParcela);
 
-    btnNovaDivida.addEventListener('click', function () { openModal('modalDivida'); });
+    // ── Fila de anexos do modal ────────────────────────────────────────────────
+    var filaAnexosModal  = [];
+    var inputAnexosModal = document.getElementById('inputAnexosModal');
+    var filaModalEl      = document.getElementById('filaAnexosModal');
+
+    document.getElementById('btnSelecionarAnexoModal').addEventListener('click', function () {
+        inputAnexosModal.click();
+    });
+
+    inputAnexosModal.addEventListener('change', function () {
+        Array.from(this.files).forEach(function (f) {
+            if (!filaAnexosModal.find(function (x) { return x.name === f.name; })) {
+                filaAnexosModal.push(f);
+            }
+        });
+        this.value = '';
+        renderFilaModal();
+    });
+
+    function renderFilaModal() {
+        filaModalEl.innerHTML = filaAnexosModal.map(function (f, i) {
+            return '<div class="dividaAnexoFila" data-idx="' + i + '">' +
+                '<span style="font-size:13px;color:#ccc;">📎 ' + f.name + '</span>' +
+                '<button type="button" class="dividaAnexoItem__del btnRemoverFilaModal" data-idx="' + i + '" title="Remover">✕</button>' +
+            '</div>';
+        }).join('');
+    }
+
+    filaModalEl.addEventListener('click', function (e) {
+        var btn = e.target.closest('.btnRemoverFilaModal');
+        if (!btn) return;
+        filaAnexosModal.splice(parseInt(btn.dataset.idx), 1);
+        renderFilaModal();
+    });
+
+    btnNovaDivida.addEventListener('click', function () {
+        filaAnexosModal = [];
+        renderFilaModal();
+        openModal('modalDivida');
+    });
     document.getElementById('closeModalDivida').addEventListener('click', function () { closeModal('modalDivida'); });
     document.getElementById('cancelarDivida').addEventListener('click',   function () { closeModal('modalDivida'); });
 
@@ -783,8 +1130,10 @@ if (btnNovaDivida) {
         e.preventDefault();
         var btn = this.querySelector('[type=submit]');
         btn.disabled = true; btn.textContent = 'Cadastrando...';
+        var fd = new FormData(this);
+        filaAnexosModal.forEach(function (f) { fd.append('anexos[]', f); });
         fetch(ADMIN_BASE_URL + '/services/save_divida.php', {
-            method: 'POST', credentials: 'same-origin', body: new FormData(this),
+            method: 'POST', credentials: 'same-origin', body: fd,
         }).then(r => r.json()).then(d => {
             if (d.success) location.href = ADMIN_BASE_URL + '/financeiro?aba=divida&id=' + d.id;
             else { alert(d.message || 'Erro.'); btn.disabled = false; btn.textContent = 'Cadastrar dívida'; }
