@@ -11,10 +11,10 @@ const esc = (s) => $('<span>').text(s).html();
 
 // ── Para fazer ────────────────────────────────────────────────────────────────
 
-const renderParaFazer = (lista) => {
+const renderParaFazer = (lista, startAt) => {
     if (!lista.length) return '<p class="adminTodosAlunos__empty">Nenhum aluno aguardando aula experimental.</p>';
 
-    const rows = lista.map(r => {
+    const rows = lista.map((r, i) => {
         const statusBadge = r.status === 'agendada'
             ? '<span class="badge badge--agendada">Agendada</span>'
             : '<span class="badge badge--fila">Na fila</span>';
@@ -22,6 +22,7 @@ const renderParaFazer = (lista) => {
             ? fmtData(r.data_agendada)
             : fmtData(r.criado_em);
         return '<tr>' +
+            '<td class="col-num">' + (startAt + i) + '</td>' +
             '<td><strong>' + esc(r.nome) + '</strong></td>' +
             '<td>' + (r.email   ? esc(r.email)   : '<em>—</em>') + '</td>' +
             '<td>' + (r.celular ? esc(r.celular) : '<em>—</em>') + '</td>' +
@@ -38,7 +39,7 @@ const renderParaFazer = (lista) => {
         '</div>' +
         '<div class="adminTodosSecao__body">' +
             '<table class="adminTodosTable">' +
-                '<thead><tr><th>Nome</th><th>E-mail</th><th>Celular</th><th>Turma</th><th>Status</th><th>Data</th></tr></thead>' +
+                '<thead><tr><th class="col-num">#</th><th>Nome</th><th>E-mail</th><th>Celular</th><th>Turma</th><th>Status</th><th>Data</th></tr></thead>' +
                 '<tbody>' + rows + '</tbody>' +
             '</table>' +
         '</div>' +
@@ -73,10 +74,10 @@ const renderAcao = (r) => {
     return btns;
 };
 
-const renderJaFizeram = (lista) => {
+const renderJaFizeram = (lista, startAt) => {
     if (!lista.length) return '<p class="adminTodosAlunos__empty">Nenhum aluno concluiu aula experimental ainda.</p>';
 
-    const rows = lista.map(r => {
+    const rows = lista.map((r, i) => {
         const vagaInfo = r.vagas === null
             ? '<span class="badge badge--semLimite">Sem limite</span>'
             : r.vagas > 0
@@ -84,6 +85,7 @@ const renderJaFizeram = (lista) => {
                 : '<span class="badge badge--lotada">Lotada</span>';
 
         return '<tr' + (r.ja_aluno ? ' class="row--ja-aluno"' : '') + '>' +
+            '<td class="col-num">' + (startAt + i) + '</td>' +
             '<td><strong>' + esc(r.nome) + '</strong></td>' +
             '<td>' + (r.email   ? esc(r.email)   : '<em>—</em>') + '</td>' +
             '<td>' + (r.celular ? esc(r.celular) : '<em>—</em>') + '</td>' +
@@ -100,7 +102,7 @@ const renderJaFizeram = (lista) => {
         '</div>' +
         '<div class="adminTodosSecao__body">' +
             '<table class="adminTodosTable">' +
-                '<thead><tr><th>Nome</th><th>E-mail</th><th>Celular</th><th>Turma onde fez o teste</th><th>Data</th><th>Ação</th></tr></thead>' +
+                '<thead><tr><th class="col-num">#</th><th>Nome</th><th>E-mail</th><th>Celular</th><th>Turma onde fez o teste</th><th>Data</th><th>Ação</th></tr></thead>' +
                 '<tbody>' + rows + '</tbody>' +
             '</table>' +
         '</div>' +
@@ -116,9 +118,10 @@ const carregarDados = () => {
             $('#adminTodosBody').html('<p class="adminTodosAlunos__empty">Erro ao carregar dados.</p>');
             return;
         }
+        const offsetJaFizeram = (res.para_fazer.length || 0) + 1;
         $('#adminTodosBody').html(
-            renderParaFazer(res.para_fazer) +
-            renderJaFizeram(res.ja_fizeram)
+            renderParaFazer(res.para_fazer, 1) +
+            renderJaFizeram(res.ja_fizeram, offsetJaFizeram)
         );
     }, 'json').fail(() => {
         $('#adminTodosBody').html('<p class="adminTodosAlunos__empty">Erro ao comunicar com o servidor.</p>');

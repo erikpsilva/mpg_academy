@@ -36,7 +36,12 @@ const renderItem = (f, tipo) => {
         : '<button class="btn--testeAcao btn--promoverTeste" data-id="' + f.id + '">Promover</button>' +
           '<button class="btn--testeAcao btn--cancelarTeste is-danger" data-id="' + f.id + '">Cancelar</button>';
 
+    const numBadge = f.pos !== undefined
+        ? '<span class="adminTesteItem__num">' + f.pos + '</span>'
+        : '';
+
     return '<div class="adminTesteItem">' +
+        numBadge +
         '<div class="adminTesteItem__info">' +
             '<strong>' + $('<span>').text(f.nome).html() + '</strong>' +
             '<span>' +
@@ -70,7 +75,7 @@ const renderBloco = (turma) => {
     const secaoAgendados = totalAgendados > 0
         ? '<div class="adminTesteBloco__secao">' +
             '<p class="adminTesteBloco__secaoTitulo">Agendados (' + totalAgendados + ')</p>' +
-            turma.agendados.map(f => renderItem(f, 'agendado')).join('') +
+            turma.agendados.map((f, i) => renderItem({ ...f, pos: i + 1 }, 'agendado')).join('') +
           '</div>'
         : '';
 
@@ -101,13 +106,51 @@ const renderBloco = (turma) => {
     '</div>';
 };
 
+const renderResumo = (turmas) => {
+    let totalAgendados = 0, totalFila = 0;
+
+    const cards = turmas.map(t => {
+        const ag = t.agendados.length;
+        const fl = t.fila.length;
+        const tot = ag + fl;
+        if (!tot) return '';
+        totalAgendados += ag;
+        totalFila      += fl;
+        return '<div class="adminTesteResumoCard">' +
+            '<div class="adminTesteResumoCard__nome">' + $('<span>').text(t.turma_nome).html() + '</div>' +
+            '<div class="adminTesteResumoCard__detalhe">' +
+                (ag ? '<span class="adminTesteResumoCard__agendados">' + ag + ' agendado' + (ag === 1 ? '' : 's') + '</span>' : '') +
+                (fl ? '<span class="adminTesteResumoCard__fila">' + fl + ' na fila</span>' : '') +
+            '</div>' +
+            '<div class="adminTesteResumoCard__total">' + tot + '</div>' +
+        '</div>';
+    }).filter(Boolean).join('');
+
+    if (!cards) return '';
+
+    const totalGeral = totalAgendados + totalFila;
+
+    return '<div class="adminTesteResumo">' +
+        '<div class="adminTesteResumo__cards">' + cards + '</div>' +
+        '<div class="adminTesteResumo__geral">' +
+            '<span class="adminTesteResumo__label">Total geral</span>' +
+            '<span class="adminTesteResumo__num">' + totalGeral + '</span>' +
+            '<div class="adminTesteResumo__sub">' +
+                (totalAgendados ? '<span>' + totalAgendados + ' agendado' + (totalAgendados === 1 ? '' : 's') + '</span>' : '') +
+                (totalFila ? '<span>' + totalFila + ' na fila</span>' : '') +
+            '</div>' +
+        '</div>' +
+    '</div>';
+};
+
 const renderPage = (turmas, realizados) => {
     const body = $('#adminTesteBody');
+    const resumo = turmas.length ? renderResumo(turmas) : '';
     const ativos = turmas.length
         ? turmas.map(renderBloco).join('')
         : '<p class="adminTeste__empty">Nenhuma aula experimental agendada no momento.</p>';
 
-    body.html(ativos + renderRealizados(realizados));
+    body.html(resumo + ativos + renderRealizados(realizados));
 };
 
 const renderRealizados = (lista) => {
