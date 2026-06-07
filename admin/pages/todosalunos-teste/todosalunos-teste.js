@@ -3,11 +3,41 @@ const NIVEL_LABEL = { iniciante: 'Iniciante', intermediario: 'Intermediário', a
 
 const fmtData = (str) => {
     if (!str) return '—';
-    const d = new Date(str);
-    return d.toLocaleDateString('pt-BR');
+    const [y, m, d] = str.split('T')[0].split('-');
+    return d + '/' + m + '/' + y;
 };
 
 const esc = (s) => $('<span>').text(s).html();
+
+// ── Badge de termo ────────────────────────────────────────────────────────────
+
+const renderTermoBadge = (r) => {
+    if (!r.is_menor) return '<em>—</em>';
+    const map = {
+        concluido:              '<span class="badge badge--termo-ok">✅ Assinado</span>',
+        aguardando_responsavel: '<span class="badge badge--termo-meio">🕐 Aguard. responsável</span>',
+        aguardando_escola:      '<span class="badge badge--termo-meio">🕐 Aguard. escola</span>',
+        pendente:               '<span class="badge badge--termo-pendente">📋 Pendente</span>',
+        nao_gerado:             '<span class="badge badge--termo-pendente">📋 Não gerado</span>',
+    };
+    let html = '<div class="adminTodosTable__termoBox">' + (map[r.termo_status] || '<em>—</em>');
+    if (r.responsavel_nome) {
+        html += '<small class="adminTodosTable__resp">Resp.: ' + esc(r.responsavel_nome) + '</small>';
+    }
+    if (r.termo_token) {
+        html += '<a class="adminTodosTable__verTermo" href="' + BASE_URL + '/termo?token=' + esc(r.termo_token) + '" target="_blank">🔗 Ver termo</a>';
+    }
+    return html + '</div>';
+};
+
+const renderNome = (r) => {
+    const menorBadge = r.is_menor ? '<span class="badge badge--menor">Menor</span>' : '';
+    return '<strong class="adminTodosTable__nome">' + menorBadge + '<span>' + esc(r.nome) + '</span></strong>';
+};
+
+const renderCell = (label, content, className) => {
+    return '<td data-label="' + esc(label) + '"' + (className ? ' class="' + className + '"' : '') + '>' + content + '</td>';
+};
 
 // ── Para fazer ────────────────────────────────────────────────────────────────
 
@@ -22,13 +52,14 @@ const renderParaFazer = (lista, startAt) => {
             ? fmtData(r.data_agendada)
             : fmtData(r.criado_em);
         return '<tr>' +
-            '<td class="col-num">' + (startAt + i) + '</td>' +
-            '<td><strong>' + esc(r.nome) + '</strong></td>' +
-            '<td>' + (r.email   ? esc(r.email)   : '<em>—</em>') + '</td>' +
-            '<td>' + (r.celular ? esc(r.celular) : '<em>—</em>') + '</td>' +
-            '<td>' + esc(r.turma_nome + ' · ' + r.quadra_nome) + '</td>' +
-            '<td>' + statusBadge + '</td>' +
-            '<td>' + dataLabel + '</td>' +
+            renderCell('#', (startAt + i), 'col-num') +
+            renderCell('Nome', renderNome(r), 'adminTodosTable__aluno') +
+            renderCell('E-mail', (r.email   ? esc(r.email)   : '<em>—</em>'), 'adminTodosTable__email') +
+            renderCell('Celular', (r.celular ? esc(r.celular) : '<em>—</em>')) +
+            renderCell('Turma', esc(r.turma_nome + ' · ' + r.quadra_nome)) +
+            renderCell('Status', statusBadge) +
+            renderCell('Data', dataLabel) +
+            renderCell('Termo', renderTermoBadge(r), 'adminTodosTable__termo') +
         '</tr>';
     }).join('');
 
@@ -39,7 +70,7 @@ const renderParaFazer = (lista, startAt) => {
         '</div>' +
         '<div class="adminTodosSecao__body">' +
             '<table class="adminTodosTable">' +
-                '<thead><tr><th class="col-num">#</th><th>Nome</th><th>E-mail</th><th>Celular</th><th>Turma</th><th>Status</th><th>Data</th></tr></thead>' +
+                '<thead><tr><th class="col-num">#</th><th>Nome</th><th>E-mail</th><th>Celular</th><th>Turma</th><th>Status</th><th>Data</th><th>Termo</th></tr></thead>' +
                 '<tbody>' + rows + '</tbody>' +
             '</table>' +
         '</div>' +
@@ -85,13 +116,14 @@ const renderJaFizeram = (lista, startAt) => {
                 : '<span class="badge badge--lotada">Lotada</span>';
 
         return '<tr' + (r.ja_aluno ? ' class="row--ja-aluno"' : '') + '>' +
-            '<td class="col-num">' + (startAt + i) + '</td>' +
-            '<td><strong>' + esc(r.nome) + '</strong></td>' +
-            '<td>' + (r.email   ? esc(r.email)   : '<em>—</em>') + '</td>' +
-            '<td>' + (r.celular ? esc(r.celular) : '<em>—</em>') + '</td>' +
-            '<td>' + esc(r.turma_nome + ' · ' + r.quadra_nome) + ' ' + vagaInfo + '</td>' +
-            '<td>' + fmtData(r.criado_em) + '</td>' +
-            '<td class="adminTodosTable__acoes">' + renderAcao(r) + '</td>' +
+            renderCell('#', (startAt + i), 'col-num') +
+            renderCell('Nome', renderNome(r), 'adminTodosTable__aluno') +
+            renderCell('E-mail', (r.email   ? esc(r.email)   : '<em>—</em>'), 'adminTodosTable__email') +
+            renderCell('Celular', (r.celular ? esc(r.celular) : '<em>—</em>')) +
+            renderCell('Turma', esc(r.turma_nome + ' · ' + r.quadra_nome) + ' ' + vagaInfo) +
+            renderCell('Data', fmtData(r.criado_em)) +
+            renderCell('Termo', renderTermoBadge(r), 'adminTodosTable__termo') +
+            renderCell('Ação', renderAcao(r), 'adminTodosTable__acoes') +
         '</tr>';
     }).join('');
 
@@ -102,7 +134,7 @@ const renderJaFizeram = (lista, startAt) => {
         '</div>' +
         '<div class="adminTodosSecao__body">' +
             '<table class="adminTodosTable">' +
-                '<thead><tr><th class="col-num">#</th><th>Nome</th><th>E-mail</th><th>Celular</th><th>Turma onde fez o teste</th><th>Data</th><th>Ação</th></tr></thead>' +
+                '<thead><tr><th class="col-num">#</th><th>Nome</th><th>E-mail</th><th>Celular</th><th>Turma onde fez o teste</th><th>Data</th><th>Termo</th><th>Ação</th></tr></thead>' +
                 '<tbody>' + rows + '</tbody>' +
             '</table>' +
         '</div>' +

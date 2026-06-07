@@ -10,7 +10,7 @@ const initSidebar = () => {
         $('.sidebar__overlay').toggleClass('show');
     });
 
-    $('#sidebarOverlay').click(function () {
+    $('#sidebarOverlay, #closeSidebar').click(function () {
         $('.sidebar').removeClass('open');
         $('.sidebar__overlay').removeClass('show');
     });

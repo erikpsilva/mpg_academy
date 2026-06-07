@@ -216,7 +216,7 @@
             </label>
 
             <div>
-                <p>Concordo com os <a href="#">Termos de Uso</a> e <a href="#">Política de Privacidade</a> da MPG Academy. <b>*</b></p>
+                <p>Concordo com os <a href="javascript:void(0)" class="termsLink" data-doc="termos">Termos de Uso</a> e <a href="javascript:void(0)" class="termsLink" data-doc="privacidade">Política de Privacidade</a> da MPG Academy. <b>*</b></p>
                 <small>Seus dados serão utilizados apenas para fins de comunicação e gestão da plataforma.</small>
             </div>
 
@@ -238,6 +238,20 @@
 $version = time();
 echo '<script src="' . BASE_URL . '/pages/cadastro/cadastro.js?' . $version . '"></script>';
 ?>
+
+<!-- Modal: visualizar termos / política -->
+<div class="docModal" id="docModal" style="display:none;" aria-modal="true" role="dialog">
+    <div class="docModal__overlay" id="docModalOverlay"></div>
+    <div class="docModal__dialog">
+        <div class="docModal__head">
+            <h3 class="docModal__title" id="docModalTitle"></h3>
+            <button class="docModal__close" id="docModalClose" aria-label="Fechar">✕</button>
+        </div>
+        <div class="docModal__body">
+            <iframe class="docModal__frame" id="docModalFrame" src="" title="Documento"></iframe>
+        </div>
+    </div>
+</div>
 
 </body>
 </html>

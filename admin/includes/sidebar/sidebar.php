@@ -1,4 +1,5 @@
 <aside class="sidebar">
+    <button class="sidebar__close" id="closeSidebar" aria-label="Fechar menu">&#10005;</button>
     <nav class="sidebar__nav">
         <ul class="sidebar__menu">
             <li class="sidebar__section">Home</li>

@@ -228,6 +228,40 @@ $(document).ready(() => {
         }
     });
 
+    // ─── Modal de documentos (Termos / Política) ──────────────────────────
+    var baseUrl = $('body').data('base-url') || '';
+
+    var docDocs = {
+        termos:      { title: 'Termos de Uso',          file: '/doc/MPG_Academy_Termos_de_Uso.pdf' },
+        privacidade: { title: 'Política de Privacidade', file: '/doc/MPG_Academy_Politica_de_Privacidade.pdf' }
+    };
+
+    function openDocModal(key) {
+        var doc = docDocs[key];
+        if (!doc) return;
+        $('#docModalTitle').text(doc.title);
+        $('#docModalFrame').attr('src', baseUrl + doc.file);
+        $('#docModal').fadeIn(180);
+        $('body').css('overflow', 'hidden');
+    }
+
+    function closeDocModal() {
+        $('#docModal').fadeOut(150, function () {
+            $('#docModalFrame').attr('src', '');
+        });
+        $('body').css('overflow', '');
+    }
+
+    $(document).on('click', '.termsLink', function () {
+        openDocModal($(this).data('doc'));
+    });
+
+    $('#docModalClose, #docModalOverlay').on('click', closeDocModal);
+
+    $(document).on('keydown', function (e) {
+        if (e.key === 'Escape') closeDocModal();
+    });
+
     // ─── Envio do formulário ──────────────────────────────────────────────────
     $('#studentSignupForm').on('submit', function submitSignup(event) {
         event.preventDefault();

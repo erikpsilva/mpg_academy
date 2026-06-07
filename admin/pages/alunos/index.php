@@ -27,6 +27,39 @@ if ($id > 0) {
     ");
     $turmasStmt->execute([$id]);
     $turmasDoAluno = $turmasStmt->fetchAll();
+
+    // Busca termo de responsabilidade (caso tenha feito aula teste como menor de idade)
+    $termoStmt = $pdo->prepare("
+        SELECT ts.token,
+               ts.assinante_escola_nome, ts.assinado_escola_em,
+               ts.responsavel_nome_assinado, ts.assinado_responsavel_em,
+               at.responsavel_nome, at.responsavel_email, at.responsavel_cpf,
+               at.data_nascimento,
+               t.nome AS turma_teste_nome
+        FROM alunos a
+        JOIN alunos_teste at ON at.email = a.email AND at.is_menor = 1
+        JOIN aulas_experimentais ae ON ae.aluno_teste_id = at.id
+        JOIN turmas t ON t.id = ae.turma_id
+        LEFT JOIN termo_assinaturas ts ON ts.aula_experimental_id = ae.id
+        WHERE a.id = ?
+        ORDER BY ae.criado_em DESC
+        LIMIT 1
+    ");
+    $termoStmt->execute([$id]);
+    $termoAluno = $termoStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+
+    if ($termoAluno) {
+        $escSigned  = !empty($termoAluno['assinado_escola_em']);
+        $respSigned = !empty($termoAluno['assinado_responsavel_em']);
+        if ($escSigned && $respSigned)   $termoAluno['status_label'] = 'Concluído';
+        elseif ($escSigned)              $termoAluno['status_label'] = 'Aguardando responsável';
+        elseif ($respSigned)             $termoAluno['status_label'] = 'Aguardando escola';
+        elseif ($termoAluno['token'])    $termoAluno['status_label'] = 'Gerado / Pendente';
+        else                             $termoAluno['status_label'] = 'Não gerado';
+
+        $termoAluno['status_class'] = ($escSigned && $respSigned) ? 'ok'
+            : (($escSigned || $respSigned) ? 'meio' : 'pendente');
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -126,6 +159,48 @@ if ($id > 0) {
                 </div>
 
                 <aside class="alunos__detailAside">
+
+                    <?php if ($termoAluno): ?>
+                    <div class="alunos__detalheCard alunos__termoCard">
+                        <div class="alunos__termoHeader">
+                            <h4>Termo de Responsabilidade</h4>
+                            <span class="alunos__termoBadge alunos__termoBadge--<?= $termoAluno['status_class'] ?>">
+                                <?= htmlspecialchars($termoAluno['status_label']) ?>
+                            </span>
+                        </div>
+                        <ul class="alunos__detalheList">
+                            <li><span>Responsável</span><strong><?= htmlspecialchars($termoAluno['responsavel_nome'] ?? '—') ?></strong></li>
+                            <li><span>E-mail resp.</span><strong><?= htmlspecialchars($termoAluno['responsavel_email'] ?? '—') ?></strong></li>
+                            <?php if ($termoAluno['responsavel_cpf']): ?>
+                            <li><span>CPF resp.</span><strong><?= htmlspecialchars($termoAluno['responsavel_cpf']) ?></strong></li>
+                            <?php endif; ?>
+                            <?php if ($termoAluno['data_nascimento']): ?>
+                            <li><span>Nasc. aluno</span><strong><?= date('d/m/Y', strtotime($termoAluno['data_nascimento'])) ?></strong></li>
+                            <?php endif; ?>
+                            <li><span>Turma do teste</span><strong><?= htmlspecialchars($termoAluno['turma_teste_nome'] ?? '—') ?></strong></li>
+                        </ul>
+                        <?php if ($termoAluno['assinante_escola_nome']): ?>
+                        <div class="alunos__termoAssinatura">
+                            <span>Ass. escola</span>
+                            <strong><?= htmlspecialchars($termoAluno['assinante_escola_nome']) ?></strong>
+                            <small><?= date('d/m/Y', strtotime($termoAluno['assinado_escola_em'])) ?></small>
+                        </div>
+                        <?php endif; ?>
+                        <?php if ($termoAluno['responsavel_nome_assinado']): ?>
+                        <div class="alunos__termoAssinatura">
+                            <span>Ass. responsável</span>
+                            <strong><?= htmlspecialchars($termoAluno['responsavel_nome_assinado']) ?></strong>
+                            <small><?= date('d/m/Y', strtotime($termoAluno['assinado_responsavel_em'])) ?></small>
+                        </div>
+                        <?php endif; ?>
+                        <?php if ($termoAluno['token']): ?>
+                        <a class="alunos__termoLink" href="<?= BASE_URL ?>/termo?token=<?= htmlspecialchars($termoAluno['token']) ?>" target="_blank">
+                            🔗 Ver / imprimir termo completo
+                        </a>
+                        <?php endif; ?>
+                    </div>
+                    <?php endif; ?>
+
                     <div class="alunos__detalheCard alunos__turmasCard">
                         <div class="alunos__turmasHeader">
                             <h4>Turmas e valores</h4>

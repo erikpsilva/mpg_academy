@@ -860,6 +860,69 @@
     }
 }
 
+// ── Termo de responsabilidade (card no detalhe do aluno) ─────────────────────
+
+.alunos {
+    &__termoCard {
+        border-color: rgba(255,213,0,.2);
+    }
+
+    &__termoHeader {
+        align-items: center;
+        display: flex;
+        gap: 10px;
+        justify-content: space-between;
+        margin-bottom: 16px;
+
+        h4 {
+            color: rgba(255,255,255,.45);
+            font-size: 11px;
+            font-weight: @semiBold;
+            letter-spacing: .5px;
+            margin: 0;
+            text-transform: uppercase;
+        }
+    }
+
+    &__termoBadge {
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: @bold;
+        padding: 3px 10px;
+        white-space: nowrap;
+
+        &--ok      { background: rgba(34,197,94,.12);   border: 1px solid rgba(34,197,94,.28);   color: #4ade80; }
+        &--meio    { background: rgba(251,191,36,.12);  border: 1px solid rgba(251,191,36,.28);  color: #fbbf24; }
+        &--pendente { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.14); color: rgba(255,255,255,.4); }
+    }
+
+    &__termoAssinatura {
+        background: rgba(255,255,255,.03);
+        border: 1px solid rgba(255,255,255,.07);
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        margin-top: 10px;
+        padding: 10px 14px;
+
+        span  { color: rgba(255,255,255,.38); font-size: 10px; letter-spacing: .4px; text-transform: uppercase; }
+        strong { color: @white; font-size: 13px; }
+        small  { color: rgba(255,255,255,.35); font-size: 11px; }
+    }
+
+    &__termoLink {
+        display: block;
+        color: rgba(255,213,0,.75);
+        font-size: 13px;
+        margin-top: 14px;
+        text-decoration: none;
+        text-align: center;
+
+        &:hover { color: @yellow; text-decoration: underline; }
+    }
+}
+
 // ── Status badge ──────────────────────────────────────────────────────────────
 
 .statusBadge {

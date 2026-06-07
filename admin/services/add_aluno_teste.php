@@ -19,14 +19,23 @@ if (empty($_SESSION['usuario'])) {
     exit;
 }
 
-$nome         = trim($_POST['nome']         ?? '');
-$email        = trim($_POST['email']        ?? '') ?: null;
-$celular      = trim($_POST['celular']      ?? '') ?: null;
-$turmaId      = (int) ($_POST['turma_id']   ?? 0);
-$dataAgendada = trim($_POST['data_agendada'] ?? '');
+$nome             = trim($_POST['nome']             ?? '');
+$email            = trim($_POST['email']            ?? '') ?: null;
+$celular          = trim($_POST['celular']          ?? '') ?: null;
+$turmaId          = (int) ($_POST['turma_id']       ?? 0);
+$dataAgendada     = trim($_POST['data_agendada']    ?? '');
+$isMenor           = ($_POST['is_menor'] ?? '0') === '1' ? 1 : 0;
+$dataNascimento    = $isMenor ? (trim($_POST['data_nascimento']    ?? '') ?: null) : null;
+$responsavelNome   = $isMenor ? (trim($_POST['responsavel_nome']   ?? '') ?: null) : null;
+$responsavelEmail  = $isMenor ? (trim($_POST['responsavel_email']  ?? '') ?: null) : null;
+$responsavelCpf    = $isMenor ? (trim($_POST['responsavel_cpf']    ?? '') ?: null) : null;
+$responsavelCelular = $isMenor ? (trim($_POST['responsavel_celular'] ?? '') ?: null) : null;
 
 if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $dataAgendada)) {
     $dataAgendada = null;
+}
+if ($dataNascimento && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $dataNascimento)) {
+    $dataNascimento = null;
 }
 
 if (!$nome || $turmaId <= 0) {
@@ -38,18 +47,22 @@ if (!$nome || $turmaId <= 0) {
 require_once dirname(__FILE__, 3) . '/config/database.php';
 $pdo = getDbConnection();
 
-// Bloqueia e-mail que já realizou teste
+// Bloqueia e-mail duplicado em qualquer status ativo
 if ($email) {
     $checkStmt = $pdo->prepare("
-        SELECT ae.id FROM aulas_experimentais ae
+        SELECT ae.id, ae.status FROM aulas_experimentais ae
         JOIN alunos_teste at ON at.id = ae.aluno_teste_id
-        WHERE at.email = ? AND ae.status = 'realizada'
+        WHERE at.email = ? AND ae.status IN ('agendada', 'fila', 'realizada')
         LIMIT 1
     ");
     $checkStmt->execute([$email]);
-    if ($checkStmt->fetch()) {
+    $existing = $checkStmt->fetch(PDO::FETCH_ASSOC);
+    if ($existing) {
+        $msg = $existing['status'] === 'realizada'
+            ? 'Este e-mail já realizou uma aula experimental.'
+            : 'Este e-mail já está cadastrado em uma aula experimental (agendada ou na fila).';
         http_response_code(409);
-        echo json_encode(['success' => false, 'message' => 'Este e-mail já realizou uma aula experimental e não pode se cadastrar novamente.']);
+        echo json_encode(['success' => false, 'message' => $msg]);
         exit;
     }
 }
@@ -97,9 +110,10 @@ try {
 
     // Insere o aluno teste
     $insAluno = $pdo->prepare(
-        "INSERT INTO alunos_teste (nome, email, celular) VALUES (?, ?, ?)"
+        "INSERT INTO alunos_teste (nome, email, celular, is_menor, data_nascimento, responsavel_nome, responsavel_email, responsavel_cpf, responsavel_celular)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
     );
-    $insAluno->execute([$nome, $email, $celular]);
+    $insAluno->execute([$nome, $email, $celular, $isMenor, $dataNascimento, $responsavelNome, $responsavelEmail, $responsavelCpf, $responsavelCelular]);
     $alunoTesteId = (int) $pdo->lastInsertId();
 
     // Insere a aula experimental
@@ -144,6 +158,29 @@ try {
 
         require_once dirname(__FILE__, 3) . '/services/site/email_template.php';
         sendMpgTesteConfirmation($email, $nome, $turmaData['nome'], $dataFmt, $horarioFmt, $endFmt);
+
+        // WhatsApp — confirmação imediata
+        require_once dirname(__FILE__, 3) . '/config/app.php';
+        require_once dirname(__FILE__, 3) . '/services/whatsapp/wpp_aula_teste_confirmacao.php';
+
+        $termoUrl = '';
+        if ($isMenor) {
+            $stmtTermo = $pdo->prepare("SELECT token FROM termo_assinaturas WHERE aula_experimental_id = ? LIMIT 1");
+            $stmtTermo->execute([$aulaId]);
+            $termoRow = $stmtTermo->fetch(PDO::FETCH_ASSOC);
+            if ($termoRow && $termoRow['token']) {
+                $termoUrl = BASE_URL . '/termo?token=' . $termoRow['token'];
+            }
+        }
+
+        $alunoWpp = [
+            'nome'                => $nome,
+            'celular'             => $celular,
+            'is_menor'            => $isMenor,
+            'responsavel_nome'    => $responsavelNome,
+            'responsavel_celular' => $responsavelCelular,
+        ];
+        wppAulaTesteConfirmacao($alunoWpp, $turmaData, $dataFmt, $horarioFmt, $termoUrl);
     }
 
     echo json_encode([

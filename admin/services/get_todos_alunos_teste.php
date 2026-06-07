@@ -22,12 +22,17 @@ $stmtParaFazer = $pdo->query("
         ae.id, ae.status, ae.data_agendada, ae.criado_em,
         at.id   AS aluno_teste_id,
         at.nome, at.email, at.celular,
+        at.is_menor, at.responsavel_nome, at.responsavel_email,
         t.nome  AS turma_nome, t.nivel,
-        q.nome  AS quadra_nome
+        q.nome  AS quadra_nome,
+        ts.token                AS termo_token,
+        ts.assinado_escola_em,
+        ts.assinado_responsavel_em
     FROM aulas_experimentais ae
     JOIN alunos_teste at ON at.id = ae.aluno_teste_id
     JOIN turmas t        ON t.id  = ae.turma_id
     JOIN quadras q       ON q.id  = t.quadra_id
+    LEFT JOIN termo_assinaturas ts ON ts.aula_experimental_id = ae.id
     WHERE ae.status IN ('agendada', 'fila')
     ORDER BY ae.data_agendada ASC, ae.criado_em ASC
 ");
@@ -36,6 +41,20 @@ $paraFazer = $stmtParaFazer->fetchAll(PDO::FETCH_ASSOC);
 foreach ($paraFazer as &$r) {
     $r['id']             = (int) $r['id'];
     $r['aluno_teste_id'] = (int) $r['aluno_teste_id'];
+    $r['is_menor']       = (int) $r['is_menor'];
+
+    $termoStatus = null;
+    if ($r['termo_token']) {
+        $escSigned  = !empty($r['assinado_escola_em']);
+        $respSigned = !empty($r['assinado_responsavel_em']);
+        if ($escSigned && $respSigned)   $termoStatus = 'concluido';
+        elseif ($escSigned)              $termoStatus = 'aguardando_responsavel';
+        elseif ($respSigned)             $termoStatus = 'aguardando_escola';
+        else                             $termoStatus = 'pendente';
+    } elseif ($r['is_menor']) {
+        $termoStatus = 'nao_gerado';
+    }
+    $r['termo_status'] = $termoStatus;
 }
 unset($r);
 
@@ -47,13 +66,17 @@ $stmtJaFizeram = $pdo->query("
         ae.id, ae.criado_em,
         at.id   AS aluno_teste_id,
         at.nome, at.email, at.celular,
+        at.is_menor, at.responsavel_nome, at.responsavel_email,
         t.id    AS turma_id, t.nome AS turma_nome, t.max_alunos,
         q.nome  AS quadra_nome,
         (SELECT COUNT(*) FROM turma_alunos ta
             WHERE ta.turma_id = t.id AND ta.status = 'ativo') AS alunos_ativos,
         CASE WHEN a.id IS NOT NULL THEN 1 ELSE 0 END           AS ja_aluno,
         CASE WHEN fe.id IS NOT NULL THEN 1 ELSE 0 END          AS na_fila,
-        fe_t.nome                                               AS fila_turma_nome
+        fe_t.nome                                               AS fila_turma_nome,
+        ts.token                AS termo_token,
+        ts.assinado_escola_em,
+        ts.assinado_responsavel_em
     FROM aulas_experimentais ae
     JOIN alunos_teste at  ON at.id  = ae.aluno_teste_id
     JOIN turmas t         ON t.id   = ae.turma_id
@@ -61,6 +84,7 @@ $stmtJaFizeram = $pdo->query("
     LEFT JOIN alunos a    ON a.email = at.email AND a.status = 'ativo'
     LEFT JOIN fila_espera fe   ON fe.aluno_teste_id = at.id AND fe.status = 'aguardando'
     LEFT JOIN turmas fe_t      ON fe_t.id = fe.turma_id
+    LEFT JOIN termo_assinaturas ts ON ts.aula_experimental_id = ae.id
     WHERE ae.status = 'realizada'
     ORDER BY ja_aluno ASC, ae.criado_em DESC
 ");
@@ -75,8 +99,22 @@ foreach ($jaFizeram as &$r) {
     $r['vagas']          = $r['max_alunos'] !== null
         ? max(0, $r['max_alunos'] - $r['alunos_ativos'])
         : null;
-    $r['ja_aluno'] = (int) $r['ja_aluno'];
-    $r['na_fila']  = (int) $r['na_fila'];
+    $r['ja_aluno']  = (int) $r['ja_aluno'];
+    $r['na_fila']   = (int) $r['na_fila'];
+    $r['is_menor']  = (int) $r['is_menor'];
+
+    $termoStatus = null;
+    if ($r['termo_token']) {
+        $escSigned  = !empty($r['assinado_escola_em']);
+        $respSigned = !empty($r['assinado_responsavel_em']);
+        if ($escSigned && $respSigned)   $termoStatus = 'concluido';
+        elseif ($escSigned)              $termoStatus = 'aguardando_responsavel';
+        elseif ($respSigned)             $termoStatus = 'aguardando_escola';
+        else                             $termoStatus = 'pendente';
+    } elseif ($r['is_menor']) {
+        $termoStatus = 'nao_gerado';
+    }
+    $r['termo_status'] = $termoStatus;
 }
 unset($r);
 

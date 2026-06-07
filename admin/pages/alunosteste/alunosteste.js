@@ -10,7 +10,15 @@ const maskPhone = (v) => {
     return v;
 };
 
-let turmasParaTeste = []; // carregado ao abrir o modal
+const maskCpf = (v) => {
+    v = v.replace(/\D/g, '').slice(0, 11);
+    if (v.length > 9)      return v.replace(/^(\d{3})(\d{3})(\d{3})(\d+)/, '$1.$2.$3-$4');
+    if (v.length > 6)      return v.replace(/^(\d{3})(\d{3})(\d+)/, '$1.$2.$3');
+    if (v.length > 3)      return v.replace(/^(\d{3})(\d+)/, '$1.$2');
+    return v;
+};
+
+let turmasParaTeste = [];
 
 const fmtData = (str) => {
     if (!str) return '—';
@@ -19,8 +27,26 @@ const fmtData = (str) => {
 };
 
 const fmtDataCriado = (str) => {
-    const d = new Date(str);
-    return d.toLocaleDateString('pt-BR');
+    if (!str) return '—';
+    const [y, m, d] = str.split('T')[0].split('-');
+    return d + '/' + m + '/' + y;
+};
+
+
+// ── Badges de status do termo ────────────────────────────────────────────────
+
+const termoBadge = (f) => {
+    if (!f.menor && !f.responsavel_nome) return '';
+    if (!f.termo_status) {
+        return '<span class="adminTesteTermo adminTesteTermo--pendente">📋 Termo pendente</span>';
+    }
+    const map = {
+        concluido:              '<span class="adminTesteTermo adminTesteTermo--ok">✅ Termo assinado</span>',
+        aguardando_responsavel: '<span class="adminTesteTermo adminTesteTermo--meio">🕐 Aguard. responsável</span>',
+        aguardando_escola:      '<span class="adminTesteTermo adminTesteTermo--meio">🕐 Aguard. escola</span>',
+        pendente:               '<span class="adminTesteTermo adminTesteTermo--pendente">📋 Termo pendente</span>',
+    };
+    return map[f.termo_status] || '';
 };
 
 // ── Render principal ──────────────────────────────────────────────────────────
@@ -40,20 +66,49 @@ const renderItem = (f, tipo) => {
         ? '<span class="adminTesteItem__num">' + f.pos + '</span>'
         : '';
 
-    return '<div class="adminTesteItem">' +
+    const termoAcoes = buildTermoAcoes(f);
+
+    return '<div class="adminTesteItem" data-id="' + f.id + '">' +
         numBadge +
         '<div class="adminTesteItem__info">' +
             '<strong>' + $('<span>').text(f.nome).html() + '</strong>' +
+            (f.menor ? '<span class="adminTesteItem__menor">Menor de idade</span>' : '') +
             '<span>' +
                 (f.email  ? $('<span>').text(f.email).html()   : '') +
                 (f.email && f.celular ? ' &nbsp;·&nbsp; ' : '') +
                 (f.celular ? $('<span>').text(f.celular).html() : '') +
                 (!f.email && !f.celular ? '<em>Sem contato</em>' : '') +
             '</span>' +
+            (f.responsavel_nome ? '<span class="adminTesteItem__resp">Resp.: ' + $('<span>').text(f.responsavel_nome).html() + '</span>' : '') +
         '</div>' +
-        '<span class="adminTesteItem__data">' + dtLabel + '</span>' +
-        '<div class="adminTesteItem__acoes">' + acoes + '</div>' +
+        '<div class="adminTesteItem__right">' +
+            '<span class="adminTesteItem__data">' + dtLabel + '</span>' +
+            termoBadge(f) +
+            '<div class="adminTesteItem__acoes">' +
+                '<button class="btn--testeAcao btn--editarTeste" data-item=\'' + JSON.stringify(f).replace(/'/g, '&#39;') + '\'>✏ Editar</button>' +
+                acoes +
+            '</div>' +
+            (termoAcoes ? '<div class="adminTesteItem__termoAcoes">' + termoAcoes + '</div>' : '') +
+        '</div>' +
     '</div>';
+};
+
+const buildTermoAcoes = (f) => {
+    if (!f.menor && !f.responsavel_nome) return '';
+    const btns = [];
+
+    if (!f.assinado_escola_em) {
+        btns.push('<button class="btn--testeAcao btn--assinarEscola" data-id="' + f.id + '">✍ Assinar (escola)</button>');
+    }
+    if (f.responsavel_email && f.termo_status !== 'concluido') {
+        btns.push('<button class="btn--testeAcao btn--enviarTermo" data-id="' + f.id + '">📧 Enviar termo resp.</button>');
+    }
+    if (f.termo_token) {
+        const url = BASE_URL + '/termo?token=' + f.termo_token;
+        btns.push('<a class="btn--testeAcao btn--verTermo" href="' + url + '" target="_blank">🔗 Ver termo</a>');
+    }
+
+    return btns.join('');
 };
 
 const renderBloco = (turma) => {
@@ -211,22 +266,22 @@ const carregarDados = () => {
     });
 };
 
-// ── Modal ─────────────────────────────────────────────────────────────────────
+
+// ── Modal: CADASTRO ───────────────────────────────────────────────────────────
 
 const openModal = () => {
-    $('#testeNome, #testeEmail, #testeCelular').val('');
+    $('#testeNome, #testeEmail, #testeCelular, #testeDataNasc, #testeRespNome, #testeRespEmail, #testeRespCpf, #testeRespCelular').val('');
     $('#testeData').val(new Date().toISOString().split('T')[0]);
+    $('#testeMenorCheck').prop('checked', false);
     $('#testeAviso').text('').hide();
+    $('#testeResponsavelSection').hide();
     $('#adminTesteSubmitBtn').prop('disabled', false).text('Cadastrar');
     $('#testeTurma').html('<option value="">Carregando turmas...</option>');
     $('#adminTesteModal').addClass('is-open');
     $('body').addClass('modal-open');
 
     $.get(ADMIN_BASE_URL + '/services/get_turmas_para_teste.php', (res) => {
-        if (!res.success) {
-            $('#testeTurma').html('<option value="">Erro ao carregar turmas</option>');
-            return;
-        }
+        if (!res.success) { $('#testeTurma').html('<option value="">Erro ao carregar turmas</option>'); return; }
         turmasParaTeste = res.turmas;
         const opts = res.turmas.map(t => {
             const vagaInfo = t.max_alunos === null
@@ -249,17 +304,13 @@ const atualizarAviso = () => {
     const selected = $('#testeTurma option:selected');
     const vagas = parseInt(selected.data('vagas'));
     const aviso = $('#testeAviso');
-
     if (!selected.val()) { aviso.text('').hide(); return; }
-
     if (isNaN(vagas) || vagas > 0) {
         aviso.removeClass('is-fila').addClass('is-ok')
-            .text(isNaN(vagas) ? 'Turma sem limite de vagas.' : vagas + ' vaga(s) de teste disponível(is).')
-            .show();
+            .text(isNaN(vagas) ? 'Turma sem limite de vagas.' : vagas + ' vaga(s) de teste disponível(is).').show();
     } else {
         aviso.removeClass('is-ok').addClass('is-fila')
-            .text('Sem vagas de teste disponíveis — o aluno entrará na fila de espera para teste.')
-            .show();
+            .text('Sem vagas de teste disponíveis — o aluno entrará na fila de espera para teste.').show();
     }
 };
 
@@ -270,34 +321,163 @@ const submitForm = (e) => {
     const celular = $('#testeCelular').val().trim();
     const turmaId = $('#testeTurma').val();
     const data    = $('#testeData').val();
+    const isMenor = $('#testeMenorCheck').is(':checked') ? 1 : 0;
+    const dataNasc    = isMenor ? $('#testeDataNasc').val() : '';
+    const respNome    = isMenor ? $('#testeRespNome').val().trim() : '';
+    const respEmail   = isMenor ? $('#testeRespEmail').val().trim() : '';
+    const respCpf     = isMenor ? $('#testeRespCpf').val().trim() : '';
+    const respCelular = isMenor ? $('#testeRespCelular').val().trim() : '';
 
-    if (!nome || !turmaId) {
-        alert('Preencha o nome e selecione a turma.');
-        return;
-    }
+    if (!nome || !turmaId) { alert('Preencha o nome e selecione a turma.'); return; }
 
     const btn = $('#adminTesteSubmitBtn').prop('disabled', true).text('...');
 
     $.post(ADMIN_BASE_URL + '/services/add_aluno_teste.php', {
-        nome, email, celular,
-        turma_id:      turmaId,
-        data_agendada: data,
+        nome, email, celular, turma_id: turmaId, data_agendada: data,
+        is_menor: isMenor,
+        data_nascimento: dataNasc,
+        responsavel_nome: respNome, responsavel_email: respEmail,
+        responsavel_cpf: respCpf, responsavel_celular: respCelular,
     }, (res) => {
-        if (res.success) {
-            closeModal();
-            carregarDados();
-        } else {
-            btn.prop('disabled', false).text('Cadastrar');
-            alert(res.message || 'Erro ao cadastrar.');
-        }
+        if (res.success) { closeModal(); carregarDados(); }
+        else { btn.prop('disabled', false).text('Cadastrar'); alert(res.message || 'Erro ao cadastrar.'); }
     }, 'json').fail((xhr) => {
         btn.prop('disabled', false).text('Cadastrar');
-        try {
-            const r = JSON.parse(xhr.responseText);
-            alert(r.message || 'Erro ao cadastrar.');
-        } catch (e) {
-            alert('Erro ao comunicar com o servidor.');
-        }
+        try { alert(JSON.parse(xhr.responseText).message || 'Erro.'); } catch(e2) { alert('Erro ao comunicar.'); }
+    });
+};
+
+// ── Modal: EDITAR ─────────────────────────────────────────────────────────────
+
+const openEditModal = (f) => {
+    const menor = !!(f.menor);
+    $('#editId').val(f.id);
+    $('#editNome').val(f.nome || '');
+    $('#editEmail').val(f.email || '');
+    $('#editCelular').val(f.celular || '');
+    $('#editData').val(f.data_agendada || '');
+    $('#editMenorCheck').prop('checked', menor);
+    $('#editDataNasc').val(f.data_nascimento || '');
+    $('#editRespNome').val(f.responsavel_nome || '');
+    $('#editRespEmail').val(f.responsavel_email || '');
+    $('#editRespCpf').val(f.responsavel_cpf || '');
+    $('#editRespCelular').val(f.responsavel_celular || '');
+    $('#editResponsavelSection').toggle(menor);
+    $('#adminTesteEditSubmitBtn').prop('disabled', false).text('Salvar alterações');
+
+    $('#editTurma').html('<option value="">Carregando...</option>');
+    $.get(ADMIN_BASE_URL + '/services/get_turmas_para_teste.php', (res) => {
+        if (!res.success) { $('#editTurma').html('<option value="">Erro</option>'); return; }
+        const opts = res.turmas.map(t =>
+            '<option value="' + t.id + '">' + t.nome + ' — ' + t.quadra_nome + '</option>'
+        );
+        $('#editTurma').html('<option value="">Selecione...</option>' + opts.join(''));
+        if (f.turma_id) $('#editTurma').val(f.turma_id);
+    }, 'json');
+
+    $('#adminTesteEditModal').addClass('is-open');
+    $('body').addClass('modal-open');
+};
+
+const closeEditModal = () => {
+    $('#adminTesteEditModal').removeClass('is-open');
+    $('body').removeClass('modal-open');
+};
+
+const submitEditForm = (e) => {
+    e.preventDefault();
+    const id      = $('#editId').val();
+    const nome    = $('#editNome').val().trim();
+    const turmaId = $('#editTurma').val();
+    if (!nome || !turmaId) { alert('Preencha nome e turma.'); return; }
+
+    const btn = $('#adminTesteEditSubmitBtn').prop('disabled', true).text('Salvando...');
+
+    const isMenorEdit = $('#editMenorCheck').is(':checked') ? 1 : 0;
+    $.post(ADMIN_BASE_URL + '/services/update_aluno_teste.php', {
+        id,
+        nome,
+        email:             $('#editEmail').val().trim(),
+        celular:           $('#editCelular').val().trim(),
+        is_menor:          isMenorEdit,
+        data_nascimento:   isMenorEdit ? $('#editDataNasc').val() : '',
+        turma_id:          turmaId,
+        data_agendada:     $('#editData').val(),
+        responsavel_nome:    isMenorEdit ? $('#editRespNome').val().trim() : '',
+        responsavel_email:   isMenorEdit ? $('#editRespEmail').val().trim() : '',
+        responsavel_cpf:     isMenorEdit ? $('#editRespCpf').val().trim() : '',
+        responsavel_celular: isMenorEdit ? $('#editRespCelular').val().trim() : '',
+    }, (res) => {
+        if (res.success) { closeEditModal(); carregarDados(); }
+        else { btn.prop('disabled', false).text('Salvar alterações'); alert(res.message || 'Erro ao salvar.'); }
+    }, 'json').fail(() => {
+        btn.prop('disabled', false).text('Salvar alterações');
+        alert('Erro ao comunicar com o servidor.');
+    });
+};
+
+// ── Modal: ASSINAR ESCOLA ─────────────────────────────────────────────────────
+
+let adminsLista = [];
+
+const openAssinarModal = (aulaId) => {
+    $('#assinarAulaId').val(aulaId);
+    $('#assinarAdminSelect').html('<option value="">Carregando...</option>');
+    $('#assinarPreview').html('');
+    $('#adminTesteAssinarSubmitBtn').prop('disabled', false).text('✍ Confirmar assinatura');
+    $('#adminTesteAssinarModal').addClass('is-open');
+    $('body').addClass('modal-open');
+
+    if (adminsLista.length) {
+        populateAdminSelect();
+    } else {
+        $.get(ADMIN_BASE_URL + '/services/get_admins_lista.php', (res) => {
+            if (res.success) { adminsLista = res.admins; populateAdminSelect(); }
+            else { $('#assinarAdminSelect').html('<option value="">Erro ao carregar</option>'); }
+        }, 'json');
+    }
+};
+
+const populateAdminSelect = () => {
+    const opts = adminsLista.map(a =>
+        '<option value="' + a.id + '" data-nome="' + $('<span>').text(a.nome_completo).html() + '">' +
+        a.nome_completo + ' (' + a.nivel_acesso + ')' +
+        '</option>'
+    );
+    $('#assinarAdminSelect').html('<option value="">Selecione o responsável...</option>' + opts.join(''));
+    updateAssinarPreview();
+};
+
+const updateAssinarPreview = () => {
+    const nome = $('#assinarAdminSelect option:selected').data('nome') || '';
+    $('#assinarPreview').html(nome
+        ? '<div class="adminTesteModal__assPreviewNome">' + $('<span>').text(nome).html() + '</div>' +
+          '<div class="adminTesteModal__assPreviewLabel">MPG Academy</div>'
+        : '');
+};
+
+const closeAssinarModal = () => {
+    $('#adminTesteAssinarModal').removeClass('is-open');
+    $('body').removeClass('modal-open');
+};
+
+const submitAssinar = () => {
+    const aulaId    = $('#assinarAulaId').val();
+    const sel       = $('#assinarAdminSelect option:selected');
+    const adminId   = sel.val();
+    const adminNome = sel.data('nome');
+    if (!adminId) { alert('Selecione o responsável pela escola.'); return; }
+
+    const btn = $('#adminTesteAssinarSubmitBtn').prop('disabled', true).text('Assinando...');
+
+    $.post(ADMIN_BASE_URL + '/services/assinar_escola.php', {
+        aula_id: aulaId, admin_id: adminId, admin_nome: adminNome,
+    }, (res) => {
+        if (res.success) { closeAssinarModal(); carregarDados(); }
+        else { btn.prop('disabled', false).text('✍ Confirmar assinatura'); alert(res.message || 'Erro.'); }
+    }, 'json').fail(() => {
+        btn.prop('disabled', false).text('✍ Confirmar assinatura');
+        alert('Erro ao comunicar com o servidor.');
     });
 };
 
@@ -308,12 +488,8 @@ const atualizar = (id, action, btn) => {
     btn.prop('disabled', true).text(labels[action] || '...');
 
     $.post(ADMIN_BASE_URL + '/services/update_aula_experimental.php', { id, action }, (res) => {
-        if (res.success) {
-            carregarDados();
-        } else {
-            btn.prop('disabled', false).text(btn.data('label'));
-            alert(res.message || 'Erro ao atualizar.');
-        }
+        if (res.success) { carregarDados(); }
+        else { btn.prop('disabled', false).text(btn.data('label')); alert(res.message || 'Erro ao atualizar.'); }
     }, 'json').fail(() => {
         btn.prop('disabled', false).text(btn.data('label'));
         alert('Erro ao comunicar com o servidor.');
@@ -327,18 +503,64 @@ $(document).ready(() => {
 
     $(document).on('click', '#btnNovoTeste', openModal);
     $(document).on('click', '#adminTesteModalClose, #adminTesteModalOverlay, #adminTesteCancelBtn', closeModal);
-    $(document).on('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+    $(document).on('keydown', (e) => { if (e.key === 'Escape') { closeModal(); closeEditModal(); closeAssinarModal(); } });
 
-    $(document).on('input', '#testeCelular', function () {
-        const cur = this.selectionStart;
-        const prev = this.value.length;
+    $(document).on('input', '#testeCelular, #editCelular, #testeRespCelular, #editRespCelular', function () {
+        const cur = this.selectionStart, prev = this.value.length;
         this.value = maskPhone(this.value);
         const diff = this.value.length - prev;
         this.setSelectionRange(cur + diff, cur + diff);
     });
 
+    $(document).on('input', '#testeRespCpf, #editRespCpf', function () {
+        this.value = maskCpf(this.value);
+    });
+
+    $(document).on('change', '#testeMenorCheck', function () {
+        const checked = $(this).is(':checked');
+        $('#testeResponsavelSection').toggle(checked);
+        if (!checked) {
+            $('#testeDataNasc, #testeRespNome, #testeRespEmail, #testeRespCpf, #testeRespCelular').val('');
+        }
+    });
+    $(document).on('change', '#editMenorCheck', function () {
+        const checked = $(this).is(':checked');
+        $('#editResponsavelSection').toggle(checked);
+        if (!checked) {
+            $('#editDataNasc, #editRespNome, #editRespEmail, #editRespCpf, #editRespCelular').val('');
+        }
+    });
+
     $(document).on('change', '#testeTurma', atualizarAviso);
     $(document).on('submit', '#adminTesteForm', submitForm);
+
+    $(document).on('click', '.btn--editarTeste', function () {
+        const f = JSON.parse($(this).attr('data-item'));
+        openEditModal(f);
+    });
+    $(document).on('click', '#adminTesteEditClose, #adminTesteEditOverlay, #adminTesteEditCancelBtn', closeEditModal);
+    $(document).on('submit', '#adminTesteEditForm', submitEditForm);
+
+    $(document).on('click', '.btn--assinarEscola', function () {
+        openAssinarModal($(this).data('id'));
+    });
+    $(document).on('click', '#adminTesteAssinarClose, #adminTesteAssinarOverlay, #adminTesteAssinarCancelBtn', closeAssinarModal);
+    $(document).on('click', '#adminTesteAssinarSubmitBtn', submitAssinar);
+    $(document).on('change', '#assinarAdminSelect', updateAssinarPreview);
+
+    $(document).on('click', '.btn--enviarTermo', function () {
+        const btn = $(this);
+        const aulaId = btn.data('id');
+        if (!confirm('Enviar o termo de responsabilidade por e-mail ao responsável cadastrado?')) return;
+        btn.prop('disabled', true).text('Enviando...');
+        $.post(ADMIN_BASE_URL + '/services/enviar_termo_responsavel.php', { aula_id: aulaId }, (res) => {
+            if (res.success) { btn.text('✓ Enviado').css('opacity', '.6'); carregarDados(); }
+            else { btn.prop('disabled', false).text('📧 Enviar termo resp.'); alert(res.message || 'Erro.'); }
+        }, 'json').fail(() => {
+            btn.prop('disabled', false).text('📧 Enviar termo resp.');
+            alert('Erro ao comunicar com o servidor.');
+        });
+    });
 
     $(document).on('click', '.btn--realizar', function () {
         const id = parseInt($(this).data('id'));
@@ -376,16 +598,10 @@ $(document).ready(() => {
         const nome  = btn.data('nome');
         const email = btn.data('email');
         if (!confirm('Enviar email de cadastro para ' + nome + ' (' + email + ')?')) return;
-
         btn.prop('disabled', true).text('Enviando...');
-
         $.post(ADMIN_BASE_URL + '/services/enviar_email_cadastro.php', { nome, email }, (res) => {
-            if (res.success) {
-                btn.text('✓ Enviado').css('opacity', '0.6');
-            } else {
-                btn.prop('disabled', false).text('Enviar email de cadastro');
-                alert(res.message || 'Erro ao enviar e-mail.');
-            }
+            if (res.success) btn.text('✓ Enviado').css('opacity', '0.6');
+            else { btn.prop('disabled', false).text('Enviar email de cadastro'); alert(res.message || 'Erro.'); }
         }, 'json').fail(() => {
             btn.prop('disabled', false).text('Enviar email de cadastro');
             alert('Erro ao comunicar com o servidor.');

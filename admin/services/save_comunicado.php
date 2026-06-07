@@ -36,7 +36,14 @@ if ($titulo === '') {
 require_once dirname(__FILE__, 3) . '/config/database.php';
 $pdo = getDbConnection();
 
+$eraPublicado = false;
 if ($id > 0) {
+    // Verifica se já estava publicado antes de editar
+    $stCheck = $pdo->prepare("SELECT publicado FROM comunicados WHERE id = ?");
+    $stCheck->execute([$id]);
+    $anterior = $stCheck->fetch(PDO::FETCH_ASSOC);
+    $eraPublicado = $anterior && (int)$anterior['publicado'] === 1;
+
     $st = $pdo->prepare("
         UPDATE comunicados
         SET titulo = ?, conteudo = ?, imagem = ?, tag = ?, destaque = ?, publicado = ?
@@ -50,6 +57,28 @@ if ($id > 0) {
     ");
     $st->execute([$titulo, $conteudo, $imagem ?: null, $tag ?: null, $destaque, $publicado]);
     $id = (int) $pdo->lastInsertId();
+}
+
+// Dispara WhatsApp apenas quando comunicado é publicado pela primeira vez
+if ($publicado && !$eraPublicado) {
+    require_once dirname(__FILE__, 3) . '/config/app.php';
+    require_once dirname(__FILE__, 3) . '/services/whatsapp/zapi.php';
+
+    $stAlunos = $pdo->query("
+        SELECT a.nome, a.celular
+        FROM alunos a
+        WHERE a.status = 'ativo' AND a.celular IS NOT NULL AND a.celular != ''
+    ");
+    $alunos = $stAlunos->fetchAll(PDO::FETCH_ASSOC);
+
+    $areaUrl = BASE_URL . '/aluno';
+    foreach ($alunos as $aluno) {
+        $nomePrimeiro = explode(' ', trim($aluno['nome']))[0];
+        $msg  = "Olá, *{$nomePrimeiro}*! 📢\n\n";
+        $msg .= "A *MPG Academy* tem uma novidade para você!\n\n";
+        $msg .= "Acesse sua área do aluno para conferir:\n🔗 {$areaUrl}";
+        sendWhatsApp(formatPhoneZapi($aluno['celular']), $msg);
+    }
 }
 
 echo json_encode(['success' => true, 'id' => $id]);
