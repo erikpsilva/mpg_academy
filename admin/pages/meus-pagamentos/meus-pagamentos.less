@@ -1,0 +1,134 @@
+.meusPgto {
+    max-width: 720px;
+    padding: 32px 0;
+
+    &__header {
+        margin-bottom: 28px;
+    }
+
+    &__title {
+        color: @white;
+        font-size: 28px;
+        font-weight: @bold;
+        margin-bottom: 6px;
+
+        span { color: @alert; }
+    }
+
+    &__sub {
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 14px;
+    }
+
+    &__resumo {
+        display: grid;
+        gap: 14px;
+        grid-template-columns: repeat(3, 1fr);
+        margin-bottom: 28px;
+
+        @media @tablet { grid-template-columns: 1fr 1fr; }
+        @media @tabletSM { grid-template-columns: 1fr; }
+    }
+
+    &__resumoCard {
+        background:
+            radial-gradient(circle at 100% 0, rgba(255, 213, 0, 0.07), transparent 60%),
+            rgba(17, 19, 21, 0.94);
+        border: 1px solid @borderColor;
+        border-radius: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 18px 20px;
+    }
+
+    &__resumoLabel {
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 11px;
+        font-weight: @bold;
+        letter-spacing: .05em;
+        text-transform: uppercase;
+    }
+
+    &__resumoValor {
+        color: @white;
+        font-size: 22px;
+        font-weight: @bold;
+    }
+
+    &__loading,
+    &__empty {
+        color: rgba(255, 255, 255, 0.32);
+        font-size: 14px;
+        padding: 48px;
+        text-align: center;
+    }
+
+    &__list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    &__item {
+        align-items: center;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid @borderColor;
+        border-radius: 12px;
+        display: flex;
+        gap: 16px;
+        justify-content: space-between;
+        padding: 18px 22px;
+        .transition(0.18s border-color);
+
+        &:hover { border-color: rgba(255, 213, 0, 0.2); }
+    }
+
+    &__item-main {
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+    }
+
+    &__valor {
+        color: #4ade80;
+        font-size: 22px;
+        font-weight: @bold;
+    }
+
+    &__meta {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 12px;
+    }
+
+    &__data {
+        color: rgba(255, 255, 255, 0.75);
+        font-size: 13px;
+    }
+
+    &__ref {
+        background: rgba(255, 213, 0, 0.1);
+        border-radius: 5px;
+        color: @alert;
+        font-size: 11px;
+        font-weight: @bold;
+        padding: 2px 8px;
+    }
+
+    &__obs {
+        color: rgba(255, 255, 255, 0.4);
+        font-size: 12px;
+    }
+
+    &__comp {
+        color: @alert;
+        font-size: 13px;
+        font-weight: @semiBold;
+        text-decoration: none;
+        white-space: nowrap;
+
+        &:hover { text-decoration: underline; }
+    }
+}

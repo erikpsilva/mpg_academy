@@ -1,4 +1,14 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://mpgacademy.com.br/video/sitemap.xml
+# Páginas privadas — não indexar
+Disallow: /admin/
+Disallow: /areadoaluno
+Disallow: /treinos
+Disallow: /meuperfil
+Disallow: /mensalidades
+Disallow: /pagamento
+Disallow: /termo
+Disallow: /assinaturas
+
+Sitemap: https://mpgacademy.com.br/sitemap.xml

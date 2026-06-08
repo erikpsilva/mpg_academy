@@ -1,0 +1,137 @@
+// ── Frequência do professor (professor view + admin view) ─────────────────────
+
+.freqProf {
+
+    &__stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-bottom: 28px;
+    }
+
+    &__statCard {
+        align-items: center;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid @borderColor;
+        border-radius: 12px;
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 110px;
+        padding: 18px 16px;
+        text-align: center;
+    }
+
+    &__statNum {
+        font-size: 32px;
+        font-weight: @bold;
+        line-height: 1;
+
+        &--verde    { color: #4ade80; }
+        &--vermelho { color: #f87171; }
+        &--amarelo  { color: @alert;  }
+        &--azul     { color: #60a5fa; }
+    }
+
+    &__statLabel {
+        color: rgba(255,255,255,0.45);
+        font-size: 12px;
+    }
+
+    &__vazio {
+        align-items: center;
+        border: 1px dashed @borderColor;
+        border-radius: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding: 60px 24px;
+        text-align: center;
+
+        span { font-size: 40px; }
+        p { color: rgba(255,255,255,0.38); font-size: 15px; }
+    }
+
+    &__lista {
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+    }
+
+    &__mesGrupo {}
+
+    &__mesHeader {
+        border-bottom: 1px solid @borderColor;
+        color: rgba(255,255,255,0.4);
+        font-size: 11px;
+        font-weight: @bold;
+        letter-spacing: .09em;
+        margin-bottom: 4px;
+        padding-bottom: 8px;
+        text-transform: uppercase;
+    }
+
+    &__item {
+        align-items: center;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        display: flex;
+        gap: 16px;
+        padding: 12px 4px;
+
+        &:last-child { border-bottom: none; }
+        &--pendente { opacity: 0.6; }
+    }
+
+    &__dataBox {
+        align-items: center;
+        display: flex;
+        flex-direction: column;
+        flex-shrink: 0;
+        min-width: 38px;
+        text-align: center;
+    }
+
+    &__diaN     { color: @white; font-size: 22px; font-weight: @bold; line-height: 1; }
+    &__diaNome  { color: rgba(255,255,255,0.4); font-size: 11px; text-transform: uppercase; }
+
+    &__info {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+    }
+
+    &__turmaNome { color: @white; font-size: 14px; font-weight: @semiBold; }
+
+    &__horario {
+        color: rgba(255,255,255,0.45);
+        font-size: 12px;
+
+        em {
+            background: rgba(255,213,0,0.12);
+            border-radius: 4px;
+            color: @alert;
+            font-size: 10px;
+            font-style: normal;
+            font-weight: @bold;
+            margin-left: 4px;
+            padding: 1px 6px;
+        }
+    }
+
+    &__tag {
+        border-radius: 6px;
+        flex-shrink: 0;
+        font-size: 11px;
+        font-weight: @bold;
+        letter-spacing: .04em;
+        padding: 4px 10px;
+        white-space: nowrap;
+
+        &--concluida { background: rgba(34,197,94,.12); color: #4ade80; }
+        &--falta     { background: rgba(239,68,68,.12); color: #f87171; }
+        &--pendente  { background: rgba(255,255,255,.06); color: rgba(255,255,255,.38); }
+    }
+}

@@ -101,9 +101,10 @@ const removeHorario = (id) => {
 
 // ─── TURMAS ──────────────────────────────────────────────────────────────────
 
-const addTurma = () => {
+const addTurma = (dbId) => {
     turmaCount++;
     const id = turmaCount;
+    const dbAttr = dbId ? ' data-db-id="' + parseInt(dbId) + '"' : '';
 
     const horarios = getHorariosAtivos();
     let checkboxesHtml = '';
@@ -118,7 +119,7 @@ const addTurma = () => {
         });
     }
 
-    const html = '<div class="turma-item" data-id="' + id + '">' +
+    const html = '<div class="turma-item" data-id="' + id + '"' + dbAttr + '>' +
         '<div class="turma-item__head">' +
             '<div class="formGroup__item turma-item__nomeWrap">' +
                 '<label>Nome da turma *</label>' +
@@ -229,7 +230,7 @@ const prefillEdit = (editData) => {
 
     // Add each turma and check the right horarios
     (editData.turmas || []).forEach(t => {
-        const turmaRowId = addTurma();
+        const turmaRowId = addTurma(t.id); // passa o db id para rastreamento no update
         const turmaEl = $('.turma-item[data-id="' + turmaRowId + '"]');
         turmaEl.find('.turma-nome').val(t.nome || '');
         if (t.valor_mensalidade != null) turmaEl.find('.turma-valor').val(t.valor_mensalidade);
@@ -310,10 +311,11 @@ const coletarDados = () => {
         const promoValor = temPromo ? (parseFloat($(this).find('.turma-promo-valor').val()) || null) : null;
         const promoMeses = temPromo ? (parseInt($(this).find('.turma-promo-meses').val())   || null) : null;
 
-        const maxRaw   = $(this).find('.turma-max-alunos').val();
+        const maxRaw    = $(this).find('.turma-max-alunos').val();
         const maxAlunos = maxRaw !== '' ? (parseInt(maxRaw) || null) : null;
+        const dbId      = $(this).data('dbId') || null; // data-db-id → jQuery converte para dbId
 
-        turmas.push({ nome, horario_indices: indices, valor_mensalidade: valor, genero, nivel, promo_valor: promoValor, promo_meses: promoMeses, max_alunos: maxAlunos });
+        turmas.push({ id: dbId, nome, horario_indices: indices, valor_mensalidade: valor, genero, nivel, promo_valor: promoValor, promo_meses: promoMeses, max_alunos: maxAlunos });
     });
 
     return {

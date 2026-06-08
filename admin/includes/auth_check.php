@@ -9,7 +9,35 @@ if (empty($_SESSION['usuario'])) {
     exit;
 }
 
+// ── Controle de acesso por perfil ──────────────────────────────────────────
+$_uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+$_naAreaProfessor = (
+    strpos($_uri, '/area-professor')   !== false ||
+    strpos($_uri, '/meus-pagamentos')  !== false ||
+    strpos($_uri, '/prof-turmas')      !== false ||
+    strpos($_uri, '/meu-contrato')     !== false ||
+    strpos($_uri, '/minhas-aulas')     !== false ||
+    strpos($_uri, '/minha-frequencia') !== false
+);
+
+if ($_SESSION['usuario']['nivel_acesso'] === 'professor') {
+    // Professor só pode ver a própria área
+    if (!$_naAreaProfessor) {
+        header('Location: ' . BASE_URL . '/admin/area-professor');
+        exit;
+    }
+} else {
+    // Admin/editor/leitor não acessam área do professor
+    if ($_naAreaProfessor) {
+        header('Location: ' . BASE_URL . '/admin/inicio');
+        exit;
+    }
+}
+
 // ── Geração automática de mensalidades (uma vez por dia por sessão) ────────────
+// Não roda para professores
+if ($_SESSION['usuario']['nivel_acesso'] === 'professor') return;
+
 $_hoje = date('Y-m-d');
 if (empty($_SESSION['_mens_auto']) || $_SESSION['_mens_auto'] !== $_hoje) {
     try {

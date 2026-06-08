@@ -1,0 +1,205 @@
+.caixa {
+    padding: 24px;
+
+    &__header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 28px;
+        flex-wrap: wrap;
+    }
+
+    &__title {
+        font-size: 22px;
+        font-weight: 700;
+        color: @secundary;
+        margin: 0 0 4px;
+    }
+
+    &__subtitle {
+        font-size: 13px;
+        color: rgba(255,255,255,0.45);
+        margin: 0;
+    }
+
+    &__filtro {
+        display: flex;
+        align-items: flex-end;
+        gap: 12px;
+    }
+
+    &__mesWrap {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    &__mesLabel {
+        font-size: 11px;
+        color: rgba(255,255,255,0.45);
+        text-transform: uppercase;
+        letter-spacing: .05em;
+    }
+
+    &__mesInput {
+        background: @bgPanel;
+        border: 1px solid @borderColor;
+        border-radius: 8px;
+        color: @secundary;
+        font-family: @font;
+        font-size: 14px;
+        padding: 8px 14px;
+        cursor: pointer;
+        min-width: 160px;
+        &:focus { outline: none; border-color: @primary; }
+    }
+
+    &__badge {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: .08em;
+        padding: 5px 10px;
+        border-radius: 6px;
+        align-self: flex-end;
+
+        &--aberto  { background: rgba(34,197,94,.15); color: #22c55e; border: 1px solid rgba(34,197,94,.3); }
+        &--fechado { background: rgba(255,255,255,.06); color: rgba(255,255,255,.45); border: 1px solid @borderColor; }
+    }
+
+    // ── Cards ─────────────────────────────────────────────────────────────────
+    &__cards {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin-bottom: 28px;
+
+        @media (max-width: 768px) { grid-template-columns: 1fr; }
+    }
+
+    &__card {
+        background: @bgPanel;
+        border: 1px solid @borderColor;
+        border-radius: 12px;
+        padding: 20px 22px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        border-top: 3px solid transparent;
+
+        &--entrada  { border-top-color: #22c55e; }
+        &--saida    { border-top-color: #ef4444; }
+        &--saldo    { border-top-color: @borderColor; }
+        &--positivo { border-top-color: #22c55e; background: rgba(34,197,94,.06); }
+        &--negativo { border-top-color: #ef4444; background: rgba(239,68,68,.06); }
+    }
+
+    &__cardLabel {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        color: rgba(255,255,255,0.45);
+    }
+
+    &__cardValor {
+        font-size: 26px;
+        font-weight: 700;
+        color: @secundary;
+        line-height: 1.1;
+    }
+
+    &__cardSub {
+        font-size: 12px;
+        color: rgba(255,255,255,0.4);
+    }
+
+    // ── Detalhes ─────────────────────────────────────────────────────────────
+    &__details {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+
+        @media (max-width: 900px) { grid-template-columns: 1fr; }
+    }
+
+    &__panel {
+        background: @bgPanel;
+        border: 1px solid @borderColor;
+        border-radius: 12px;
+        padding: 22px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    &__panelTitle {
+        font-size: 14px;
+        font-weight: 700;
+        margin: 0 0 18px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid @borderColor;
+
+        &--entrada { color: #22c55e; }
+        &--saida   { color: #ef4444; }
+    }
+
+    &__section { margin-bottom: 16px; }
+
+    &__sectionTitle {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .07em;
+        color: rgba(255,255,255,0.35);
+        margin-bottom: 8px;
+    }
+
+    &__row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 0;
+        border-bottom: 1px solid rgba(255,255,255,0.04);
+        font-size: 13px;
+        &:last-child { border-bottom: none; }
+    }
+
+    &__rowLabel { color: rgba(255,255,255,0.65); }
+
+    &__rowVal {
+        color: @secundary;
+        font-weight: 600;
+        font-size: 13px;
+    }
+
+    &__total {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: auto;
+        padding-top: 14px;
+        border-top: 1px solid @borderColor;
+        font-weight: 700;
+        font-size: 14px;
+        color: #22c55e;
+
+        &--saida { color: #ef4444; }
+    }
+
+    &__parcelasDetalhe { margin-top: 4px; }
+
+    &__parcelaItem {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 12px;
+        padding: 5px 8px;
+        border-radius: 6px;
+        background: rgba(255,255,255,0.03);
+        margin-bottom: 4px;
+        color: rgba(255,255,255,0.6);
+
+        small { font-size: 10px; color: rgba(255,255,255,0.3); margin-left: 4px; }
+        span:last-child { font-weight: 600; color: @secundary; }
+    }
+}

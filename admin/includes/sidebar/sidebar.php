@@ -2,6 +2,47 @@
     <button class="sidebar__close" id="closeSidebar" aria-label="Fechar menu">&#10005;</button>
     <nav class="sidebar__nav">
         <ul class="sidebar__menu">
+
+        <?php if (($_SESSION['usuario']['nivel_acesso'] ?? '') === 'professor'): ?>
+            <!-- Menu exclusivo do professor -->
+            <li class="sidebar__section">Minha Área</li>
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/area-professor"
+                   class="sidebar__link <?= ($subRoute === 'area-professor') ? 'sidebar__link--active' : '' ?>">
+                    Início
+                </a>
+            </li>
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/prof-turmas"
+                   class="sidebar__link <?= ($subRoute === 'prof-turmas') ? 'sidebar__link--active' : '' ?>">
+                    Turmas
+                </a>
+            </li>
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/meus-pagamentos"
+                   class="sidebar__link <?= ($subRoute === 'meus-pagamentos') ? 'sidebar__link--active' : '' ?>">
+                    Pagamentos
+                </a>
+            </li>
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/minhas-aulas"
+                   class="sidebar__link <?= ($subRoute === 'minhas-aulas') ? 'sidebar__link--active' : '' ?>">
+                    Aulas
+                </a>
+            </li>
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/minha-frequencia"
+                   class="sidebar__link <?= ($subRoute === 'minha-frequencia') ? 'sidebar__link--active' : '' ?>">
+                    Frequência
+                </a>
+            </li>
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/meu-contrato"
+                   class="sidebar__link <?= ($subRoute === 'meu-contrato') ? 'sidebar__link--active' : '' ?>">
+                    Contrato
+                </a>
+            </li>
+        <?php else: ?>
             <li class="sidebar__section">Home</li>
 
             <li class="sidebar__item">
@@ -25,6 +66,20 @@
                 <a href="<?= BASE_URL ?>/admin/financeiro?aba=dividas"
                    class="sidebar__link">
                     Dívidas
+                </a>
+            </li>
+
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/caixa"
+                   class="sidebar__link <?= ($subRoute === 'caixa') ? 'sidebar__link--active' : '' ?>">
+                    Caixa
+                </a>
+            </li>
+
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/previsao"
+                   class="sidebar__link <?= ($subRoute === 'previsao') ? 'sidebar__link--active' : '' ?>">
+                    Previsão Financeira
                 </a>
             </li>
 
@@ -137,6 +192,7 @@
                 </a>
             </li>
 
+        <?php endif; // fim do bloco professor vs admin ?>
         </ul>
     </nav>
 </aside>
