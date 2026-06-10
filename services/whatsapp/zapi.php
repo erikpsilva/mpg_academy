@@ -1,9 +1,10 @@
 <?php
 
 // Z-API credentials
-define('ZAPI_INSTANCE', '3F440D9CACDF51785B317A94F00847F6');
-define('ZAPI_TOKEN',    '5E43617F1326762958BEE1D6');
-define('ZAPI_BASE',     'https://api.z-api.io/instances/' . ZAPI_INSTANCE . '/token/' . ZAPI_TOKEN);
+define('ZAPI_INSTANCE',     '3F440D9CACDF51785B317A94F00847F6');
+define('ZAPI_TOKEN',        '5E43617F1326762958BEE1D6');
+define('ZAPI_CLIENT_TOKEN', 'F457c946dd7db4b0e81d6297315f7f5c7S');
+define('ZAPI_BASE',         'https://api.z-api.io/instances/' . ZAPI_INSTANCE . '/token/' . ZAPI_TOKEN);
 
 /**
  * Envia mensagem de texto via Z-API.
@@ -37,7 +38,7 @@ function sendWhatsApp(string $phone, string $message): bool {
     curl_setopt_array($ch, [
         CURLOPT_POST           => true,
         CURLOPT_POSTFIELDS     => $payload,
-        CURLOPT_HTTPHEADER     => ['Content-Type: application/json', 'Client-Token: ' . ZAPI_TOKEN],
+        CURLOPT_HTTPHEADER     => ['Content-Type: application/json', 'Client-Token: ' . ZAPI_CLIENT_TOKEN],
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT        => 15,
     ]);

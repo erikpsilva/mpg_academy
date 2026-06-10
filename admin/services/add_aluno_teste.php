@@ -124,6 +124,14 @@ try {
     $insAula->execute([$alunoTesteId, $turmaId, $status, $dataAgendada]);
     $aulaId = (int) $pdo->lastInsertId();
 
+    // Para menores: cria o termo automaticamente dentro da transação
+    $termoToken = null;
+    if ($isMenor) {
+        $termoToken = bin2hex(random_bytes(32));
+        $pdo->prepare("INSERT INTO termo_assinaturas (aula_experimental_id, token) VALUES (?, ?)")
+            ->execute([$aulaId, $termoToken]);
+    }
+
     $pdo->commit();
 
     // Envia email de confirmação se agendada, tiver email e data definida
@@ -156,22 +164,18 @@ try {
             $endFmt .= ' - ' . $turmaData['bairro'] . ', ' . $turmaData['cidade'] . '/' . $turmaData['estado'];
         }
 
+        require_once dirname(__FILE__, 3) . '/config/app.php';
         require_once dirname(__FILE__, 3) . '/services/site/email_template.php';
+        require_once dirname(__FILE__, 3) . '/services/whatsapp/wpp_aula_teste_confirmacao.php';
+        require_once dirname(__FILE__, 3) . '/services/site/notificar_termo_responsavel.php';
+
+        // E-mail de confirmação para o aluno
         sendMpgTesteConfirmation($email, $nome, $turmaData['nome'], $dataFmt, $horarioFmt, $endFmt);
 
-        // WhatsApp — confirmação imediata
-        require_once dirname(__FILE__, 3) . '/config/app.php';
-        require_once dirname(__FILE__, 3) . '/services/whatsapp/wpp_aula_teste_confirmacao.php';
-
-        $termoUrl = '';
-        if ($isMenor) {
-            $stmtTermo = $pdo->prepare("SELECT token FROM termo_assinaturas WHERE aula_experimental_id = ? LIMIT 1");
-            $stmtTermo->execute([$aulaId]);
-            $termoRow = $stmtTermo->fetch(PDO::FETCH_ASSOC);
-            if ($termoRow && $termoRow['token']) {
-                $termoUrl = BASE_URL . '/termo?token=' . $termoRow['token'];
-            }
-        }
+        // WhatsApp de confirmação (aluno + responsável se menor)
+        $termoUrl = ($isMenor && $termoToken)
+            ? BASE_URL . '/termo?token=' . $termoToken
+            : '';
 
         $alunoWpp = [
             'nome'                => $nome,
@@ -181,6 +185,18 @@ try {
             'responsavel_celular' => $responsavelCelular,
         ];
         wppAulaTesteConfirmacao($alunoWpp, $turmaData, $dataFmt, $horarioFmt, $termoUrl);
+
+        // E-mail + WhatsApp do termo para o responsável (menor)
+        // WPP já enviado junto com a confirmação em wppAulaTesteConfirmacao(); só envia email aqui
+        if ($isMenor && $termoUrl && $responsavelEmail) {
+            notificarTermoResponsavel([
+                'responsavel_email'   => $responsavelEmail,
+                'responsavel_nome'    => $responsavelNome,
+                'responsavel_celular' => $responsavelCelular,
+                'aluno_nome'          => $nome,
+                'turma_nome'          => $turmaData['nome'],
+            ], $termoUrl, true);
+        }
     }
 
     echo json_encode([

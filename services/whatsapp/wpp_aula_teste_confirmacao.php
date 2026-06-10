@@ -39,16 +39,15 @@ function wppAulaTesteConfirmacao(array $aluno, array $turma, string $dataFmt, st
         $msgResp .= "📅 *Data:* {$dataFmt}\n";
         $msgResp .= "⏰ *Horário:* {$horarioFmt}\n";
         if ($endereco) $msgResp .= "📍 *Local:* {$endereco}\n";
-        $msgResp .= "\nQualquer dúvida estamos à disposição!";
+
+        if ($termoUrl) {
+            $msgResp .= "\n✍ Para que *{$nomeAluno}* participe, precisamos da sua assinatura no *Termo de Autorização e Responsabilidade*.\n";
+            $msgResp .= "Acesse o link abaixo para ler e assinar:\n🔗 {$termoUrl}";
+        } else {
+            $msgResp .= "\nQualquer dúvida estamos à disposição!";
+        }
 
         sendWhatsApp(formatPhoneZapi($aluno['responsavel_celular']), $msgResp);
-
-        // Envia link do termo separado para não poluir a mensagem principal
-        if ($termoUrl) {
-            $msgTermo = "Para seu filho(a) participar da MPG Academy, precisamos da sua assinatura no *Termo de Responsabilidade*.\n\n";
-            $msgTermo .= "Acesse o link abaixo para ler e assinar:\n🔗 {$termoUrl}";
-            sendWhatsApp(formatPhoneZapi($aluno['responsavel_celular']), $msgTermo);
-        }
     }
 }
 

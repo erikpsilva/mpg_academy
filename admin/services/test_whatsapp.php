@@ -27,7 +27,7 @@ $ch = curl_init(ZAPI_BASE . '/send-text');
 curl_setopt_array($ch, [
     CURLOPT_POST           => true,
     CURLOPT_POSTFIELDS     => $payload,
-    CURLOPT_HTTPHEADER     => ['Content-Type: application/json', 'Client-Token: ' . ZAPI_TOKEN],
+    CURLOPT_HTTPHEADER     => ['Content-Type: application/json', 'Client-Token: ' . ZAPI_CLIENT_TOKEN],
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_TIMEOUT        => 15,
     CURLOPT_SSL_VERIFYPEER => true,
