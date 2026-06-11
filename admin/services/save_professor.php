@@ -32,8 +32,10 @@ function parseBrl(string $v): ?float {
     return (float) str_replace(['.', ','], ['', '.'], $v);
 }
 
-$valor90  = parseBrl($_POST['valor_aula_90min']  ?? '');
-$valor120 = parseBrl($_POST['valor_aula_120min'] ?? '');
+$valor90     = parseBrl($_POST['valor_aula_90min']  ?? '');
+$valor120    = parseBrl($_POST['valor_aula_120min'] ?? '');
+$bonusTitulo = trim($_POST['bonus_titulo'] ?? '') ?: null;
+$bonusValor  = parseBrl($_POST['bonus_valor']  ?? '');
 
 $dataNasc = null;
 $nascRaw  = trim($_POST['data_nascimento'] ?? '');
@@ -80,39 +82,42 @@ try {
                 UPDATE professores
                 SET nome=?, sobrenome=?, email=?, senha=?, cpf=?, celular=?,
                     data_nascimento=?, valor_aula_90min=?, valor_aula_120min=?,
-                    dia_pagamento=?, status=?
+                    dia_pagamento=?, status=?, bonus_titulo=?, bonus_valor=?
                 WHERE id=?
             ");
             $st->execute([
                 $nome, $sobrenome, $email, password_hash($senha, PASSWORD_DEFAULT),
                 $cpf ?: null, $celular ?: null, $dataNasc,
-                $valor90, $valor120, $diaPgto ?: null, $status, $id
+                $valor90, $valor120, $diaPgto ?: null, $status,
+                $bonusTitulo, $bonusValor, $id
             ]);
         } else {
             $st = $pdo->prepare("
                 UPDATE professores
                 SET nome=?, sobrenome=?, email=?, cpf=?, celular=?,
                     data_nascimento=?, valor_aula_90min=?, valor_aula_120min=?,
-                    dia_pagamento=?, status=?
+                    dia_pagamento=?, status=?, bonus_titulo=?, bonus_valor=?
                 WHERE id=?
             ");
             $st->execute([
                 $nome, $sobrenome, $email,
                 $cpf ?: null, $celular ?: null, $dataNasc,
-                $valor90, $valor120, $diaPgto ?: null, $status, $id
+                $valor90, $valor120, $diaPgto ?: null, $status,
+                $bonusTitulo, $bonusValor, $id
             ]);
         }
     } else {
         $st = $pdo->prepare("
             INSERT INTO professores
                 (nome, sobrenome, email, senha, cpf, celular, data_nascimento,
-                 valor_aula_90min, valor_aula_120min, dia_pagamento, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 valor_aula_90min, valor_aula_120min, dia_pagamento, status, bonus_titulo, bonus_valor)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
         $st->execute([
             $nome, $sobrenome, $email, password_hash($senha, PASSWORD_DEFAULT),
             $cpf ?: null, $celular ?: null, $dataNasc,
-            $valor90, $valor120, $diaPgto ?: null, $status
+            $valor90, $valor120, $diaPgto ?: null, $status,
+            $bonusTitulo, $bonusValor
         ]);
         $id = (int) $pdo->lastInsertId();
     }

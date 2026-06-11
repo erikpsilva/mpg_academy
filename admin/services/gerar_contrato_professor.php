@@ -100,8 +100,11 @@ function gerarHtmlContrato(array $prof, array $horarios): string {
     $cpf      = fmtCpfStr($prof['cpf'] ?? '');
     $diaPgto  = (int)($prof['dia_pagamento'] ?? 5);
 
-    $valor90  = (float)($prof['valor_aula_90min']  ?? 0);
-    $valor120 = (float)($prof['valor_aula_120min'] ?? 0);
+    $valor90      = (float)($prof['valor_aula_90min']  ?? 0);
+    $valor120     = (float)($prof['valor_aula_120min'] ?? 0);
+    $bonusValor   = (float)($prof['bonus_valor']  ?? 0);
+    $bonusTitulo  = trim($prof['bonus_titulo'] ?? '');
+    if ($bonusTitulo === '') $bonusTitulo = 'Adicional mensal';
 
     $has2h = false;
     foreach ($horarios as $h) {
@@ -123,6 +126,14 @@ function gerarHtmlContrato(array $prof, array $horarios): string {
     $totalExt = mb_strtoupper(brlExtenso($totalMensal));
     $sessExt  = numPt($sessCount);
     $aulasExt = numPt($aulasMensais);
+
+    // Adicional mensal (se houver)
+    $bonusFmt       = $bonusValor > 0 ? 'R$ ' . number_format($bonusValor, 2, ',', '.') : '';
+    $bonusExt       = $bonusValor > 0 ? mb_strtoupper(brlExtenso($bonusValor)) : '';
+    $bonusTituloUp  = mb_strtoupper($bonusTitulo);
+    $totalGeral     = $totalMensal + $bonusValor;
+    $totalGeralFmt  = 'R$ ' . number_format($totalGeral, 2, ',', '.');
+    $totalGeralExt  = mb_strtoupper(brlExtenso($totalGeral));
 
     $sessoesHtml = '';
     foreach ($horarios as $h) {
@@ -169,6 +180,11 @@ function gerarHtmlContrato(array $prof, array $horarios): string {
     <p>Pelo serviço prestado, a CONTRATANTE pagará ao CONTRATADO o valor de <strong><?= $valorFmt ?> (<?= $valorExt ?>)</strong>
     por aula de <?= $duracaoStr ?> ministrada, totalizando aproximadamente <strong><?= $totalFmt ?> (<?= $totalExt ?>)</strong> mensais,
     conforme a frequência estipulada na Cláusula 2.</p>
+    <?php if ($bonusValor > 0): ?>
+    <p>Adicionalmente, a CONTRATANTE pagará ao CONTRATADO o valor fixo de <strong><?= $bonusFmt ?> (<?= $bonusExt ?>)</strong>
+    mensais a título de <strong><?= htmlspecialchars($bonusTituloUp) ?></strong>, independentemente do número de aulas ministradas no período,
+    perfazendo uma remuneração total de <strong><?= $totalGeralFmt ?> (<?= $totalGeralExt ?>)</strong> mensais.</p>
+    <?php endif; ?>
     <p>Aulas não ministradas por ausência do CONTRATADO não serão remuneradas, salvo nos casos previstos na Cláusula 6.</p>
 </div>
 
@@ -223,7 +239,7 @@ function gerarHtmlContrato(array $prof, array $horarios): string {
 
 <div class="c-secao">
     <h2 class="c-secaoTitulo">CLÁUSULA 12 &mdash; RESCISÃO E MULTA</h2>
-    <p>Em caso de rescisão antecipada sem justa causa por qualquer das partes — e sem observância do aviso prévio previsto na Cláusula 11 —, fica estabelecida multa equivalente ao valor de um mês de aulas, correspondente a <strong><?= $totalFmt ?> (<?= $totalExt ?>)</strong>, a ser pago à parte lesada no prazo de 10 (dez) dias após a notificação.</p>
+    <p>Em caso de rescisão antecipada sem justa causa por qualquer das partes — e sem observância do aviso prévio previsto na Cláusula 11 —, fica estabelecida multa equivalente ao valor de um mês de remuneração, correspondente a <strong><?= $bonusValor > 0 ? $totalGeralFmt : $totalFmt ?> (<?= $bonusValor > 0 ? $totalGeralExt : $totalExt ?>)</strong>, a ser pago à parte lesada no prazo de 10 (dez) dias após a notificação.</p>
     <p>Constituem justa causa para rescisão sem multa: descumprimento reiterado das obrigações contratuais, conduta antiética ou qualquer ato que cause dano à imagem da MPG Academy ou de seus alunos.</p>
 </div>
 

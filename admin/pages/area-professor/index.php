@@ -42,6 +42,7 @@
                     <span class="areaProfessor__cardLabel">Total esperado no pagamento</span>
                     <span class="areaProfessor__cardValor" id="apTotal">—</span>
                     <span class="areaProfessor__cardSub" id="apDiaPgto">—</span>
+                    <span class="areaProfessor__cardNote" id="apBonusNote" style="display:none"></span>
                 </div>
             </div>
 
@@ -61,6 +62,7 @@
                     <div class="areaProfessor__dado"><span>Valor aula 1h30</span><strong id="apValor90">—</strong></div>
                     <div class="areaProfessor__dado"><span>Valor aula 2h00</span><strong id="apValor120">—</strong></div>
                     <div class="areaProfessor__dado"><span>Dia de pagamento</span><strong id="apDiaPgtoInfo">—</strong></div>
+                    <div class="areaProfessor__dado" id="apBonusRow" style="display:none"><span id="apBonusTituloLabel">Adicional mensal</span><strong id="apBonusValorInfo">—</strong></div>
                 </div>
 
                 <div class="areaProfessor__senhaBox">

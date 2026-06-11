@@ -68,9 +68,11 @@ $descontoVitalicio = 0;
 $mensalidadesParaGerar = [];
 
 if ($turmaData && $turmaData['valor_mensalidade'] !== null) {
-    $entrada   = new DateTime($dataInicio);
-    $entryDay  = (int) $entrada->format('j');
-    $valorBase = (float) $turmaData['valor_mensalidade'];
+    $entrada          = new DateTime($dataInicio);
+    $entryDay         = (int) $entrada->format('j');
+    $valorBase        = (float) $turmaData['valor_mensalidade'];
+    // Prazo de 5 dias para o aluno pagar a primeira fatura
+    $vencInicial      = (clone $entrada)->modify('+5 days')->format('Y-m-d');
 
     $temPromo = $turmaData['promo_valor'] !== null
              && $turmaData['promo_meses'] !== null
@@ -85,62 +87,43 @@ if ($turmaData && $turmaData['valor_mensalidade'] !== null) {
         $promoMeses = (int) $turmaData['promo_meses'];
 
         if ($isExcecao) {
-            // Mês cheio: mês atual conta como mês 1 da promoção
-            $refDate = new DateTime($entrada->format('Y-m') . '-01');
-            for ($i = 0; $i < $promoMeses; $i++) {
-                $vencDate = clone $refDate;
-                $vencDate->modify('+1 month');
-                $mensalidadesParaGerar[] = [
-                    'referencia' => $refDate->format('Y-m'),
-                    'valor'      => $promoValor,
-                    'vencimento' => $vencDate->format('Y-m') . '-05',
-                ];
-                $refDate->modify('+1 month');
-            }
+            // Dia 1–5: mês cheio ao valor promocional, pago na entrada.
+            // Mês de entrada = mês 1 da promoção. Os meses seguintes são gerados pelo cron.
+            $mensalidadesParaGerar[] = [
+                'referencia' => $entrada->format('Y-m'),
+                'valor'      => $promoValor,
+                'vencimento' => $vencInicial,
+            ];
 
-            // Desconto vigente: do mês de entrada até o último mês promocional
+            // descontoFim = 1º dia do mês (promo_meses - 1) após o mês de entrada.
+            // Garante que o cron aplica desconto apenas nos meses 2..promo_meses.
             $fimPromo = new DateTime($entrada->format('Y-m') . '-01');
-            $fimPromo->modify('+' . $promoMeses . ' months');
-            $fimPromo->modify('-1 day');
+            $fimPromo->modify('+' . ($promoMeses - 1) . ' months');
 
             $desconto       = round($valorBase - $promoValor, 2);
             $descontoInicio = $dataInicio;
             $descontoFim    = $fimPromo->format('Y-m-d');
 
         } else {
-            // Proporcional: cobra os dias usados no mês de entrada (sobre o valor promocional)
-            // depois $promoMeses meses cheios de promoção
+            // Dia 6–30: fatura proporcional (dias usados) ao valor promocional, paga na entrada.
+            // Os promo_meses seguintes são gerados mensalmente pelo cron via desconto.
             $daysInMonth  = (int) $entrada->format('t');
             $daysUsed     = $daysInMonth - $entryDay + 1;
             $proportional = round(($daysUsed / $daysInMonth) * $promoValor, 2);
 
-            $nextMonth = new DateTime($entrada->format('Y-m') . '-01');
-            $nextMonth->modify('+1 month');
-
-            // Fatura proporcional: referência = mês de entrada, vencimento = dia 5 do mês seguinte
             $mensalidadesParaGerar[] = [
                 'referencia' => $entrada->format('Y-m'),
                 'valor'      => $proportional,
-                'vencimento' => $nextMonth->format('Y-m') . '-05',
+                'vencimento' => $vencInicial,
             ];
 
-            // Meses promocionais cheios a partir do mês seguinte ao de entrada
-            $refDate = clone $nextMonth;
-            for ($i = 0; $i < $promoMeses; $i++) {
-                $vencDate = clone $refDate;
-                $vencDate->modify('+1 month');
-                $mensalidadesParaGerar[] = [
-                    'referencia' => $refDate->format('Y-m'),
-                    'valor'      => $promoValor,
-                    'vencimento' => $vencDate->format('Y-m') . '-05',
-                ];
-                $refDate->modify('+1 month');
-            }
+            $nextMonth = new DateTime($entrada->format('Y-m') . '-01');
+            $nextMonth->modify('+1 month');
 
-            // Desconto vigente: do mês seguinte até o último mês promocional
+            // descontoFim = 1º dia do mês (promo_meses - 1) após o nextMonth.
+            // Cron aplica desconto nos meses 1..promo_meses (meses completos após o proporcional).
             $fimPromo = clone $nextMonth;
-            $fimPromo->modify('+' . $promoMeses . ' months');
-            $fimPromo->modify('-1 day');
+            $fimPromo->modify('+' . ($promoMeses - 1) . ' months');
 
             $desconto       = round($valorBase - $promoValor, 2);
             $descontoInicio = $dataInicio;
@@ -148,27 +131,22 @@ if ($turmaData && $turmaData['valor_mensalidade'] !== null) {
         }
 
     } else {
-        // Sem promoção: gera apenas a primeira fatura (proporcional ou mês cheio)
+        // Sem promoção: apenas a primeira fatura (proporcional ou mês cheio), paga na entrada.
         if ($isExcecao) {
-            $vencDate = new DateTime($entrada->format('Y-m') . '-01');
-            $vencDate->modify('+1 month');
             $mensalidadesParaGerar[] = [
                 'referencia' => $entrada->format('Y-m'),
                 'valor'      => $valorBase,
-                'vencimento' => $vencDate->format('Y-m') . '-05',
+                'vencimento' => $vencInicial,
             ];
         } else {
             $daysInMonth  = (int) $entrada->format('t');
             $daysUsed     = $daysInMonth - $entryDay + 1;
             $proportional = round(($daysUsed / $daysInMonth) * $valorBase, 2);
 
-            $nextMonth = new DateTime($entrada->format('Y-m') . '-01');
-            $nextMonth->modify('+1 month');
-
             $mensalidadesParaGerar[] = [
                 'referencia' => $entrada->format('Y-m'),
                 'valor'      => $proportional,
-                'vencimento' => $nextMonth->format('Y-m') . '-05',
+                'vencimento' => $vencInicial,
             ];
         }
     }

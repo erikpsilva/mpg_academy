@@ -238,6 +238,21 @@ function fmtBrlLabel(?float $v): string {
                 </div>
             </div>
 
+            <!-- Adicional mensal -->
+            <div class="profForm__grid">
+                <div class="profForm__field">
+                    <label>Título do adicional mensal</label>
+                    <input type="text" name="bonus_titulo" class="input" maxlength="120"
+                           placeholder="Ex: Ajuda de custo, Bônus de desempenho"
+                           value="<?= htmlspecialchars($professor['bonus_titulo'] ?? '') ?>">
+                </div>
+                <div class="profForm__field">
+                    <label>Valor mensal adicional (R$)</label>
+                    <input type="text" name="bonus_valor" id="inputBonusValor" class="input" placeholder="0,00"
+                           value="<?= fmtBrl(isset($professor['bonus_valor']) && $professor['bonus_valor'] !== null ? (float)$professor['bonus_valor'] : null) ?>">
+                </div>
+            </div>
+
             <!-- Turmas -->
             <div class="profForm__sectionLabel">
                 Turmas que leciona
@@ -580,8 +595,9 @@ function maskValor(el) {
 if (document.getElementById('inputCpf'))     maskCpf(document.getElementById('inputCpf'));
 if (document.getElementById('inputCelular')) maskCelular(document.getElementById('inputCelular'));
 if (document.getElementById('inputNasc'))    maskData(document.getElementById('inputNasc'));
-if (document.getElementById('inputVal90'))   maskValor(document.getElementById('inputVal90'));
-if (document.getElementById('inputVal120'))  maskValor(document.getElementById('inputVal120'));
+if (document.getElementById('inputVal90'))       maskValor(document.getElementById('inputVal90'));
+if (document.getElementById('inputVal120'))      maskValor(document.getElementById('inputVal120'));
+if (document.getElementById('inputBonusValor'))  maskValor(document.getElementById('inputBonusValor'));
 
 // ── Highlight ao marcar turma + exibe/oculta data ────────────────────────────
 document.querySelectorAll('.profForm__turmaCheck').forEach(function (chk) {

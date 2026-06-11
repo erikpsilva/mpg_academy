@@ -72,9 +72,10 @@ $aluguelMensal = (float)$pdo->query("
 ")->fetchColumn();
 $aluguelQuadras = $aluguelMensal * $numMeses;
 
-// ── 5. Salários professores ativos (× nº meses) ───────────────────────────
+// ── 5. Salários + adicionais de professores ativos (× nº meses) ──────────
 $salarioMensal = (float)$pdo->query("
-    SELECT COALESCE(SUM(salario), 0) FROM professores WHERE status = 'ativo' AND salario IS NOT NULL
+    SELECT COALESCE(SUM(COALESCE(salario,0) + COALESCE(bonus_valor,0)), 0)
+    FROM professores WHERE status = 'ativo'
 ")->fetchColumn();
 $salarios = $salarioMensal * $numMeses;
 

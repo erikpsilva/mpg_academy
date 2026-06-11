@@ -18,7 +18,8 @@ $profId   = (int) $_SESSION['usuario']['professor_id'];
 // Dados do professor
 $stProf = $pdo->prepare("
     SELECT id, nome, sobrenome, email, cpf, celular, data_nascimento,
-           dia_pagamento, valor_aula_90min, valor_aula_120min, status
+           dia_pagamento, valor_aula_90min, valor_aula_120min, status,
+           bonus_titulo, bonus_valor
     FROM professores WHERE id = ?
 ");
 $stProf->execute([$profId]);
@@ -148,6 +149,7 @@ foreach ($rows as $row) {
 $turmasArr      = array_values($turmas);
 $totalGanhos    = array_sum(array_column($turmasArr, 'ganhos_hoje'));
 $totalProjecao  = array_sum(array_column($turmasArr, 'projecao'));
+$bonusValor     = (float)($prof['bonus_valor'] ?? 0);
 
 echo json_encode([
     'success'         => true,
@@ -161,9 +163,11 @@ echo json_encode([
         'pgto_date'        => $pgtoDate,
         'valor_90min'      => (float)($prof['valor_aula_90min']  ?? 0),
         'valor_120min'     => (float)($prof['valor_aula_120min'] ?? 0),
+        'bonus_titulo'     => $prof['bonus_titulo'] ?? null,
+        'bonus_valor'      => $bonusValor > 0 ? $bonusValor : null,
     ],
     'turmas'          => $turmasArr,
     'total_ganhos'    => $totalGanhos,
     'total_projecao'  => $totalProjecao,
-    'total_esperado'  => $totalGanhos + $totalProjecao,
+    'total_esperado'  => $totalGanhos + $totalProjecao + $bonusValor,
 ]);

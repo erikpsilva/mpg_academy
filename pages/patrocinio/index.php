@@ -120,42 +120,54 @@
 
     <section class="patrocinioReach">
         <div class="container">
-            <div class="row align-items-center">
-                <div class="col-lg-5">
+            <div class="row">
+                <div class="col-12">
                     <span class="patrocinioEyebrow">Nosso alcance</span>
                     <h2>Presen&ccedil;a digital com p&uacute;blico regional.</h2>
                     <p>A comunica&ccedil;&atilde;o da MPG aproxima sua marca de alunos, interessados e fam&iacute;lias que acompanham nossa rotina de treinos, turmas e eventos.</p>
+                </div>
+            </div>
 
-                    <div class="row patrocinioReach__metrics">
-                        <div class="col-sm-6 col-lg-12 col-xl-6">
-                            <article class="patrocinioMetric">
-                                <small>&Uacute;ltimos 3 dias</small>
-                                <strong>3.884</strong>
-                                <span>Visualiza&ccedil;&otilde;es totais</span>
-                                <p>65,4% de n&atilde;o seguidores, ampliando a exposi&ccedil;&atilde;o org&acirc;nica para novos p&uacute;blicos.</p>
-                            </article>
-                        </div>
-                        <div class="col-sm-6 col-lg-12 col-xl-6">
-                            <article class="patrocinioMetric">
-                                <small>Alcance real</small>
-                                <strong>1.575</strong>
-                                <span>Contas alcan&ccedil;adas</span>
-                                <p>Pessoas &uacute;nicas impactadas no per&iacute;odo, incluindo interessados fora da base atual.</p>
-                            </article>
-                        </div>
-                    </div>
-
-                    <div class="patrocinioNote">
-                        Posts de divulga&ccedil;&atilde;o de turmas chegaram a 512 visualiza&ccedil;&otilde;es em apenas 2 dias.
-                        Com campanha paga ativa no Meta Ads, a exposi&ccedil;&atilde;o da marca parceira ganha escala.
-                    </div>
+            <div class="row patrocinioReach__metrics">
+                <div class="col-md-6 col-xl-3">
+                    <figure class="patrocinioInsight">
+                        <img src="<?= BASE_URL ?>/images/imgPatrocinio.png" alt="Print de insights do Instagram da MPG Academy com dados de alcance em 30 dias">
+                        <figcaption>Instagram Insights MPG Academy - 30 dias</figcaption>
+                    </figure>
                 </div>
 
-                <div class="col-lg-7">
-                    <figure class="patrocinioInsight">
-                        <img src="<?= BASE_URL ?>/images/instaAlcance.png" alt="Print do Instagram Insights da MPG Academy">
-                        <figcaption>Instagram Insights MPG Academy</figcaption>
-                    </figure>
+                <div class="col-md-6 col-xl-3">
+                    <article class="patrocinioMetric">
+                        <small>&Uacute;ltimos 30 dias</small>
+                        <strong>31,0 mil</strong>
+                        <span>Visualiza&ccedil;&otilde;es totais</span>
+                        <p>Volume recente de exibi&ccedil;&otilde;es no Instagram, refor&ccedil;ando a presen&ccedil;a da marca MPG na regi&atilde;o.</p>
+                    </article>
+                </div>
+
+                <div class="col-md-6 col-xl-3">
+                    <article class="patrocinioMetric">
+                        <small>Alcance real</small>
+                        <strong>13,1 mil</strong>
+                        <span>Contas alcan&ccedil;adas</span>
+                        <p>Pessoas impactadas no per&iacute;odo, incluindo alunos, interessados e novos p&uacute;blicos fora da base atual.</p>
+                    </article>
+                </div>
+
+                <div class="col-md-6 col-xl-3">
+                    <article class="patrocinioMetric">
+                        <small>Crescimento</small>
+                        <strong>+276</strong>
+                        <span>Seguidores l&iacute;quidos</span>
+                        <p>Novas conex&otilde;es somadas ao perfil, aumentando a audi&ecirc;ncia para a comunica&ccedil;&atilde;o dos parceiros.</p>
+                    </article>
+                </div>
+
+                <div class="col-12">
+                    <div class="patrocinioNote">
+                        Em 30 dias, a MPG somou 31,0 mil visualiza&ccedil;&otilde;es, 13,1 mil contas alcan&ccedil;adas
+                        e 276 seguidores l&iacute;quidos. Com campanha paga ativa no Meta Ads, a exposi&ccedil;&atilde;o da marca parceira ganha escala.
+                    </div>
                 </div>
             </div>
         </div>

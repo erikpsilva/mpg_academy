@@ -318,6 +318,7 @@
     }
 
     &__metrics {
+        align-items: stretch;
         margin-top: 24px;
         row-gap: 16px;
     }
@@ -361,12 +362,18 @@
 }
 
 .patrocinioInsight {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
     margin: 0;
     overflow: hidden;
 
     img {
         display: block;
-        height: auto;
+        flex: 1 1 auto;
+        height: 100%;
+        min-height: 210px;
+        object-fit: cover;
         width: 100%;
     }
 

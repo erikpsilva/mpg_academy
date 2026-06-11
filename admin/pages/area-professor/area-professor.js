@@ -38,6 +38,14 @@
             $('#apValor120').text(p.valor_120min > 0 ? brl(p.valor_120min) + ' / aula' : '—');
             $('#apDiaPgtoInfo').text(p.dia_pagamento ? 'Dia ' + p.dia_pagamento : '—');
 
+            // Adicional mensal
+            if (p.bonus_valor) {
+                $('#apBonusTituloLabel').text(p.bonus_titulo || 'Adicional mensal');
+                $('#apBonusValorInfo').text(brl(p.bonus_valor) + ' / mês');
+                $('#apBonusRow').show();
+                $('#apBonusNote').text('Inclui ' + (p.bonus_titulo || 'adicional') + ': ' + brl(p.bonus_valor)).show();
+            }
+
             // Turmas
             var $turmas = $('#apTurmas').empty();
             if (!d.turmas || d.turmas.length === 0) {

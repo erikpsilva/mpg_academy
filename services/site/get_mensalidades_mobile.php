@@ -2,19 +2,37 @@
 require_once __DIR__ . '/mobile_auth.php';
 $aluno = mobileAuth();
 
-$pdo   = getDbConnection();
-$hoje  = new DateTime('today');
+$pdo  = getDbConnection();
+$hoje = new DateTime('today');
 
-$stmt = $pdo->prepare("
-    SELECT m.id, m.referencia, m.valor, m.vencimento, m.data_pagamento, m.status,
-           t.nome AS turma_nome
+$cols = "m.id, m.referencia, m.valor, m.vencimento, m.data_pagamento, m.status,
+         t.nome AS turma_nome";
+
+// Próxima fatura a pagar (mais antiga pendente/atrasada)
+$stNext = $pdo->prepare("
+    SELECT $cols
     FROM mensalidades m
     LEFT JOIN turmas t ON t.id = m.turma_id
-    WHERE m.aluno_id = ?
-    ORDER BY m.referencia DESC
+    WHERE m.aluno_id = ? AND m.status IN ('pendente', 'atrasado')
+    ORDER BY m.vencimento ASC
+    LIMIT 1
 ");
-$stmt->execute([$aluno['id']]);
-$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$stNext->execute([$aluno['id']]);
+$next = $stNext->fetch(PDO::FETCH_ASSOC);
+
+// Última fatura paga
+$stPaid = $pdo->prepare("
+    SELECT $cols
+    FROM mensalidades m
+    LEFT JOIN turmas t ON t.id = m.turma_id
+    WHERE m.aluno_id = ? AND m.status = 'pago'
+    ORDER BY m.referencia DESC
+    LIMIT 1
+");
+$stPaid->execute([$aluno['id']]);
+$paid = $stPaid->fetch(PDO::FETCH_ASSOC);
+
+$rows = array_values(array_filter([$next, $paid]));
 
 foreach ($rows as &$m) {
     $m['id']    = (int)   $m['id'];
@@ -32,11 +50,11 @@ foreach ($rows as &$m) {
         $m['total_devido']   = round($base + $juros, 2);
         $m['display_status'] = 'atrasado';
     } elseif ($m['status'] === 'pendente') {
-        // A VENCER: vencimento ainda no futuro
         $m['display_status'] = $venc >= $hoje ? 'a_vencer' : 'atrasado';
     } else {
-        $m['display_status'] = $m['status']; // pago
+        $m['display_status'] = 'pago';
     }
 }
+unset($m);
 
-echo json_encode(['success'=>true, 'data'=>$rows]);
+echo json_encode(['success' => true, 'data' => $rows]);
