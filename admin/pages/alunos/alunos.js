@@ -233,6 +233,7 @@ const removerTurmaAluno = (turmaId, el) => {
 
 const initDetalhe = () => {
     carregarSelectTurmas();
+    initFaturasDrawer();
 
     $('#btnAddTurma').on('click', addTurmaAluno);
 
@@ -333,6 +334,88 @@ const initDetalhe = () => {
         });
     });
 
+    // ── Cobrança extra ───────────────────────────────────────────────────────
+    const cobrancaModal = document.getElementById('cobrancaModal');
+    const btnNova       = document.getElementById('btnNovaCobranca');
+
+    if (btnNova && cobrancaModal) {
+        btnNova.addEventListener('click', () => {
+            document.getElementById('cobrancaDescricao').value  = '';
+            document.getElementById('cobrancaValor').value      = '';
+            document.getElementById('cobrancaMsg').style.display = 'none';
+            cobrancaModal.classList.add('confirmModal--open');
+        });
+
+        document.getElementById('cobrancaCancelar').addEventListener('click', () => {
+            cobrancaModal.classList.remove('confirmModal--open');
+        });
+
+        cobrancaModal.addEventListener('click', e => {
+            if (e.target === cobrancaModal) cobrancaModal.classList.remove('confirmModal--open');
+        });
+
+        document.getElementById('cobrancaSalvar').addEventListener('click', function () {
+            const btn      = this;
+            const desc     = document.getElementById('cobrancaDescricao').value.trim();
+            const valor    = parseFloat(document.getElementById('cobrancaValor').value);
+            const venc     = document.getElementById('cobrancaVencimento').value;
+            const msg      = document.getElementById('cobrancaMsg');
+
+            if (!desc || isNaN(valor) || valor <= 0 || !venc) {
+                msg.textContent   = 'Preencha todos os campos.';
+                msg.style.color   = '#cf7e7e';
+                msg.style.display = '';
+                return;
+            }
+
+            btn.disabled    = true;
+            btn.textContent = 'Criando...';
+            msg.style.display = 'none';
+
+            const fd = new FormData();
+            fd.append('aluno_id',   ALUNO_ID);
+            fd.append('descricao',  desc);
+            fd.append('valor',      valor.toFixed(2));
+            fd.append('vencimento', venc);
+
+            fetch(ADMIN_BASE_URL + '/services/add_cobranca_avulsa.php', {
+                method: 'POST', credentials: 'same-origin', body: fd,
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    cobrancaModal.classList.remove('confirmModal--open');
+                    // Força recarregar faturas se o painel já foi aberto
+                    const panel = document.getElementById('faturasPanel');
+                    if (panel) {
+                        const body = document.getElementById('faturasBody');
+                        body.innerHTML = '<div class="faturasPanel__loading">Carregando...</div>';
+                        fetch(ADMIN_BASE_URL + '/services/get_mensalidades_aluno.php?aluno_id=' + ALUNO_ID, {
+                            credentials: 'same-origin',
+                        })
+                        .then(r => r.json())
+                        .then(d => { if (d.success) renderFaturas(d.mensalidades); });
+                        panel.classList.add('is-open');
+                        document.body.style.overflow = 'hidden';
+                    }
+                } else {
+                    msg.textContent   = data.message || 'Erro ao criar cobrança.';
+                    msg.style.color   = '#cf7e7e';
+                    msg.style.display = '';
+                    btn.disabled      = false;
+                    btn.textContent   = 'Criar cobrança';
+                }
+            })
+            .catch(() => {
+                msg.textContent   = 'Erro de comunicação.';
+                msg.style.color   = '#cf7e7e';
+                msg.style.display = '';
+                btn.disabled      = false;
+                btn.textContent   = 'Criar cobrança';
+            });
+        });
+    }
+
     // Exclusão do aluno
     let alunoIdParaExcluir = 0;
 
@@ -368,6 +451,205 @@ const initDetalhe = () => {
             alert('Erro ao comunicar com o servidor.');
             btn.prop('disabled', false).text('Sim, excluir');
         });
+    });
+};
+
+// ─── PAINEL DE FATURAS ───────────────────────────────────────────────────────
+
+const statusLabel = { pago: 'Pago', pendente: 'Pendente', atrasado: 'Atrasado' };
+const fmtData = (v) => v ? v.split('-').reverse().join('/') : '—';
+const fmtVal  = (v) => 'R$ ' + parseFloat(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+
+const renderFaturas = (lista) => {
+    const body = document.getElementById('faturasBody');
+
+    if (!lista || lista.length === 0) {
+        body.innerHTML = '<div class="faturasPanel__empty">Nenhuma fatura encontrada.</div>';
+        return;
+    }
+
+    // Resumo
+    let totPago = 0, totPend = 0, totAtr = 0, totVal = 0;
+    lista.forEach(m => {
+        const v = parseFloat(m.valor) || 0;
+        totVal += v;
+        if (m.status === 'pago')      totPago++;
+        else if (m.status === 'atrasado') totAtr++;
+        else                          totPend++;
+    });
+
+    let statsHtml = '<div class="faturasPanel__stats">'
+        + '<div class="fpStat fpStat--total"><div class="fpStat__label">Total faturas</div><div class="fpStat__value">' + lista.length + '</div></div>'
+        + '<div class="fpStat fpStat--pago"><div class="fpStat__label">Pagas</div><div class="fpStat__value">' + totPago + '</div></div>'
+        + '<div class="fpStat fpStat--pend"><div class="fpStat__label">Pendentes</div><div class="fpStat__value">' + totPend + '</div></div>'
+        + (totAtr > 0 ? '<div class="fpStat fpStat--atr"><div class="fpStat__label">Atrasadas</div><div class="fpStat__value">' + totAtr + '</div></div>' : '')
+        + '</div>';
+
+    let rows = lista.map(m => {
+        const matriculaTag = m.matricula_valor && parseFloat(m.matricula_valor) > 0
+            ? '<br><span class="fpMatricula">+ matrícula ' + fmtVal(m.matricula_valor) + '</span>'
+            : '';
+
+        const colorClass = m.status === 'pago' ? 'is-pago' : (m.status === 'atrasado' ? 'is-atrasado' : 'is-pendente');
+
+        const isAvulso = m.tipo === 'avulso';
+        const refCell  = isAvulso
+            ? '<span class="fpRefStack fpRefStack--extra">'
+                + '<span class="fpExtraTag">EXTRA</span>'
+                + '<strong>' + $('<span>').text(m.descricao || '—').html() + '</strong>'
+              + '</span>'
+            : '<strong>' + $('<span>').text(m.referencia).html() + '</strong>';
+        const turmaCell = isAvulso
+            ? '<span style="color:#555">—</span>'
+            : $('<span>').text(m.turma_nome).html();
+
+        return '<tr data-id="' + m.id + '">'
+            + '<td>' + refCell + '</td>'
+            + '<td>' + turmaCell + '</td>'
+            + '<td>' + fmtVal(m.valor) + matriculaTag + '</td>'
+            + '<td>' + fmtData(m.vencimento) + '</td>'
+            + '<td class="fpCellPago">' + (m.data_pagamento ? fmtData(m.data_pagamento) : '<span style="color:#444">—</span>') + '</td>'
+            + '<td>'
+                + '<div class="fpStatusWrap">'
+                    + '<select class="fpStatusSelect ' + colorClass + '" data-id="' + m.id + '" data-status="' + m.status + '">'
+                        + '<option value="pendente"' + (m.status === 'pendente' ? ' selected' : '') + '>Pendente</option>'
+                        + '<option value="pago"'     + (m.status === 'pago'     ? ' selected' : '') + '>Pago</option>'
+                        + '<option value="atrasado"' + (m.status === 'atrasado' ? ' selected' : '') + '>Atrasado</option>'
+                    + '</select>'
+                    + '<input type="date" class="fpDateInput" value="' + (m.data_pagamento || new Date().toISOString().slice(0,10)) + '">'
+                    + '<button class="fpStatusSave">Salvar</button>'
+                    + '<span class="fpFlash fpFlash--ok">&#10003;</span>'
+                    + '<span class="fpFlash fpFlash--err">&#10007;</span>'
+                + '</div>'
+            + '</td>'
+        + '</tr>';
+    }).join('');
+
+    body.innerHTML = statsHtml
+        + '<table class="fpTable">'
+        + '<thead><tr><th>Referência</th><th>Turma</th><th>Valor</th><th>Vencimento</th><th>Data pag.</th><th>Status</th></tr></thead>'
+        + '<tbody>' + rows + '</tbody>'
+        + '</table>';
+
+    // Bind events
+    body.querySelectorAll('.fpStatusSelect').forEach(sel => {
+        sel.addEventListener('change', function () {
+            const wrap    = this.closest('.fpStatusWrap');
+            const dateInp = wrap.querySelector('.fpDateInput');
+            const saveBtn = wrap.querySelector('.fpStatusSave');
+
+            // Limpa classes de cor
+            sel.className = 'fpStatusSelect is-' + this.value;
+
+            if (this.value === 'pago') {
+                dateInp.style.display = '';
+                saveBtn.style.display = '';
+            } else {
+                dateInp.style.display = 'none';
+                saveBtn.style.display = 'none';
+                salvarStatusFatura(this.closest('tr').dataset.id, this.value, '', wrap);
+            }
+        });
+    });
+
+    body.querySelectorAll('.fpStatusSave').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const wrap    = this.closest('.fpStatusWrap');
+            const dateInp = wrap.querySelector('.fpDateInput');
+            const tr      = this.closest('tr');
+            salvarStatusFatura(tr.dataset.id, 'pago', dateInp.value, wrap);
+        });
+    });
+};
+
+const salvarStatusFatura = (id, status, dataPag, wrap) => {
+    const flashOk  = wrap.querySelector('.fpFlash--ok');
+    const flashErr = wrap.querySelector('.fpFlash--err');
+    const saveBtn  = wrap.querySelector('.fpStatusSave');
+    flashOk.style.display = flashErr.style.display = 'none';
+    if (saveBtn) saveBtn.disabled = true;
+
+    const fd = new FormData();
+    fd.append('id', id);
+    fd.append('status', status);
+    if (dataPag) fd.append('data_pagamento', dataPag);
+
+    fetch(ADMIN_BASE_URL + '/services/update_mensalidade_status.php', {
+        method: 'POST', credentials: 'same-origin', body: fd,
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            flashOk.style.display = '';
+            setTimeout(() => { flashOk.style.display = 'none'; }, 2500);
+
+            // Atualiza célula de data paga
+            const tr = wrap.closest('tr');
+            const cellPago = tr.querySelector('.fpCellPago');
+            if (status === 'pago' && dataPag) {
+                cellPago.textContent = dataPag.split('-').reverse().join('/');
+            } else if (status !== 'pago') {
+                cellPago.innerHTML = '<span style="color:#444">—</span>';
+            }
+
+            // Oculta date+save se foi salvo com sucesso como pago
+            if (status === 'pago') {
+                wrap.querySelector('.fpDateInput').style.display = 'none';
+                if (saveBtn) { saveBtn.style.display = 'none'; saveBtn.disabled = false; }
+            }
+        } else {
+            flashErr.style.display = '';
+            if (saveBtn) saveBtn.disabled = false;
+        }
+    })
+    .catch(() => {
+        flashErr.style.display = '';
+        if (saveBtn) saveBtn.disabled = false;
+    });
+};
+
+const initFaturasDrawer = () => {
+    const panel     = document.getElementById('faturasPanel');
+    const body      = document.getElementById('faturasBody');
+    const nomeSpan  = document.getElementById('faturasNomeAluno');
+    const btnAbrir  = document.getElementById('btnFaturas');
+    const btnFechar = document.getElementById('fechaFaturas');
+
+    if (!panel || !btnAbrir) return;
+
+    let carregado = false;
+
+    const abrirPanel = () => {
+        nomeSpan.textContent = btnAbrir.dataset.nome || '';
+        panel.classList.add('is-open');
+        document.body.style.overflow = 'hidden';
+
+        if (!carregado) {
+            carregado = true;
+            fetch(ADMIN_BASE_URL + '/services/get_mensalidades_aluno.php?aluno_id=' + ALUNO_ID, {
+                credentials: 'same-origin',
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) renderFaturas(data.mensalidades);
+                else body.innerHTML = '<div class="faturasPanel__empty">Erro ao carregar faturas.</div>';
+            })
+            .catch(() => {
+                body.innerHTML = '<div class="faturasPanel__empty">Erro de comunicação.</div>';
+            });
+        }
+    };
+
+    const fecharPanel = () => {
+        panel.classList.remove('is-open');
+        document.body.style.overflow = '';
+    };
+
+    btnAbrir.addEventListener('click', abrirPanel);
+    btnFechar.addEventListener('click', fecharPanel);
+
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && panel.classList.contains('is-open')) fecharPanel();
     });
 };
 

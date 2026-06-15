@@ -67,6 +67,87 @@ if ($id > 0) {
 <head>
 <title>MPG Academy - Admin - Alunos</title>
 <?php include ROOT . '/admin/includes/assets.php'; ?>
+<style>
+/* ── Painel de faturas (slide-up) ──────────────────────────────────────────── */
+.faturasPanel {
+    position: fixed;
+    inset: 0;
+    z-index: 900;
+    background: #0d0d0d;
+    display: flex;
+    flex-direction: column;
+    transform: translateY(100%);
+    transition: transform .32s cubic-bezier(.2,.8,.3,1);
+}
+.faturasPanel.is-open { transform: translateY(0); }
+.faturasPanel__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 28px;
+    border-bottom: 1px solid #1e1e1e;
+    flex-shrink: 0;
+}
+.faturasPanel__header h3 { font-size: 18px; font-weight: 700; margin: 0; }
+.faturasPanel__close {
+    background: none; border: 1px solid #333; border-radius: 6px;
+    color: #aaa; font-size: 18px; width: 36px; height: 36px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.faturasPanel__close:hover { border-color: #555; color: #fff; }
+.faturasPanel__body { flex: 1; overflow-y: auto; padding: 24px 28px; }
+.faturasPanel__stats {
+    display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px;
+}
+.fpStat {
+    background: #111; border: 1px solid #1e1e1e; border-radius: 10px;
+    padding: 14px 20px; min-width: 120px;
+}
+.fpStat__label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: .05em; }
+.fpStat__value { font-size: 20px; font-weight: 700; margin-top: 4px; }
+.fpStat--pago  .fpStat__value { color: #7ecf7e; }
+.fpStat--pend  .fpStat__value { color: #cccc00; }
+.fpStat--atr   .fpStat__value { color: #ff5a5a; }
+.fpStat--total .fpStat__value { color: #e5c200; }
+/* Tabela */
+.fpTable { width: 100%; border-collapse: collapse; }
+.fpTable th {
+    background: #111; color: #666; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .05em;
+    text-align: left; padding: 10px 12px; border-bottom: 1px solid #1e1e1e;
+    white-space: nowrap;
+}
+.fpTable td { padding: 10px 12px; font-size: 13px; border-bottom: 1px solid #141414; vertical-align: middle; }
+.fpTable tr:hover td { background: #0f0f0f; }
+/* Status select inline */
+.fpStatusWrap { display: flex; align-items: center; gap: 8px; }
+.fpStatusSelect {
+    background: #1a1a1a; border: 1px solid #333; border-radius: 6px;
+    color: #ddd; font-size: 12px; padding: 5px 8px; cursor: pointer;
+}
+.fpStatusSelect.is-pago    { border-color: #3a6b3a; color: #7ecf7e; }
+.fpStatusSelect.is-atrasado{ border-color: #6b3a3a; color: #ff5a5a; }
+.fpStatusSelect.is-pendente{ border-color: #6b6b3a; color: #cccc00; }
+.fpStatusSave {
+    background: #e5c200; color: #111; border: none; border-radius: 5px;
+    font-size: 11px; font-weight: 700; padding: 5px 10px; cursor: pointer; display: none;
+}
+.fpDateInput {
+    background: #1a1a1a; border: 1px solid #333; border-radius: 6px;
+    color: #ddd; font-size: 12px; padding: 5px 8px; display: none;
+}
+.fpFlash { font-size: 11px; font-weight: 700; display: none; }
+.fpFlash--ok  { color: #7ecf7e; }
+.fpFlash--err { color: #ff5a5a; }
+/* Matrícula tag */
+.fpMatricula {
+    display: inline-block; background: #1f1d00; color: #e5c200;
+    border: 1px solid #3a3600; border-radius: 3px; font-size: 10px;
+    padding: 1px 5px; margin-top: 3px; vertical-align: middle;
+}
+.faturasPanel__empty { text-align: center; color: #555; padding: 40px 0; font-size: 14px; }
+.faturasPanel__loading { text-align: center; color: #555; padding: 40px 0; }
+</style>
 </head>
 <body>
 
@@ -87,16 +168,23 @@ if ($id > 0) {
                     <h2>Detalhe do <span>Aluno</span></h2>
                     <p>Informações completas do aluno cadastrado.</p>
                 </div>
-                <?php if ($_SESSION['usuario']['nivel_acesso'] === 'admin'): ?>
                 <div class="col-md-4 alunos__headerActions">
+                    <button class="btn btn--outline" id="btnFaturas"
+                            data-nome="<?= htmlspecialchars($aluno['nome']) ?>">
+                        &#128196; Faturas
+                    </button>
+                    <button class="btn btn--primary btn--sm" id="btnNovaCobranca">
+                        + Cobrança extra
+                    </button>
+                    <?php if ($_SESSION['usuario']['nivel_acesso'] === 'admin'): ?>
                     <button class="btn btn--error"
                             id="btnExcluir"
                             data-id="<?= $aluno['id'] ?>"
                             data-nome="<?= htmlspecialchars($aluno['nome']) ?>">
                         Excluir Aluno
                     </button>
+                    <?php endif; ?>
                 </div>
-                <?php endif; ?>
             </div>
 
             <div class="alunos__detailLayout">
@@ -289,6 +377,17 @@ if ($id > 0) {
             </div>
         </section>
 
+        <!-- ── Painel de faturas ─────────────────────────────────────────── -->
+        <div class="faturasPanel" id="faturasPanel">
+            <div class="faturasPanel__header">
+                <h3>Faturas — <span id="faturasNomeAluno"></span></h3>
+                <button class="faturasPanel__close" id="fechaFaturas">&#10005;</button>
+            </div>
+            <div class="faturasPanel__body" id="faturasBody">
+                <div class="faturasPanel__loading">Carregando...</div>
+            </div>
+        </div>
+
         <!-- Modal de desconto -->
         <div class="confirmModal" id="descontoModal">
             <div class="confirmModal__box descontoModal__box">
@@ -330,6 +429,41 @@ if ($id > 0) {
                     <button class="btn btn--gray" id="descontoCancelar">Cancelar</button>
                     <button class="btn btn--gray" id="descontoRemover">Remover desconto</button>
                     <button class="btn btn--primary" id="descontoSalvar">Salvar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal nova cobrança extra -->
+        <div class="confirmModal" id="cobrancaModal">
+            <div class="confirmModal__box cobrancaModal__box">
+                <h3>Nova cobrança extra</h3>
+                <p class="cobrancaModal__intro">
+                    A cobrança aparecerá na área do aluno e poderá ser paga online.
+                </p>
+                <div class="cobrancaModal__form">
+                    <label class="cobrancaModal__label">
+                        <span>Descrição <em>*</em></span>
+                        <input type="text" id="cobrancaDescricao" class="input cobrancaModal__input"
+                               placeholder="Ex: Camiseta oficial, Taxa de evento..."
+                               maxlength="255">
+                    </label>
+                    <div class="cobrancaModal__row">
+                        <label class="cobrancaModal__label">
+                            <span>Valor (R$) <em>*</em></span>
+                            <input type="number" id="cobrancaValor" class="input cobrancaModal__input"
+                                   min="0.01" step="0.01" placeholder="0,00">
+                        </label>
+                        <label class="cobrancaModal__label">
+                            <span>Vencimento <em>*</em></span>
+                            <input type="date" id="cobrancaVencimento" class="input cobrancaModal__input"
+                                   value="<?= date('Y-m-d', strtotime('+5 days')) ?>">
+                        </label>
+                    </div>
+                </div>
+                <div id="cobrancaMsg" class="cobrancaModal__msg"></div>
+                <div class="confirmModal__actions cobrancaModal__actions">
+                    <button class="btn btn--gray" id="cobrancaCancelar">Cancelar</button>
+                    <button class="btn btn--primary" id="cobrancaSalvar">Criar cobrança</button>
                 </div>
             </div>
         </div>

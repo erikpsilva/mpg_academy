@@ -32,12 +32,13 @@ $turma = $stTurma->fetch();
 
 // Mensalidades em ordem decrescente com nome da turma
 $stMens = $pdo->prepare("
-    SELECT m.id, m.referencia, m.valor, m.vencimento, m.data_pagamento, m.status,
-           t.nome AS turma_nome
+    SELECT m.id, m.referencia, m.tipo, m.descricao, m.valor, m.matricula_valor,
+           m.vencimento, m.data_pagamento, m.status,
+           COALESCE(t.nome, '') AS turma_nome
     FROM mensalidades m
     LEFT JOIN turmas t ON t.id = m.turma_id
     WHERE m.aluno_id = ?
-    ORDER BY m.referencia DESC
+    ORDER BY m.vencimento DESC, m.referencia DESC
 ");
 $stMens->execute([$alunoId]);
 $mensalidades = $stMens->fetchAll();
@@ -230,15 +231,35 @@ function fmtMoney(float $val): string {
                         $isLate    = $m['status'] === 'atrasado';
                         $isPaid    = $m['status'] === 'pago';
                         $isPending = $m['status'] === 'pendente';
-                        $refLabel  = refLabel($m['referencia'], $meses);
+                        $isAvulso  = ($m['tipo'] ?? 'mensalidade') === 'avulso';
+                        $refLabel  = $isAvulso
+                            ? htmlspecialchars($m['descricao'] ?? 'Cobrança extra')
+                            : refLabel($m['referencia'], $meses);
+                        $matriculaValor = (float)($m['matricula_valor'] ?? 0);
                     ?>
 
                     <div class="studentMonthlyTable__row<?= $isLate ? ' studentMonthlyTable__row--late' : '' ?>"
                          role="row"
                          data-status="<?= htmlspecialchars($m['status']) ?>">
-                        <span data-label="Refer&ecirc;ncia"><?= $refLabel ?></span>
+                        <span data-label="Refer&ecirc;ncia">
+                            <?php if ($isAvulso): ?>
+                            <span class="studentMonthlyRef studentMonthlyRef--extra">
+                                <b>EXTRA</b>
+                                <strong><?= $refLabel ?></strong>
+                            </span>
+                            <?php else: ?>
+                            <?= $refLabel ?>
+                            <?php endif; ?>
+                        </span>
                         <span data-label="Vencimento"><?= fmtDate($m['vencimento']) ?></span>
-                        <span data-label="Valor">R$ <?= number_format((float)$m['valor'], 2, ',', '.') ?></span>
+                        <span data-label="Valor">
+                            <?php if ($matriculaValor > 0): ?>
+                                R$ <?= number_format((float)$m['valor'] - $matriculaValor, 2, ',', '.') ?>
+                                <small style="display:block;color:#888;font-size:11px;">+ R$ <?= number_format($matriculaValor, 2, ',', '.') ?> matrícula</small>
+                            <?php else: ?>
+                                R$ <?= number_format((float)$m['valor'], 2, ',', '.') ?>
+                            <?php endif; ?>
+                        </span>
 
                         <span data-label="Status">
                             <?php if ($isLate): ?>

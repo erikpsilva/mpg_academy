@@ -36,7 +36,57 @@ if ($turmaId <= 0 || $alunoId <= 0) {
 
 $pdo = getDbConnection();
 
-$aluno = $pdo->prepare("SELECT id, nome, email, celular FROM alunos WHERE id = ? AND status = 'ativo'");
+function contarAulasTurma(PDO $pdo, int $turmaId, string $dataInicio, string $dataFim): int {
+    $st = $pdo->prepare("
+        SELECT DISTINCT qh.dia_semana
+        FROM turma_horarios th
+        JOIN quadra_horarios qh ON qh.id = th.horario_id
+        WHERE th.turma_id = ?
+    ");
+    $st->execute([$turmaId]);
+    $diasSemana = array_map('intval', $st->fetchAll(PDO::FETCH_COLUMN));
+    if (empty($diasSemana)) return 0;
+
+    $st2 = $pdo->prepare("
+        SELECT DATE_FORMAT(data, '%Y-%m-%d')
+        FROM aulas_canceladas
+        WHERE data BETWEEN ? AND ? AND (turma_id = ? OR turma_id IS NULL)
+    ");
+    $st2->execute([$dataInicio, $dataFim, $turmaId]);
+    $canceladas = $st2->fetchAll(PDO::FETCH_COLUMN);
+
+    $count   = 0;
+    $current = new DateTime($dataInicio);
+    $fim     = new DateTime($dataFim);
+    while ($current <= $fim) {
+        $dow = (int) $current->format('w');
+        if (in_array($dow, $diasSemana, true) && !in_array($current->format('Y-m-d'), $canceladas, true)) {
+            $count++;
+        }
+        $current->modify('+1 day');
+    }
+    return $count;
+}
+
+function calcProporcional(PDO $pdo, int $turmaId, DateTime $entrada, string $dataInicio, float $baseValor): float {
+    $fechamentoDia  = min(30, (int) $entrada->format('t'));
+    $fimCiclo       = $entrada->format('Y-m') . '-' . str_pad($fechamentoDia, 2, '0', STR_PAD_LEFT);
+    $iniCiclo       = $entrada->format('Y-m-01');
+
+    $totalAulas     = contarAulasTurma($pdo, $turmaId, $iniCiclo, $fimCiclo);
+    $aulasPendentes = contarAulasTurma($pdo, $turmaId, $dataInicio, $fimCiclo);
+
+    if ($totalAulas > 0) {
+        return round(($aulasPendentes / $totalAulas) * $baseValor, 2);
+    }
+    // Fallback: proporcional por dias quando a turma não tem horários cadastrados
+    $daysInMonth = (int) $entrada->format('t');
+    $entryDay    = (int) $entrada->format('j');
+    $daysUsed    = $daysInMonth - $entryDay + 1;
+    return round(($daysUsed / $daysInMonth) * $baseValor, 2);
+}
+
+$aluno = $pdo->prepare("SELECT id, nome, email, celular, matricula_cobrada FROM alunos WHERE id = ? AND status = 'ativo'");
 $aluno->execute([$alunoId]);
 $aluno = $aluno->fetch();
 
@@ -105,11 +155,8 @@ if ($turmaData && $turmaData['valor_mensalidade'] !== null) {
             $descontoFim    = $fimPromo->format('Y-m-d');
 
         } else {
-            // Dia 6–30: fatura proporcional (dias usados) ao valor promocional, paga na entrada.
-            // Os promo_meses seguintes são gerados mensalmente pelo cron via desconto.
-            $daysInMonth  = (int) $entrada->format('t');
-            $daysUsed     = $daysInMonth - $entryDay + 1;
-            $proportional = round(($daysUsed / $daysInMonth) * $promoValor, 2);
+            // Dia 6–30: fatura proporcional (aulas restantes no ciclo) ao valor promocional.
+            $proportional = calcProporcional($pdo, $turmaId, $entrada, $dataInicio, $promoValor);
 
             $mensalidadesParaGerar[] = [
                 'referencia' => $entrada->format('Y-m'),
@@ -139,9 +186,7 @@ if ($turmaData && $turmaData['valor_mensalidade'] !== null) {
                 'vencimento' => $vencInicial,
             ];
         } else {
-            $daysInMonth  = (int) $entrada->format('t');
-            $daysUsed     = $daysInMonth - $entryDay + 1;
-            $proportional = round(($daysUsed / $daysInMonth) * $valorBase, 2);
+            $proportional = calcProporcional($pdo, $turmaId, $entrada, $dataInicio, $valorBase);
 
             $mensalidadesParaGerar[] = [
                 'referencia' => $entrada->format('Y-m'),
@@ -150,6 +195,20 @@ if ($turmaData && $turmaData['valor_mensalidade'] !== null) {
             ];
         }
     }
+}
+
+// Verifica se deve cobrar matrícula (uma única vez por aluno)
+$matriculaValor = 0.0;
+if (!$aluno['matricula_cobrada']) {
+    $cfgSt = $pdo->prepare("SELECT valor FROM configuracoes WHERE chave = 'valor_matricula'");
+    $cfgSt->execute();
+    $cfgRow = $cfgSt->fetch();
+    $matriculaValor = $cfgRow ? (float) $cfgRow['valor'] : 0.0;
+}
+
+if ($matriculaValor > 0 && !empty($mensalidadesParaGerar)) {
+    $mensalidadesParaGerar[0]['valor']          = round($mensalidadesParaGerar[0]['valor'] + $matriculaValor, 2);
+    $mensalidadesParaGerar[0]['matricula_valor'] = $matriculaValor;
 }
 
 try {
@@ -174,12 +233,21 @@ try {
 
     if (!empty($mensalidadesParaGerar)) {
         $stmtMens = $pdo->prepare("
-            INSERT IGNORE INTO mensalidades (aluno_id, turma_id, referencia, valor, vencimento, status)
-            VALUES (?, ?, ?, ?, ?, 'pendente')
+            INSERT IGNORE INTO mensalidades (aluno_id, turma_id, referencia, valor, matricula_valor, vencimento, status)
+            VALUES (?, ?, ?, ?, ?, ?, 'pendente')
         ");
         foreach ($mensalidadesParaGerar as $m) {
-            $stmtMens->execute([$alunoId, $turmaId, $m['referencia'], $m['valor'], $m['vencimento']]);
+            $stmtMens->execute([
+                $alunoId, $turmaId,
+                $m['referencia'], $m['valor'],
+                $m['matricula_valor'] ?? null,
+                $m['vencimento'],
+            ]);
         }
+    }
+
+    if ($matriculaValor > 0) {
+        $pdo->prepare("UPDATE alunos SET matricula_cobrada = 1 WHERE id = ?")->execute([$alunoId]);
     }
 
     $pdo->commit();

@@ -6,6 +6,9 @@ require_once ROOT . '/config/mercadopago.php';
 $pdo       = getDbConnection();
 $modoTeste = mpModoTeste($pdo);
 
+$cfgMatricula = $pdo->query("SELECT valor FROM configuracoes WHERE chave = 'valor_matricula'")->fetch();
+$valorMatricula = $cfgMatricula ? (float) $cfgMatricula['valor'] : 0.0;
+
 // Carrega emails de notificação cadastrados
 $stEmails        = $pdo->query("SELECT id, email, nome FROM emails_notificacao WHERE ativo = 1 ORDER BY id");
 $emailsNotificacao = $stEmails->fetchAll();
@@ -32,8 +35,29 @@ $emailsNotificacao = $stEmails->fetchAll();
                 </div>
             </div>
 
-            <!-- ── Pagamentos ───────────────────────────────────────── -->
+            <!-- ── Matrícula ───────────────────────────────────────── -->
             <div class="configSection configSection--first">
+                <h3>Matrícula</h3>
+                <div class="configCard">
+                    <div class="configRow configRow--stack">
+                        <div class="configRow__info">
+                            <strong>Taxa de matrícula</strong>
+                            <p>Valor cobrado uma única vez quando o aluno é adicionado a uma turma pela primeira vez. Use <strong>0</strong> para desativar a cobrança.</p>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
+                            <span style="color:#aaa;font-size:14px;">R$</span>
+                            <input type="number" id="inputValorMatricula" min="0" step="0.01"
+                                   value="<?= number_format($valorMatricula, 2, '.', '') ?>"
+                                   style="background:#1a1a1a;border:1px solid #333;border-radius:6px;color:#ddd;font-size:14px;padding:9px 12px;width:130px;">
+                            <button class="btn btn--primary btn--sm" id="btnSalvarMatricula">Salvar</button>
+                        </div>
+                        <div id="matriculaMsg" class="configMsg" style="margin-top:8px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Pagamentos ───────────────────────────────────────── -->
+            <div class="configSection">
                 <h3>Pagamentos — Mercado Pago</h3>
                 <div class="configCard">
 
@@ -126,6 +150,50 @@ $emailsNotificacao = $stEmails->fetchAll();
 var ADMIN_BASE_URL = "<?= ADMIN_BASE_URL ?>";
 var PK_TEST = "<?= substr(MP_PUBLIC_KEY_TEST, 0, 24) ?>…";
 var PK_PROD = "<?= substr(MP_PUBLIC_KEY_PROD, 0, 24) ?>";
+
+// ── Matrícula ─────────────────────────────────────────────────────────────────
+(function () {
+    var btn = document.getElementById('btnSalvarMatricula');
+    var input = document.getElementById('inputValorMatricula');
+    var msg = document.getElementById('matriculaMsg');
+    if (!btn) return;
+
+    btn.addEventListener('click', function () {
+        var valor = parseFloat(input.value);
+        if (isNaN(valor) || valor < 0) {
+            msg.textContent = 'Informe um valor válido (0 para desativar).';
+            msg.className   = 'configMsg is-error';
+            return;
+        }
+        btn.disabled = true;
+        msg.className = 'configMsg';
+
+        var body = new URLSearchParams({ chave: 'valor_matricula', valor: valor.toFixed(2) });
+        fetch(ADMIN_BASE_URL + '/services/save_configuracao.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            credentials: 'same-origin',
+            body: body.toString(),
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (data.success) {
+                msg.textContent = valor > 0
+                    ? 'Taxa de R$ ' + valor.toFixed(2).replace('.', ',') + ' salva.'
+                    : 'Taxa de matrícula desativada.';
+                msg.className = 'configMsg is-success';
+            } else {
+                msg.textContent = 'Erro: ' + (data.message || '');
+                msg.className   = 'configMsg is-error';
+            }
+        })
+        .catch(function () {
+            msg.textContent = 'Erro de comunicação.';
+            msg.className   = 'configMsg is-error';
+        })
+        .finally(function () { btn.disabled = false; });
+    });
+}());
 
 (function () {
     var toggle  = document.getElementById('toggleModoteste');

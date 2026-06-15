@@ -19,25 +19,28 @@ if (empty($_SESSION['usuario'])) {
     exit;
 }
 
-$chave = trim($_POST['chave'] ?? '');
-$valor = $_POST['valor'] ?? '';
-
-// Somente chaves permitidas podem ser alteradas
-$chavesPermitidas = ['pagamento_modo_teste', 'valor_matricula'];
-if (!in_array($chave, $chavesPermitidas, true)) {
+$id = (int) ($_POST['id'] ?? 0);
+if ($id <= 0) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Chave inválida.']);
+    echo json_encode(['success' => false, 'message' => 'ID inválido.']);
     exit;
 }
 
 require_once dirname(__FILE__, 3) . '/config/database.php';
 $pdo = getDbConnection();
 
-$stmt = $pdo->prepare("
-    INSERT INTO configuracoes (chave, valor)
-    VALUES (?, ?)
-    ON DUPLICATE KEY UPDATE valor = VALUES(valor), atualizado_em = CURRENT_TIMESTAMP
-");
-$stmt->execute([$chave, $valor]);
+try {
+    $st = $pdo->prepare("DELETE FROM aulas_canceladas WHERE id = ?");
+    $st->execute([$id]);
 
-echo json_encode(['success' => true]);
+    if ($st->rowCount() === 0) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'message' => 'Registro não encontrado.']);
+        exit;
+    }
+
+    echo json_encode(['success' => true]);
+} catch (PDOException $e) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Erro ao excluir: ' . $e->getMessage()]);
+}

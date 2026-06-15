@@ -159,6 +159,13 @@
                 </a>
             </li>
 
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/aulas-canceladas"
+                   class="sidebar__link <?= ($subRoute === 'aulas-canceladas') ? 'sidebar__link--active' : '' ?>">
+                    Aulas Canceladas
+                </a>
+            </li>
+
             <li class="sidebar__divider" aria-hidden="true"></li>
             <li class="sidebar__section">Plataforma</li>
 

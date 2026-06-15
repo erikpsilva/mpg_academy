@@ -24,11 +24,38 @@
     &__headerActions {
         align-items: center;
         display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
         justify-content: flex-end;
+
+        .btn {
+            align-items: center;
+            display: inline-flex;
+            justify-content: center;
+            min-height: 50px;
+            min-width: 112px;
+            padding: 0 18px;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .btn--sm {
+            font-size: 12px;
+            line-height: 1.15;
+            padding: 0 18px;
+        }
+
+        .btn--error {
+            min-width: 132px;
+        }
 
         @media @tabletSM {
             margin-top: 15px;
             justify-content: flex-start;
+
+            .btn {
+                flex: 1 1 145px;
+            }
         }
     }
 
@@ -618,18 +645,21 @@
     &__turmaRow {
         align-items: flex-start;
         border-bottom: 1px solid @borderColor;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px 12px;
-        padding: 13px 0;
+        display: grid;
+        gap: 12px 14px;
+        grid-template-columns: minmax(150px, 1fr) auto auto;
+        padding: 16px 0;
 
         &:last-child { border-bottom: none; }
+
+        @media @tabletSM {
+            grid-template-columns: 1fr;
+        }
     }
 
     &__turmaInfo {
         display: flex;
         flex-direction: column;
-        flex: 1;
         min-width: 140px;
     }
 
@@ -674,19 +704,27 @@
         display: flex;
         align-items: center;
         flex-wrap: wrap;
-        gap: 8px;
-        flex-shrink: 0;
+        gap: 10px;
+        grid-column: 1 / -1;
         justify-content: flex-end;
         width: 100%;
 
         .btn {
+            align-items: center;
+            display: inline-flex;
+            justify-content: center;
             min-height: 34px;
-            padding-left: 12px;
-            padding-right: 12px;
+            min-width: 92px;
+            padding: 0 14px;
+            text-align: center;
         }
 
         @media @tabletSM {
             justify-content: flex-start;
+
+            .btn {
+                flex: 1 1 130px;
+            }
         }
     }
 
@@ -708,10 +746,10 @@
         align-items: end;
         border-top: 1px solid @borderColor;
         display: grid;
-        gap: 14px;
+        gap: 16px;
         grid-template-columns: minmax(220px, 1fr) 150px;
-        margin-top: 14px;
-        padding-top: 16px;
+        margin-top: 18px;
+        padding-top: 18px;
 
         .input {
             background-color: rgba(255, 255, 255, 0.055);
@@ -733,11 +771,15 @@
         }
 
         .btn {
+            align-items: center;
+            display: inline-flex;
+            justify-content: center;
             flex-shrink: 0;
             grid-column: 1 / -1;
             justify-self: end;
-            min-height: 46px;
-            min-width: 128px;
+            min-height: 48px;
+            min-width: 130px;
+            padding: 0 22px;
         }
 
         @media @notebookSM {
@@ -938,6 +980,38 @@
     &--pendente { background: rgba(255, 157, 0, 0.14); color: @orange; }
 }
 
+.fpRefStack {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+    min-width: 0;
+
+    strong {
+        color: @white;
+        font-size: 13px;
+        font-weight: @bold;
+        line-height: 1.25;
+        overflow-wrap: anywhere;
+    }
+}
+
+.fpExtraTag {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    min-height: 18px;
+    padding: 0 7px;
+    border: 1px solid rgba(96, 165, 250, 0.38);
+    border-radius: 4px;
+    background: rgba(96, 165, 250, 0.12);
+    color: #60a5fa;
+    font-size: 10px;
+    font-weight: @bold;
+    line-height: 1;
+    text-transform: uppercase;
+}
+
 // ── Modal de confirmação ──────────────────────────────────────────────────────
 
 .confirmModal {
@@ -1133,5 +1207,102 @@
         @media @tabletSM {
             grid-template-columns: 1fr;
         }
+    }
+}
+
+// Modal de cobrança extra
+.cobrancaModal {
+
+    &__box {
+        max-width: 460px !important;
+    }
+
+    &__intro {
+        color: rgba(255, 255, 255, 0.58) !important;
+        font-size: 13px !important;
+        line-height: 1.55 !important;
+        margin-bottom: 22px !important;
+    }
+
+    &__form {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    &__row {
+        display: grid;
+        gap: 14px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+
+        @media @tabletSM {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    &__label {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+
+        span {
+            color: rgba(255, 255, 255, 0.52);
+            font-size: 11px;
+            font-weight: @bold;
+            letter-spacing: 0.8px;
+            margin-bottom: 7px;
+            text-transform: uppercase;
+
+            em {
+                color: @error;
+                font-style: normal;
+            }
+        }
+    }
+
+    &__input {
+        background:
+            linear-gradient(90deg, rgba(255, 213, 0, 0.055), transparent 34%),
+            rgba(255, 255, 255, 0.055) !important;
+        border: 1px solid rgba(255, 255, 255, 0.16) !important;
+        border-radius: 7px !important;
+        color: @white !important;
+        font-family: @font;
+        font-size: 14px !important;
+        height: 48px !important;
+        margin-bottom: 0 !important;
+        padding: 0 14px !important;
+        width: 100%;
+        .transition;
+
+        &::placeholder {
+            color: rgba(255, 255, 255, 0.38);
+        }
+
+        &:focus {
+            border-color: @alert !important;
+            box-shadow: 0 0 0 3px rgba(255, 213, 0, 0.1);
+            outline: none;
+        }
+    }
+
+    input[type="date"] {
+        color-scheme: dark;
+
+        &::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+            filter: invert(84%) sepia(85%) saturate(1648%) hue-rotate(359deg) brightness(103%) contrast(104%);
+            opacity: 0.9;
+        }
+    }
+
+    &__msg {
+        display: none;
+        font-size: 13px;
+        margin-top: 12px;
+    }
+
+    &__actions {
+        margin-top: 22px;
     }
 }

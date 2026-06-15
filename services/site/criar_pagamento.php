@@ -27,9 +27,10 @@ if (!$input) {
 }
 
 $mensalidadeId = (int) ($input['mensalidade_id'] ?? 0);
+$isPix         = ($input['payment_method_id'] ?? '') === 'pix';
 $token         = trim($input['token'] ?? '');
 
-if ($mensalidadeId <= 0 || empty($token)) {
+if ($mensalidadeId <= 0 || (!$isPix && empty($token))) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Dados insuficientes.']);
     exit;
@@ -42,9 +43,8 @@ require_once dirname(__FILE__, 3) . '/config/app.php';
 $pdo     = getDbConnection();
 $alunoId = (int) $_SESSION['aluno']['id'];
 
-// Busca mensalidade (deve pertencer ao aluno logado e não estar paga)
 $stMens = $pdo->prepare("
-    SELECT m.id, m.referencia, m.valor, m.vencimento, m.status,
+    SELECT m.id, m.referencia, m.tipo, m.descricao, m.valor, m.vencimento, m.status,
            a.email AS aluno_email, a.nome AS aluno_nome, a.cpf AS aluno_cpf
     FROM mensalidades m
     JOIN alunos a ON a.id = m.aluno_id
@@ -59,7 +59,6 @@ if (!$mens) {
     exit;
 }
 
-// Calcula valor correto (inclui multa + juros se atrasada)
 $valor = (float) $mens['valor'];
 $hoje  = new DateTime('today');
 $venc  = new DateTime($mens['vencimento']);
@@ -74,42 +73,63 @@ if ($mens['status'] === 'atrasado') {
     $total = $valor;
 }
 
-// Monta a descrição da referência (ex: "Mai/2026")
-$meses = ['01'=>'Jan','02'=>'Fev','03'=>'Mar','04'=>'Abr','05'=>'Mai','06'=>'Jun',
-          '07'=>'Jul','08'=>'Ago','09'=>'Set','10'=>'Out','11'=>'Nov','12'=>'Dez'];
-[$refAno, $refMes] = explode('-', $mens['referencia']);
-$refLabel = ($meses[$refMes] ?? $refMes) . '/' . $refAno;
+$isAvulso = ($mens['tipo'] ?? 'mensalidade') === 'avulso';
+if ($isAvulso) {
+    $refLabel = $mens['descricao'] ?? 'Cobrança extra';
+} else {
+    $meses = ['01'=>'Jan','02'=>'Fev','03'=>'Mar','04'=>'Abr','05'=>'Mai','06'=>'Jun',
+              '07'=>'Jul','08'=>'Ago','09'=>'Set','10'=>'Out','11'=>'Nov','12'=>'Dez'];
+    [$refAno, $refMes] = explode('-', $mens['referencia']);
+    $refLabel = ($meses[$refMes] ?? $refMes) . '/' . $refAno;
+}
 
-// Monta payload para MP
-$paymentData = [
-    'transaction_amount' => $total,
-    'token'              => $token,
-    'description'        => 'MPG Academy — Mensalidade ' . $refLabel,
-    'installments'       => (int) ($input['installments'] ?? 1),
-    'payment_method_id'  => $input['payment_method_id'] ?? '',
-    'payer'              => [
-        'email'          => $input['payer']['email'] ?? $mens['aluno_email'],
-        'identification' => [
-            'type'   => $input['payer']['identification']['type']   ?? 'CPF',
-            'number' => $input['payer']['identification']['number'] ?? preg_replace('/\D/', '', $mens['aluno_cpf']),
-        ],
+$payer = [
+    'email'          => $input['payer']['email'] ?? $mens['aluno_email'],
+    'identification' => [
+        'type'   => $input['payer']['identification']['type']   ?? 'CPF',
+        'number' => $input['payer']['identification']['number'] ?? preg_replace('/\D/', '', $mens['aluno_cpf'] ?? ''),
     ],
-    'metadata' => ['mensalidade_id' => $mensalidadeId],
 ];
 
-if (!empty($input['issuer_id'])) {
-    $paymentData['issuer_id'] = (int) $input['issuer_id'];
+if ($isPix) {
+    $paymentData = [
+        'transaction_amount' => $total,
+        'payment_method_id'  => 'pix',
+        'description'        => 'MPG Academy — Mensalidade ' . $refLabel,
+        'payer'              => ['email' => $payer['email']],
+        'metadata'           => ['mensalidade_id' => $mensalidadeId],
+    ];
+} else {
+    $paymentData = [
+        'transaction_amount' => $total,
+        'token'              => $token,
+        'description'        => 'MPG Academy — Mensalidade ' . $refLabel,
+        'installments'       => (int) ($input['installments'] ?? 1),
+        'payment_method_id'  => $input['payment_method_id'] ?? '',
+        'payer'              => $payer,
+        'metadata'           => ['mensalidade_id' => $mensalidadeId],
+    ];
+    if (!empty($input['issuer_id'])) {
+        $paymentData['issuer_id'] = (int) $input['issuer_id'];
+    }
 }
 
 $accessToken = mpAccessToken($pdo);
-$modoTeste   = mpModoTeste($pdo);
-error_log('[mpg-pagamento] modo_teste=' . ($modoTeste ? 'SIM' : 'NAO') . ' | token_fim=' . substr($accessToken, -10) . ' | appIsLocal=' . (APP_IS_LOCAL ? 'SIM' : 'NAO'));
 $result      = mpCriarPagamento($accessToken, $paymentData);
 $body        = $result['body'];
 $status      = $body['status'] ?? '';
+$mpPaymentId = $body['id'] ?? null;
 
 if (in_array($status, ['approved', 'pending', 'in_process'], true)) {
-    // Atualiza mensalidade e cria lançamento financeiro imediatamente
+
+    // Salva mp_payment_id para rastreamento
+    if ($mpPaymentId) {
+        try {
+            $pdo->prepare("UPDATE mensalidades SET mp_payment_id = ? WHERE id = ?")
+                ->execute([$mpPaymentId, $mensalidadeId]);
+        } catch (PDOException $e) {}
+    }
+
     if ($status === 'approved') {
         $pdo->prepare("
             UPDATE mensalidades
@@ -117,7 +137,6 @@ if (in_array($status, ['approved', 'pending', 'in_process'], true)) {
             WHERE id = ?
         ")->execute([$mensalidadeId]);
 
-        // Registra receita no livro-caixa (sem duplicar se já existir)
         $competencia = date('Y-m');
         $descLanc    = 'Mensalidade ' . $refLabel . ' — ' . $mens['aluno_nome'] . ' (via MP)';
         try {
@@ -127,15 +146,37 @@ if (in_array($status, ['approved', 'pending', 'in_process'], true)) {
                 VALUES (?, CURDATE(), 'receita', 'mensalidade', ?, ?, 'auto', 'mensalidade', ?)
             ")->execute([$competencia, $descLanc, $total, $mensalidadeId]);
         } catch (PDOException $e) {}
+
+        echo json_encode([
+            'success'    => true,
+            'status'     => 'approved',
+            'payment_id' => $mpPaymentId,
+            'referencia' => $refLabel,
+            'valor_pago' => $total,
+        ]);
+
+    } elseif ($isPix) {
+        $txData = $body['point_of_interaction']['transaction_data'] ?? [];
+        echo json_encode([
+            'success'        => true,
+            'status'         => 'pix_pending',
+            'payment_id'     => $mpPaymentId,
+            'qr_code'        => $txData['qr_code']        ?? '',
+            'qr_code_base64' => $txData['qr_code_base64'] ?? '',
+            'referencia'     => $refLabel,
+            'valor_pago'     => $total,
+        ]);
+
+    } else {
+        echo json_encode([
+            'success'    => true,
+            'status'     => $status,
+            'payment_id' => $mpPaymentId,
+            'referencia' => $refLabel,
+            'valor_pago' => $total,
+        ]);
     }
 
-    echo json_encode([
-        'success'      => true,
-        'status'       => $status,
-        'payment_id'   => $body['id'] ?? null,
-        'referencia'   => $refLabel,
-        'valor_pago'   => $total,
-    ]);
 } else {
     $detail = $body['status_detail'] ?? ($body['message'] ?? 'Pagamento recusado.');
     echo json_encode([

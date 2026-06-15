@@ -137,8 +137,10 @@ if ($aba === 'dividas') {
     $dividas = $pdo->query("
         SELECT d.*,
                (SELECT COUNT(*) FROM parcelas_dividas WHERE divida_id=d.id) AS total_parcelas,
-               (SELECT COUNT(*) FROM parcelas_dividas WHERE divida_id=d.id AND status!='pendente') AS pagas,
-               (SELECT SUM(valor) FROM parcelas_dividas WHERE divida_id=d.id AND status!='pendente') AS total_pago
+               (SELECT COUNT(*) FROM parcelas_dividas WHERE divida_id=d.id AND status NOT IN ('pendente')) AS pagas,
+               (SELECT SUM(valor) FROM parcelas_dividas WHERE divida_id=d.id AND status NOT IN ('pendente')) AS total_pago,
+               (SELECT numero FROM parcelas_dividas WHERE divida_id=d.id AND status='pendente' ORDER BY numero LIMIT 1) AS proxima_numero,
+               (SELECT data_vencimento FROM parcelas_dividas WHERE divida_id=d.id AND status='pendente' ORDER BY numero LIMIT 1) AS proxima_vencimento
         FROM dividas d ORDER BY d.criado_em DESC
     ")->fetchAll();
 }
@@ -320,7 +322,10 @@ if ($aba === 'divida') {
                         data-descricao="<?= htmlspecialchars($dividaDetalhe['descricao']) ?>"
                         data-credor="<?= htmlspecialchars($dividaDetalhe['credor'] ?? '') ?>"
                         data-categoria="<?= htmlspecialchars($dividaDetalhe['categoria']) ?>"
-                        data-observacao="<?= htmlspecialchars($dividaDetalhe['observacao'] ?? '') ?>">
+                        data-observacao="<?= htmlspecialchars($dividaDetalhe['observacao'] ?? '') ?>"
+                        data-valor-total="<?= $dividaDetalhe['valor_total'] ?>"
+                        data-num-parcelas="<?= $dividaDetalhe['num_parcelas'] ?>"
+                        data-data-inicio="<?= $dividaDetalhe['data_inicio'] ?>">
                     ✏️ Editar dados
                 </button>
             </div>
@@ -328,61 +333,107 @@ if ($aba === 'divida') {
 
         <dl class="dividaInfo" id="dividaInfoDl">
             <div><dt>Credor</dt><dd id="dividaCredorDd"><?= htmlspecialchars($dividaDetalhe['credor'] ?: '—') ?></dd></div>
-            <div><dt>Valor total</dt><dd><?= fmtR((float)$dividaDetalhe['valor_total']) ?></dd></div>
-            <div><dt>Parcelas</dt><dd><?= count($parcelas) ?>x de <?= fmtR((float)$dividaDetalhe['valor_parcela']) ?></dd></div>
+            <div><dt>Categoria</dt><dd id="dividaCategoriaDd"><?= ucfirst($dividaDetalhe['categoria']) ?></dd></div>
+            <div><dt>Valor total</dt><dd id="dividaValorTotalDd"><?= fmtR((float)$dividaDetalhe['valor_total']) ?></dd></div>
+            <div><dt>Parcelas</dt><dd id="dividaParcelasDd"><?= count($parcelas) ?>x de <?= fmtR((float)$dividaDetalhe['valor_parcela']) ?></dd></div>
             <div><dt>Status</dt><dd><?= $dividaDetalhe['status'] === 'quitado' ? '✅ Quitada' : '⏳ Em aberto' ?></dd></div>
             <?php if ($dividaDetalhe['observacao']): ?>
             <div><dt>Observação</dt><dd id="dividaObsDd"><?= htmlspecialchars($dividaDetalhe['observacao']) ?></dd></div>
             <?php endif; ?>
         </dl>
 
-        <div class="finTable__wrap">
-            <table class="finTable">
-                <thead>
-                    <tr>
-                        <th>#</th><th>Vencimento</th><th>Valor</th>
-                        <th>Pagamento</th><th>Status</th><th>Ação</th>
-                    </tr>
-                </thead>
-                <tbody>
+        <!-- ── Parcelas ──────────────────────────────────────────────────────── -->
+        <?php
+            $nTotalParc = count($parcelas);
+            $nPagasParc = count(array_filter($parcelas, fn($p) => in_array($p['status'], ['pago','adiantado'])));
+            $pendentes  = array_values(array_filter($parcelas, fn($p) => $p['status'] === 'pendente'));
+            $hoje       = date('Y-m-d');
+        ?>
+        <div style="margin-top:24px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                <h3 style="margin:0;font-size:15px;color:#eee;">Parcelas</h3>
+                <span style="font-size:13px;color:#888;"><?= $nPagasParc ?>/<?= $nTotalParc ?> pagas</span>
+            </div>
+
+            <!-- Progress dots -->
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px;">
                 <?php foreach ($parcelas as $p):
-                    $venc = new DateTime($p['data_vencimento']);
-                    $isAdiantavel = $p['status'] === 'pendente' && $venc > new DateTime('today');
-                    $isAtrasado   = $p['status'] === 'pendente' && $venc < new DateTime('today');
+                    $dotColor = $p['status'] === 'pago'      ? '#4caf50'
+                              : ($p['status'] === 'adiantado' ? '#2196f3'
+                              : ($p['data_vencimento'] < $hoje ? '#ff7070' : '#555'));
+                    $dotTip   = '#' . $p['numero'] . ' — ' . ucfirst($p['status']);
                 ?>
-                <tr>
-                    <td><strong><?= $p['numero'] ?>/<?= count($parcelas) ?></strong></td>
-                    <td><?= $venc->format('d/m/Y') ?><?= $isAtrasado ? ' <span style="color:#ff7070;font-size:11px;">atrasada</span>' : '' ?></td>
-                    <td><?= fmtR((float)$p['valor']) ?></td>
-                    <td><?= $p['data_pagamento'] ? date('d/m/Y', strtotime($p['data_pagamento'])) : '—' ?></td>
-                    <td>
-                        <?php if ($p['status'] === 'pago'):     ?><span class="badge-pago">Pago</span><?php
-                        elseif ($p['status'] === 'adiantado'):  ?><span class="badge-adi">Adiantado</span><?php
-                        elseif ($isAtrasado):                   ?><span class="badge-desp">Atrasada</span><?php
-                        else:                                   ?><span class="badge-pend">Pendente</span><?php endif; ?>
-                    </td>
-                    <td>
-                        <?php if ($p['status'] === 'pendente'): ?>
-                        <div style="display:flex;gap:6px;">
-                            <button class="btn btn--sm btn--primary btnPagarParcela"
-                                    data-id="<?= $p['id'] ?>" data-tipo="pago"
-                                    data-label="parcela <?= $p['numero'] ?>">
-                                Pagar
-                            </button>
-                            <?php if ($isAdiantavel): ?>
-                            <button class="btn btn--sm btn--gray btnPagarParcela"
-                                    data-id="<?= $p['id'] ?>" data-tipo="adiantado"
-                                    data-label="parcela <?= $p['numero'] ?>">
-                                Adiantar
-                            </button>
-                            <?php endif; ?>
-                        </div>
-                        <?php endif; ?>
-                    </td>
-                </tr>
+                <span title="<?= $dotTip ?>"
+                      style="width:30px;height:30px;border-radius:50%;background:<?= $dotColor ?>;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;cursor:default;">
+                    <?= $p['numero'] ?>
+                </span>
                 <?php endforeach; ?>
-                </tbody>
-            </table>
+            </div>
+
+            <?php
+                $proxima     = $pendentes[0] ?? null;
+                $adiantaveis = array_slice($pendentes, 1);
+            ?>
+            <?php if ($proxima): ?>
+            <!-- Action card: próxima parcela -->
+            <?php $proxVencDt = new DateTime($proxima['data_vencimento']); $proxAtrasada = $proxima['data_vencimento'] < $hoje; ?>
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:16px 20px;background:#1e1e1e;border-radius:8px;border:1px solid #2a2a2a;margin-bottom:8px;">
+                <div>
+                    <div style="font-size:11px;color:#555;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Próxima parcela</div>
+                    <div style="font-size:16px;font-weight:700;color:#eee;">
+                        Parcela <?= $proxima['numero'] ?>/<?= $nTotalParc ?> — <?= fmtR((float)$proxima['valor']) ?>
+                    </div>
+                    <div style="font-size:12px;color:<?= $proxAtrasada ? '#ff7070' : '#888' ?>;margin-top:2px;">
+                        Venc. <?= $proxVencDt->format('d/m/Y') ?><?= $proxAtrasada ? ' — atrasada' : '' ?>
+                    </div>
+                </div>
+                <div style="display:flex;gap:8px;">
+                    <button class="btn btn--primary" id="btnPagarProxima"
+                            data-id="<?= $proxima['id'] ?>"
+                            data-num="<?= $proxima['numero'] ?>"
+                            data-total="<?= $nTotalParc ?>">
+                        Pagar <?= $proxima['numero'] ?>/<?= $nTotalParc ?>
+                    </button>
+                    <?php if ($adiantaveis): ?>
+                    <button class="btn btn--gray" id="btnAbrirAdiantar">Adiantar parcelas</button>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <?php elseif (empty($pendentes) && $nTotalParc > 0): ?>
+            <div style="padding:20px;text-align:center;color:#4caf50;font-weight:600;font-size:15px;">✅ Todas as parcelas foram quitadas</div>
+            <?php endif; ?>
+
+            <!-- Lista de parcelas -->
+            <div class="finTable__wrap" style="margin-top:16px;">
+                <table class="finTable">
+                    <thead>
+                        <tr>
+                            <th>#</th><th>Vencimento</th><th>Valor</th>
+                            <th>Pagamento</th><th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    <?php foreach ($parcelas as $p):
+                        $venc       = new DateTime($p['data_vencimento']);
+                        $isAtrasado = $p['status'] === 'pendente' && $p['data_vencimento'] < $hoje;
+                    ?>
+                    <tr>
+                        <td><strong><?= $p['numero'] ?>/<?= $nTotalParc ?></strong></td>
+                        <td><?= $venc->format('d/m/Y') ?><?= $isAtrasado ? ' <span style="color:#ff7070;font-size:11px;">atrasada</span>' : '' ?></td>
+                        <td><?= fmtR((float)$p['valor']) ?></td>
+                        <td><?= $p['data_pagamento'] ? date('d/m/Y', strtotime($p['data_pagamento'])) : '—' ?></td>
+                        <td>
+                            <?php if ($p['status'] === 'pago'):     ?><span class="badge-pago">Pago</span><?php
+                            elseif ($p['status'] === 'adiantado'):  ?><span class="badge-adi">Adiantado</span><?php
+                            elseif ($isAtrasado):                   ?><span class="badge-desp">Atrasada</span><?php
+                            else:                                   ?><span class="badge-pend">Pendente</span><?php endif; ?>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+
         </div>
 
         <!-- ── Anexos ─────────────────────────────────────────────────────── -->
@@ -621,47 +672,72 @@ if ($aba === 'divida') {
             <button class="btn btn--primary" id="btnNovaDivida">+ Nova Dívida</button>
         </div>
 
-        <div class="finTable__wrap">
-            <table class="finTable">
-                <thead><tr>
-                    <th>Descrição</th><th>Credor</th><th>Total</th>
-                    <th>Progresso</th><th>Status</th><th>Ações</th>
-                </tr></thead>
-                <tbody>
-                <?php if (empty($dividas)): ?>
-                <tr><td colspan="6" style="text-align:center;color:#444;padding:28px;">Nenhuma dívida cadastrada.</td></tr>
-                <?php else: ?>
-                <?php foreach ($dividas as $d):
-                    $pct = $d['total_parcelas'] > 0 ? round(($d['pagas'] / $d['total_parcelas']) * 100) : 0;
-                ?>
-                <tr>
-                    <td><strong style="color:#eee;"><?= htmlspecialchars($d['descricao']) ?></strong></td>
-                    <td><?= htmlspecialchars($d['credor'] ?: '—') ?></td>
-                    <td><?= fmtR((float)$d['valor_total']) ?></td>
-                    <td style="min-width:140px;">
-                        <span style="font-size:12px;color:#888;"><?= $d['pagas'] ?>/<?= $d['total_parcelas'] ?> parcelas</span>
-                        <div class="parcProgress"><div class="parcProgress__bar" style="width:<?= $pct ?>%"></div></div>
-                    </td>
-                    <td>
-                        <?= $d['status'] === 'quitado'
-                            ? '<span class="badge-pago">Quitada</span>'
-                            : '<span class="badge-pend">Em aberto</span>' ?>
-                    </td>
-                    <td>
-                        <div style="display:flex;gap:6px;">
-                            <a href="?aba=divida&id=<?= $d['id'] ?>" class="btn btn--sm btn--gray">Parcelas</a>
-                            <?php if ($d['pagas'] == 0): ?>
-                            <button class="btn btn--sm btn--error btnDeleteDivida"
-                                    data-id="<?= $d['id'] ?>" data-desc="<?= htmlspecialchars($d['descricao']) ?>">Excluir</button>
-                            <?php endif; ?>
-                        </div>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
+        <?php if (empty($dividas)): ?>
+        <div style="text-align:center;color:#444;padding:48px 0;">Nenhuma dívida cadastrada.</div>
+        <?php else: ?>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+        <?php foreach ($dividas as $d):
+            $isQuitada   = $d['status'] === 'quitado';
+            $proxNum     = $d['proxima_numero'];
+            $proxVenc    = $d['proxima_vencimento'];
+            $totalParc   = (int) $d['total_parcelas'];
+            $proxAtrasada = $proxVenc && $proxVenc < date('Y-m-d');
+        ?>
+        <div style="display:flex;align-items:center;gap:16px;padding:16px 20px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;flex-wrap:wrap;">
+
+            <!-- Nome + credor -->
+            <div style="flex:1;min-width:180px;">
+                <a href="?aba=divida&id=<?= $d['id'] ?>" style="color:#eee;font-size:15px;font-weight:700;text-decoration:none;">
+                    <?= htmlspecialchars($d['descricao']) ?>
+                </a>
+                <?php if ($d['credor']): ?>
+                <div style="font-size:12px;color:#666;margin-top:2px;"><?= htmlspecialchars($d['credor']) ?></div>
                 <?php endif; ?>
-                </tbody>
-            </table>
+            </div>
+
+            <!-- Parcela atual -->
+            <div style="text-align:center;min-width:90px;">
+                <?php if ($isQuitada): ?>
+                <div style="font-size:22px;font-weight:800;color:#4caf50;"><?= $totalParc ?>/<?= $totalParc ?></div>
+                <div style="font-size:11px;color:#4caf50;">Quitada</div>
+                <?php elseif ($proxNum): ?>
+                <div style="font-size:22px;font-weight:800;color:#eee;"><?= $proxNum ?>/<?= $totalParc ?></div>
+                <div style="font-size:11px;color:<?= $proxAtrasada ? '#ff7070' : '#888' ?>;">
+                    <?= $proxAtrasada ? 'Atrasada' : 'Venc. ' . date('d/m/Y', strtotime($proxVenc)) ?>
+                </div>
+                <?php else: ?>
+                <div style="font-size:22px;font-weight:800;color:#4caf50;"><?= $totalParc ?>/<?= $totalParc ?></div>
+                <div style="font-size:11px;color:#4caf50;">Quitada</div>
+                <?php endif; ?>
+            </div>
+
+            <!-- Valor total -->
+            <div style="text-align:center;min-width:100px;">
+                <div style="font-size:14px;font-weight:600;color:#ccc;"><?= fmtR((float)$d['valor_total']) ?></div>
+                <div style="font-size:11px;color:#555;">valor total</div>
+            </div>
+
+            <!-- Ações -->
+            <div style="display:flex;gap:8px;align-items:center;">
+                <a href="?aba=divida&id=<?= $d['id'] ?>" class="btn btn--sm btn--primary">Pagar / Ver</a>
+                <button class="btn btn--sm btn--gray btnEditarDividaRow"
+                        data-id="<?= $d['id'] ?>"
+                        data-descricao="<?= htmlspecialchars($d['descricao']) ?>"
+                        data-credor="<?= htmlspecialchars($d['credor'] ?? '') ?>"
+                        data-categoria="<?= htmlspecialchars($d['categoria']) ?>"
+                        data-observacao="<?= htmlspecialchars($d['observacao'] ?? '') ?>"
+                        data-valor-total="<?= $d['valor_total'] ?>"
+                        data-num-parcelas="<?= $d['num_parcelas'] ?>"
+                        data-data-inicio="<?= $d['data_inicio'] ?>">Editar</button>
+                <?php if ($d['pagas'] == 0): ?>
+                <button class="btn btn--sm btn--error btnDeleteDivida"
+                        data-id="<?= $d['id'] ?>" data-desc="<?= htmlspecialchars($d['descricao']) ?>">Excluir</button>
+                <?php endif; ?>
+            </div>
         </div>
+        <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
 
     <?php endif; ?>
     </section>
@@ -765,12 +841,80 @@ if ($aba === 'divida') {
                     <label>Observação</label>
                     <input type="text" name="observacao" id="editDividaObs" class="input" placeholder="Opcional">
                 </div>
+                <hr style="border-color:#333;margin:14px 0 10px;">
+                <p style="font-size:12px;color:#888;margin:0 0 12px;">Valores — preencha apenas o que quiser alterar</p>
+                <div class="finRow2">
+                    <div class="finField">
+                        <label>Valor total (R$)</label>
+                        <input type="text" name="valor_total" id="editDividaValor" class="input" placeholder="Ex: 1.200,00">
+                    </div>
+                    <div class="finField">
+                        <label>Nº de parcelas</label>
+                        <input type="number" name="num_parcelas" id="editDividaNumParcelas" class="input" min="1" placeholder="Ex: 12">
+                    </div>
+                </div>
+                <div class="finField finField--full">
+                    <label>Data da 1ª parcela</label>
+                    <input type="date" name="data_inicio" id="editDividaDataInicio" class="input">
+                </div>
+                <div style="margin-top:10px;padding:12px;background:#181818;border-radius:6px;border:1px solid #2a2a2a;">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:#ccc;">
+                        <input type="checkbox" name="regenerar" id="editDividaRegenerar" value="1">
+                        Regenerar parcelas pendentes com os novos valores
+                    </label>
+                    <p style="font-size:11px;color:#ff7070;margin:6px 0 0 24px;">Parcelas já pagas são mantidas. As pendentes serão recriadas.</p>
+                </div>
             </div>
             <div class="finModalActions">
                 <button type="button" class="btn btn--gray" id="cancelarEditarDivida">Cancelar</button>
                 <button type="submit" class="btn btn--primary">Salvar alterações</button>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- ── Modal: Adiantar Parcelas ────────────────────────────────────────────── -->
+<div class="finModal" id="modalAdiantar">
+    <div class="finModal__box">
+        <div class="finModal__head">
+            <h3>Adiantar Parcelas</h3>
+            <button id="closeModalAdiantar">&times;</button>
+        </div>
+        <div class="finModal__body" id="adiantarBody">
+            <?php
+            $adiantaveisGlobal = isset($pendentes)
+                ? array_values(array_filter($pendentes, fn($p) => $p['data_vencimento'] > date('Y-m-d')))
+                : [];
+            ?>
+            <?php if ($adiantaveisGlobal): ?>
+            <p style="font-size:13px;color:#888;margin:0 0 14px;">Selecione as parcelas que deseja adiantar:</p>
+            <?php foreach ($adiantaveisGlobal as $p):
+                $vDt = new DateTime($p['data_vencimento']);
+            ?>
+            <label style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:6px;cursor:pointer;transition:background .15s;"
+                   onmouseover="this.style.background='#1e1e1e'" onmouseout="this.style.background=''">
+                <input type="checkbox" class="chkAdiantar"
+                       data-id="<?= $p['id'] ?>"
+                       data-valor="<?= $p['valor'] ?>"
+                       data-num="<?= $p['numero'] ?>">
+                <span style="flex:1;font-size:14px;color:#ccc;">
+                    Parcela <?= $p['numero'] ?>/<?= isset($nTotalParc) ? $nTotalParc : count($parcelas) ?> — <?= fmtR((float)$p['valor']) ?>
+                </span>
+                <span style="font-size:12px;color:#666;">Venc. <?= $vDt->format('d/m/Y') ?></span>
+            </label>
+            <?php endforeach; ?>
+            <div style="margin-top:16px;padding-top:14px;border-top:1px solid #222;display:flex;align-items:center;justify-content:space-between;">
+                <span style="font-size:13px;color:#888;">Total selecionado</span>
+                <span style="font-size:18px;font-weight:700;color:#eee;" id="totalAdiantarVal">R$ 0,00</span>
+            </div>
+            <?php else: ?>
+            <p style="color:#888;text-align:center;padding:20px 0;">Nenhuma parcela futura disponível para adiantamento.</p>
+            <?php endif; ?>
+        </div>
+        <div class="finModalActions">
+            <button type="button" class="btn btn--gray" id="cancelarAdiantar">Cancelar</button>
+            <button type="button" class="btn btn--primary" id="confirmarAdiantar"><?php if ($adiantaveisGlobal): ?>Confirmar adiantamento<?php else: ?>Fechar<?php endif; ?></button>
+        </div>
     </div>
 </div>
 
@@ -904,11 +1048,18 @@ if (btnNovoLanc) {
 // ── Editar dívida ─────────────────────────────────────────────────────────────
 var btnEditarDivida = document.getElementById('btnEditarDivida');
 if (btnEditarDivida) {
+    var editValorEl = document.getElementById('editDividaValor');
+    if (editValorEl) maskValor(editValorEl);
+
     btnEditarDivida.addEventListener('click', function () {
-        document.getElementById('editDividaId').value         = this.dataset.id;
-        document.getElementById('editDividaDescricao').value  = this.dataset.descricao;
-        document.getElementById('editDividaCredor').value     = this.dataset.credor;
-        document.getElementById('editDividaObs').value        = this.dataset.observacao;
+        document.getElementById('editDividaId').value          = this.dataset.id;
+        document.getElementById('editDividaDescricao').value   = this.dataset.descricao;
+        document.getElementById('editDividaCredor').value      = this.dataset.credor;
+        document.getElementById('editDividaObs').value         = this.dataset.observacao;
+        document.getElementById('editDividaValor').value       = '';
+        document.getElementById('editDividaNumParcelas').value = this.dataset.numParcelas || '';
+        document.getElementById('editDividaDataInicio').value  = this.dataset.dataInicio  || '';
+        document.getElementById('editDividaRegenerar').checked = false;
         var sel = document.getElementById('editDividaCategoria');
         sel.value = this.dataset.categoria || 'outros';
         openModal('modalEditarDivida');
@@ -924,20 +1075,138 @@ if (btnEditarDivida) {
             method: 'POST', credentials: 'same-origin', body: new FormData(this),
         }).then(r => r.json()).then(d => {
             if (d.success) {
+                if (document.getElementById('editDividaRegenerar').checked) {
+                    location.reload(); return;
+                }
                 closeModal('modalEditarDivida');
                 var desc = document.getElementById('editDividaDescricao').value;
                 var cred = document.getElementById('editDividaCredor').value;
+                var cat  = document.getElementById('editDividaCategoria').value;
                 document.getElementById('dividaDescricaoTitulo').textContent = desc;
                 document.getElementById('dividaCredorDd').textContent        = cred || '—';
+                var catDd = document.getElementById('dividaCategoriaDd');
+                if (catDd) catDd.textContent = cat.charAt(0).toUpperCase() + cat.slice(1);
                 btnEditarDivida.dataset.descricao  = desc;
                 btnEditarDivida.dataset.credor     = cred;
                 btnEditarDivida.dataset.observacao = document.getElementById('editDividaObs').value;
-                btnEditarDivida.dataset.categoria  = document.getElementById('editDividaCategoria').value;
+                btnEditarDivida.dataset.categoria  = cat;
                 btn.disabled = false; btn.textContent = 'Salvar alterações';
             } else {
                 alert(d.message || 'Erro ao salvar.');
                 btn.disabled = false; btn.textContent = 'Salvar alterações';
             }
+        });
+    });
+}
+
+// ── Editar dívida (lista) ─────────────────────────────────────────────────────
+// Quando estamos na lista (aba=dividas) btnEditarDivida não existe, então
+// registramos os handlers do modal aqui via event delegation.
+if (!document.getElementById('btnEditarDivida') && document.getElementById('formEditarDivida')) {
+    var editValorElLista = document.getElementById('editDividaValor');
+    if (editValorElLista) maskValor(editValorElLista);
+
+    document.addEventListener('click', function (e) {
+        var btn = e.target.closest('.btnEditarDividaRow');
+        if (!btn) return;
+        document.getElementById('editDividaId').value          = btn.dataset.id;
+        document.getElementById('editDividaDescricao').value   = btn.dataset.descricao;
+        document.getElementById('editDividaCredor').value      = btn.dataset.credor;
+        document.getElementById('editDividaObs').value         = btn.dataset.observacao;
+        document.getElementById('editDividaValor').value       = '';
+        document.getElementById('editDividaNumParcelas').value = btn.dataset.numParcelas || '';
+        document.getElementById('editDividaDataInicio').value  = btn.dataset.dataInicio  || '';
+        document.getElementById('editDividaRegenerar').checked = false;
+        var sel = document.getElementById('editDividaCategoria');
+        sel.value = btn.dataset.categoria || 'outros';
+        openModal('modalEditarDivida');
+    });
+
+    document.getElementById('closeModalEditarDivida').addEventListener('click', function () { closeModal('modalEditarDivida'); });
+    document.getElementById('cancelarEditarDivida').addEventListener('click',   function () { closeModal('modalEditarDivida'); });
+
+    document.getElementById('formEditarDivida').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var btn = this.querySelector('[type=submit]');
+        btn.disabled = true; btn.textContent = 'Salvando...';
+        fetch(ADMIN_BASE_URL + '/services/update_divida.php', {
+            method: 'POST', credentials: 'same-origin', body: new FormData(this),
+        }).then(r => r.json()).then(d => {
+            if (d.success) {
+                location.reload();
+            } else {
+                alert(d.message || 'Erro ao salvar.');
+                btn.disabled = false; btn.textContent = 'Salvar alterações';
+            }
+        });
+    });
+}
+
+// ── Pagar próxima parcela ─────────────────────────────────────────────────────
+var btnPagarProxima = document.getElementById('btnPagarProxima');
+if (btnPagarProxima) {
+    btnPagarProxima.addEventListener('click', function () {
+        var id  = this.dataset.id;
+        var num = this.dataset.num;
+        var tot = this.dataset.total;
+        abrirConfirm('Pagar Parcela', 'Registrar pagamento da parcela ' + num + '/' + tot + '?', function () {
+            var fd = new FormData();
+            fd.append('parcela_id', id);
+            fd.append('tipo', 'pago');
+            fetch(ADMIN_BASE_URL + '/services/pagar_parcela.php', {
+                method: 'POST', credentials: 'same-origin', body: fd,
+            }).then(r => r.json()).then(d => { if (d.success) location.reload(); else alert(d.message || 'Erro.'); });
+        });
+    });
+}
+
+// ── Adiantar parcelas (modal com checkboxes) ──────────────────────────────────
+var btnAbrirAdiantar  = document.getElementById('btnAbrirAdiantar');
+var confirmarAdiantar = document.getElementById('confirmarAdiantar');
+var cancelarAdiantar  = document.getElementById('cancelarAdiantar');
+var closeAdiantar     = document.getElementById('closeModalAdiantar');
+var totalAdiantarVal  = document.getElementById('totalAdiantarVal');
+
+function recalcTotalAdiantar() {
+    var total = 0;
+    document.querySelectorAll('.chkAdiantar:checked').forEach(function (c) {
+        total += parseFloat(c.dataset.valor) || 0;
+    });
+    if (totalAdiantarVal) {
+        totalAdiantarVal.textContent = 'R$ ' + total.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+    }
+    if (confirmarAdiantar) confirmarAdiantar.disabled = total === 0;
+}
+
+if (btnAbrirAdiantar) {
+    btnAbrirAdiantar.addEventListener('click', function () {
+        document.querySelectorAll('.chkAdiantar').forEach(function (c) { c.checked = false; });
+        recalcTotalAdiantar();
+        openModal('modalAdiantar');
+    });
+}
+if (closeAdiantar)    closeAdiantar.addEventListener('click',    function () { closeModal('modalAdiantar'); });
+if (cancelarAdiantar) cancelarAdiantar.addEventListener('click', function () { closeModal('modalAdiantar'); });
+
+document.addEventListener('change', function (e) {
+    if (e.target.classList.contains('chkAdiantar')) recalcTotalAdiantar();
+});
+
+if (confirmarAdiantar) {
+    recalcTotalAdiantar();
+    confirmarAdiantar.addEventListener('click', function () {
+        var ids = [];
+        document.querySelectorAll('.chkAdiantar:checked').forEach(function (c) { ids.push(c.dataset.id); });
+        if (!ids.length) { closeModal('modalAdiantar'); return; }
+        var btn = this;
+        btn.disabled = true; btn.textContent = 'Registrando...';
+        var fd = new FormData();
+        ids.forEach(function (id) { fd.append('ids[]', id); });
+        fetch(ADMIN_BASE_URL + '/services/adiantar_parcelas.php', {
+            method: 'POST', credentials: 'same-origin', body: fd,
+        }).then(r => r.json()).then(d => {
+            if (d.success) location.reload();
+            else { alert(d.message || 'Erro.'); btn.disabled = false; btn.textContent = 'Confirmar adiantamento'; }
         });
     });
 }
@@ -1219,24 +1488,6 @@ document.addEventListener('click', function (e) {
     });
 });
 
-// ── Pagar / Adiantar parcela ──────────────────────────────────────────────────
-document.addEventListener('click', function (e) {
-    var btn = e.target.closest('.btnPagarParcela');
-    if (!btn) return;
-    var tipo = btn.dataset.tipo;
-    var label = btn.dataset.label;
-    var msg = tipo === 'adiantado'
-        ? 'Adiantar pagamento da ' + label + '? Será registrada como paga hoje.'
-        : 'Registrar pagamento da ' + label + '?';
-    abrirConfirm(tipo === 'adiantado' ? 'Adiantar Parcela' : 'Pagar Parcela', msg, function () {
-        var fd = new FormData();
-        fd.append('parcela_id', btn.dataset.id);
-        fd.append('tipo', tipo);
-        fetch(ADMIN_BASE_URL + '/services/pagar_parcela.php', {
-            method: 'POST', credentials: 'same-origin', body: fd,
-        }).then(r => r.json()).then(d => { if (d.success) location.reload(); else alert(d.message || 'Erro.'); });
-    });
-});
 </script>
 </body>
 </html>
