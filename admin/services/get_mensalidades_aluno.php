@@ -24,7 +24,7 @@ require_once dirname(__FILE__, 3) . '/config/database.php';
 $pdo = getDbConnection();
 
 $stmt = $pdo->prepare("
-    SELECT m.id, m.referencia, m.tipo, m.descricao, m.valor, m.matricula_valor,
+    SELECT m.id, m.referencia, m.tipo, m.descricao, m.valor, m.matricula_valor, m.proporcional_valor,
            m.vencimento, m.data_pagamento, m.status, m.mp_payment_id,
            COALESCE(t.nome, '—') AS turma_nome
     FROM mensalidades m

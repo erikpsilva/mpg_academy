@@ -56,6 +56,30 @@
     </div>
 </div>
 
+<!-- Modal: confirmar em qual turma a aula teste foi realizada -->
+<div class="adminTodosModal" id="modalRealizar">
+    <div class="adminTodosModal__overlay" id="modalRealizarOverlay"></div>
+    <div class="adminTodosModal__dialog">
+        <div class="adminTodosModal__head">
+            <div>
+                <h3>Confirmar realização da aula teste</h3>
+                <p id="modalRealizarAluno">—</p>
+            </div>
+            <button class="adminTodosModal__close" id="modalRealizarClose">✕</button>
+        </div>
+        <div class="adminTodosModal__body">
+            <label class="adminTodosModal__label">Em qual turma o aluno fez a aula teste?</label>
+            <select class="input" id="modalRealizarTurma">
+                <option value="">Carregando turmas...</option>
+            </select>
+        </div>
+        <div class="adminTodosModal__foot">
+            <button class="btn btn--outline" id="modalRealizarCancelar">Cancelar</button>
+            <button class="btn btn--primary" id="modalRealizarConfirmar">Confirmar realização</button>
+        </div>
+    </div>
+</div>
+
 <?php include ROOT . '/admin/includes/footer/footer.php'; ?>
 <?php include ROOT . '/admin/includes/scripts.php'; ?>
 

@@ -32,7 +32,7 @@ $turma = $stTurma->fetch();
 
 // Mensalidades em ordem decrescente com nome da turma
 $stMens = $pdo->prepare("
-    SELECT m.id, m.referencia, m.tipo, m.descricao, m.valor, m.matricula_valor,
+    SELECT m.id, m.referencia, m.tipo, m.descricao, m.valor, m.matricula_valor, m.proporcional_valor,
            m.vencimento, m.data_pagamento, m.status,
            COALESCE(t.nome, '') AS turma_nome
     FROM mensalidades m
@@ -235,7 +235,8 @@ function fmtMoney(float $val): string {
                         $refLabel  = $isAvulso
                             ? htmlspecialchars($m['descricao'] ?? 'Cobrança extra')
                             : refLabel($m['referencia'], $meses);
-                        $matriculaValor = (float)($m['matricula_valor'] ?? 0);
+                        $matriculaValor    = (float)($m['matricula_valor'] ?? 0);
+                        $proporcionalValor = (float)($m['proporcional_valor'] ?? 0);
                     ?>
 
                     <div class="studentMonthlyTable__row<?= $isLate ? ' studentMonthlyTable__row--late' : '' ?>"
@@ -253,9 +254,14 @@ function fmtMoney(float $val): string {
                         </span>
                         <span data-label="Vencimento"><?= fmtDate($m['vencimento']) ?></span>
                         <span data-label="Valor">
-                            <?php if ($matriculaValor > 0): ?>
-                                R$ <?= number_format((float)$m['valor'] - $matriculaValor, 2, ',', '.') ?>
+                            <?php if ($matriculaValor > 0 || $proporcionalValor > 0): ?>
+                                R$ <?= number_format((float)$m['valor'] - $matriculaValor - $proporcionalValor, 2, ',', '.') ?>
+                                <?php if ($proporcionalValor > 0): ?>
+                                <small style="display:block;color:#888;font-size:11px;">+ R$ <?= number_format($proporcionalValor, 2, ',', '.') ?> proporcional (mês anterior)</small>
+                                <?php endif; ?>
+                                <?php if ($matriculaValor > 0): ?>
                                 <small style="display:block;color:#888;font-size:11px;">+ R$ <?= number_format($matriculaValor, 2, ',', '.') ?> matrícula</small>
+                                <?php endif; ?>
                             <?php else: ?>
                                 R$ <?= number_format((float)$m['valor'], 2, ',', '.') ?>
                             <?php endif; ?>

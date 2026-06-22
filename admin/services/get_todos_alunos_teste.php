@@ -23,7 +23,7 @@ $stmtParaFazer = $pdo->query("
         at.id   AS aluno_teste_id,
         at.nome, at.email, at.celular,
         at.is_menor, at.responsavel_nome, at.responsavel_email,
-        t.nome  AS turma_nome, t.nivel,
+        t.id    AS turma_id, t.nome AS turma_nome, t.nivel,
         q.nome  AS quadra_nome,
         ts.token                AS termo_token,
         ts.assinado_escola_em,
@@ -41,6 +41,7 @@ $paraFazer = $stmtParaFazer->fetchAll(PDO::FETCH_ASSOC);
 foreach ($paraFazer as &$r) {
     $r['id']             = (int) $r['id'];
     $r['aluno_teste_id'] = (int) $r['aluno_teste_id'];
+    $r['turma_id']       = (int) $r['turma_id'];
     $r['is_menor']       = (int) $r['is_menor'];
 
     $termoStatus = null;

@@ -262,6 +262,27 @@ const initDetalhe = () => {
         );
     };
 
+    $(document).on('change', '#chkIsentoMatricula', function () {
+        const chk    = $(this);
+        const isento = chk.is(':checked') ? '1' : '0';
+        chk.prop('disabled', true);
+
+        $.post(ADMIN_BASE_URL + '/services/save_isencao_matricula.php', {
+            aluno_id: ALUNO_ID,
+            isento:   isento,
+        }, (res) => {
+            chk.prop('disabled', false);
+            if (!res.success) {
+                chk.prop('checked', !chk.is(':checked'));
+                alert(res.message || 'Erro ao salvar isenção.');
+            }
+        }, 'json').fail(() => {
+            chk.prop('disabled', false);
+            chk.prop('checked', !chk.is(':checked'));
+            alert('Erro ao comunicar com o servidor.');
+        });
+    });
+
     $(document).on('click', '.alunos__btnDesconto', function () {
         const btn = $(this);
         $('#descontoModal').data('valor-base', btn.data('valor'));
@@ -489,6 +510,9 @@ const renderFaturas = (lista) => {
         const matriculaTag = m.matricula_valor && parseFloat(m.matricula_valor) > 0
             ? '<br><span class="fpMatricula">+ matrícula ' + fmtVal(m.matricula_valor) + '</span>'
             : '';
+        const proporcionalTag = m.proporcional_valor && parseFloat(m.proporcional_valor) > 0
+            ? '<br><span class="fpMatricula">+ proporcional ' + fmtVal(m.proporcional_valor) + '</span>'
+            : '';
 
         const colorClass = m.status === 'pago' ? 'is-pago' : (m.status === 'atrasado' ? 'is-atrasado' : 'is-pendente');
 
@@ -506,7 +530,7 @@ const renderFaturas = (lista) => {
         return '<tr data-id="' + m.id + '">'
             + '<td>' + refCell + '</td>'
             + '<td>' + turmaCell + '</td>'
-            + '<td>' + fmtVal(m.valor) + matriculaTag + '</td>'
+            + '<td>' + fmtVal(m.valor) + proporcionalTag + matriculaTag + '</td>'
             + '<td>' + fmtData(m.vencimento) + '</td>'
             + '<td class="fpCellPago">' + (m.data_pagamento ? fmtData(m.data_pagamento) : '<span style="color:#444">—</span>') + '</td>'
             + '<td>'

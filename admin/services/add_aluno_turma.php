@@ -86,7 +86,7 @@ function calcProporcional(PDO $pdo, int $turmaId, DateTime $entrada, string $dat
     return round(($daysUsed / $daysInMonth) * $baseValor, 2);
 }
 
-$aluno = $pdo->prepare("SELECT id, nome, email, celular, matricula_cobrada FROM alunos WHERE id = ? AND status = 'ativo'");
+$aluno = $pdo->prepare("SELECT id, nome, email, celular, matricula_cobrada, isento_matricula FROM alunos WHERE id = ? AND status = 'ativo'");
 $aluno->execute([$alunoId]);
 $aluno = $aluno->fetch();
 
@@ -155,20 +155,24 @@ if ($turmaData && $turmaData['valor_mensalidade'] !== null) {
             $descontoFim    = $fimPromo->format('Y-m-d');
 
         } else {
-            // Dia 6–30: fatura proporcional (aulas restantes no ciclo) ao valor promocional.
+            // Dia 6–30: o proporcional do mês de entrada NÃO vira fatura própria — ele é
+            // somado à fatura cheia do mês seguinte (mesmo vencimento dia 5), discriminado
+            // em proporcional_valor pra aparecer separado pro aluno.
             $proportional = calcProporcional($pdo, $turmaId, $entrada, $dataInicio, $promoValor);
-
-            $mensalidadesParaGerar[] = [
-                'referencia' => $entrada->format('Y-m'),
-                'valor'      => $proportional,
-                'vencimento' => $vencInicial,
-            ];
 
             $nextMonth = new DateTime($entrada->format('Y-m') . '-01');
             $nextMonth->modify('+1 month');
 
+            $mensalidadesParaGerar[] = [
+                'referencia'         => $nextMonth->format('Y-m'),
+                'valor'              => round($proportional + $promoValor, 2),
+                'proporcional_valor' => $proportional,
+                'vencimento'         => $nextMonth->format('Y-m') . '-05',
+            ];
+
             // descontoFim = 1º dia do mês (promo_meses - 1) após o nextMonth.
-            // Cron aplica desconto nos meses 1..promo_meses (meses completos após o proporcional).
+            // Cron aplica desconto nos meses 2..promo_meses (o mês 1, nextMonth, já saiu
+            // junto da fatura combinada acima — o cron pula ele pelo check de referencia).
             $fimPromo = clone $nextMonth;
             $fimPromo->modify('+' . ($promoMeses - 1) . ' months');
 
@@ -178,7 +182,7 @@ if ($turmaData && $turmaData['valor_mensalidade'] !== null) {
         }
 
     } else {
-        // Sem promoção: apenas a primeira fatura (proporcional ou mês cheio), paga na entrada.
+        // Sem promoção.
         if ($isExcecao) {
             $mensalidadesParaGerar[] = [
                 'referencia' => $entrada->format('Y-m'),
@@ -186,24 +190,37 @@ if ($turmaData && $turmaData['valor_mensalidade'] !== null) {
                 'vencimento' => $vencInicial,
             ];
         } else {
+            // Dia 6–30: idem ao caso com promoção — proporcional somado à fatura cheia
+            // do mês seguinte, discriminado em proporcional_valor.
             $proportional = calcProporcional($pdo, $turmaId, $entrada, $dataInicio, $valorBase);
 
+            $nextMonth = new DateTime($entrada->format('Y-m') . '-01');
+            $nextMonth->modify('+1 month');
+
             $mensalidadesParaGerar[] = [
-                'referencia' => $entrada->format('Y-m'),
-                'valor'      => $proportional,
-                'vencimento' => $vencInicial,
+                'referencia'         => $nextMonth->format('Y-m'),
+                'valor'              => round($proportional + $valorBase, 2),
+                'proporcional_valor' => $proportional,
+                'vencimento'         => $nextMonth->format('Y-m') . '-05',
             ];
         }
     }
 }
 
-// Verifica se deve cobrar matrícula (uma única vez por aluno)
+// Verifica se deve cobrar matrícula (uma única vez por aluno, exceto se isento ou se a cobrança estiver desativada globalmente)
 $matriculaValor = 0.0;
-if (!$aluno['matricula_cobrada']) {
-    $cfgSt = $pdo->prepare("SELECT valor FROM configuracoes WHERE chave = 'valor_matricula'");
-    $cfgSt->execute();
-    $cfgRow = $cfgSt->fetch();
-    $matriculaValor = $cfgRow ? (float) $cfgRow['valor'] : 0.0;
+if (!$aluno['matricula_cobrada'] && !$aluno['isento_matricula']) {
+    $cfgAtiva = $pdo->prepare("SELECT valor FROM configuracoes WHERE chave = 'matricula_ativa'");
+    $cfgAtiva->execute();
+    $rowAtiva       = $cfgAtiva->fetch();
+    $matriculaAtiva = $rowAtiva === false || $rowAtiva['valor'] !== '0'; // default ativa se não configurado
+
+    if ($matriculaAtiva) {
+        $cfgSt = $pdo->prepare("SELECT valor FROM configuracoes WHERE chave = 'valor_matricula'");
+        $cfgSt->execute();
+        $cfgRow = $cfgSt->fetch();
+        $matriculaValor = $cfgRow ? (float) $cfgRow['valor'] : 0.0;
+    }
 }
 
 if ($matriculaValor > 0 && !empty($mensalidadesParaGerar)) {
@@ -233,14 +250,15 @@ try {
 
     if (!empty($mensalidadesParaGerar)) {
         $stmtMens = $pdo->prepare("
-            INSERT IGNORE INTO mensalidades (aluno_id, turma_id, referencia, valor, matricula_valor, vencimento, status)
-            VALUES (?, ?, ?, ?, ?, ?, 'pendente')
+            INSERT IGNORE INTO mensalidades (aluno_id, turma_id, referencia, valor, matricula_valor, proporcional_valor, vencimento, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'pendente')
         ");
         foreach ($mensalidadesParaGerar as $m) {
             $stmtMens->execute([
                 $alunoId, $turmaId,
                 $m['referencia'], $m['valor'],
                 $m['matricula_valor'] ?? null,
+                $m['proporcional_valor'] ?? null,
                 $m['vencimento'],
             ]);
         }

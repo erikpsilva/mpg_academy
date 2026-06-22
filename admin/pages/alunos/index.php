@@ -215,6 +215,21 @@ if ($id > 0) {
                                         <dt>Cadastrado em</dt>
                                         <dd><?= date('d/m/Y H:i', strtotime($aluno['criado_em'])) ?></dd>
                                     </div>
+                                    <div>
+                                        <dt>Taxa de matrícula</dt>
+                                        <dd>
+                                            <?php if (!empty($aluno['matricula_cobrada'])): ?>
+                                                <span class="statusBadge statusBadge--ativo">JÁ COBRADA</span>
+                                            <?php else: ?>
+                                                <label class="alunos__isencaoToggle">
+                                                    <input type="checkbox" id="chkIsentoMatricula"
+                                                           data-aluno-id="<?= $aluno['id'] ?>"
+                                                           <?= !empty($aluno['isento_matricula']) ? 'checked' : '' ?>>
+                                                    Isentar dessa taxa
+                                                </label>
+                                            <?php endif; ?>
+                                        </dd>
+                                    </div>
                                 </dl>
                             </div>
                         </div>

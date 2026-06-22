@@ -41,6 +41,16 @@ const renderCell = (label, content, className) => {
 
 // ── Para fazer ────────────────────────────────────────────────────────────────
 
+const renderAcaoParaFazer = (r) => {
+    if (r.status !== 'agendada') return '<em>—</em>';
+    return '<button class="btn--acaoTodos btn--confirmarRealizado" ' +
+        'data-id="' + r.id + '" ' +
+        'data-nome="' + esc(r.nome) + '" ' +
+        'data-turma-id="' + r.turma_id + '">' +
+        '✓ Confirmar realização' +
+    '</button>';
+};
+
 const renderParaFazer = (lista, startAt) => {
     if (!lista.length) return '<p class="adminTodosAlunos__empty">Nenhum aluno aguardando aula experimental.</p>';
 
@@ -60,6 +70,7 @@ const renderParaFazer = (lista, startAt) => {
             renderCell('Status', statusBadge) +
             renderCell('Data', dataLabel) +
             renderCell('Termo', renderTermoBadge(r), 'adminTodosTable__termo') +
+            renderCell('Ação', renderAcaoParaFazer(r), 'adminTodosTable__acoes') +
         '</tr>';
     }).join('');
 
@@ -70,7 +81,7 @@ const renderParaFazer = (lista, startAt) => {
         '</div>' +
         '<div class="adminTodosSecao__body">' +
             '<table class="adminTodosTable">' +
-                '<thead><tr><th class="col-num">#</th><th>Nome</th><th>E-mail</th><th>Celular</th><th>Turma</th><th>Status</th><th>Data</th><th>Termo</th></tr></thead>' +
+                '<thead><tr><th class="col-num">#</th><th>Nome</th><th>E-mail</th><th>Celular</th><th>Turma</th><th>Status</th><th>Data</th><th>Termo</th><th>Ação</th></tr></thead>' +
                 '<tbody>' + rows + '</tbody>' +
             '</table>' +
         '</div>' +
@@ -120,6 +131,7 @@ const renderJaFizeram = (lista, startAt) => {
             renderCell('Nome', renderNome(r), 'adminTodosTable__aluno') +
             renderCell('E-mail', (r.email   ? esc(r.email)   : '<em>—</em>'), 'adminTodosTable__email') +
             renderCell('Celular', (r.celular ? esc(r.celular) : '<em>—</em>')) +
+            renderCell('Status', '<span class="badge badge--realizada">✅ Treino realizado</span>') +
             renderCell('Turma', esc(r.turma_nome + ' · ' + r.quadra_nome) + ' ' + vagaInfo) +
             renderCell('Data', fmtData(r.criado_em)) +
             renderCell('Termo', renderTermoBadge(r), 'adminTodosTable__termo') +
@@ -134,7 +146,7 @@ const renderJaFizeram = (lista, startAt) => {
         '</div>' +
         '<div class="adminTodosSecao__body">' +
             '<table class="adminTodosTable">' +
-                '<thead><tr><th class="col-num">#</th><th>Nome</th><th>E-mail</th><th>Celular</th><th>Turma onde fez o teste</th><th>Data</th><th>Termo</th><th>Ação</th></tr></thead>' +
+                '<thead><tr><th class="col-num">#</th><th>Nome</th><th>E-mail</th><th>Celular</th><th>Status</th><th>Turma onde fez o teste</th><th>Data</th><th>Termo</th><th>Ação</th></tr></thead>' +
                 '<tbody>' + rows + '</tbody>' +
             '</table>' +
         '</div>' +
@@ -204,10 +216,87 @@ const fecharModalFila = () => {
     modalFilaAlunoId = null;
 };
 
+// ── Modal confirmar realização ───────────────────────────────────────────────
+
+let modalRealizarAulaId = null;
+
+const abrirModalRealizar = (aulaId, nomeAluno, turmaIdAtual) => {
+    modalRealizarAulaId = aulaId;
+    $('#modalRealizarAluno').text(nomeAluno);
+    $('#modalRealizarTurma').html('<option value="">Carregando turmas...</option>');
+    $('#modalRealizarConfirmar').prop('disabled', false).text('Confirmar realização');
+    $('#modalRealizar').addClass('is-open');
+    $('body').addClass('modal-open');
+
+    if (turmasCache.length) {
+        preencherSelectTurmasRealizar(turmasCache, turmaIdAtual);
+        return;
+    }
+    $.get(ADMIN_BASE_URL + '/services/get_turmas_para_fila.php', (res) => {
+        if (!res.success) {
+            $('#modalRealizarTurma').html('<option value="">Erro ao carregar turmas</option>');
+            return;
+        }
+        turmasCache = res.turmas;
+        preencherSelectTurmasRealizar(turmasCache, turmaIdAtual);
+    }, 'json');
+};
+
+const preencherSelectTurmasRealizar = (turmas, turmaIdAtual) => {
+    const opts = turmas.map(t => {
+        const vagaInfo = t.vagas === null ? 'sem limite' : t.vagas + ' vaga' + (t.vagas === 1 ? '' : 's');
+        return '<option value="' + t.id + '"' + (t.id === turmaIdAtual ? ' selected' : '') + '>' +
+            esc(t.nome) + ' — ' + esc(t.quadra_nome) + ' (' + vagaInfo + ')' +
+        '</option>';
+    });
+    $('#modalRealizarTurma').html(opts.join(''));
+};
+
+const fecharModalRealizar = () => {
+    $('#modalRealizar').removeClass('is-open');
+    $('body').removeClass('modal-open');
+    modalRealizarAulaId = null;
+};
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 $(document).ready(() => {
     carregarDados();
+
+    // Abrir modal de confirmar realização
+    $(document).on('click', '.btn--confirmarRealizado', function () {
+        abrirModalRealizar(
+            parseInt($(this).data('id')),
+            $(this).data('nome'),
+            parseInt($(this).data('turma-id'))
+        );
+    });
+
+    // Fechar modal de confirmar realização
+    $(document).on('click', '#modalRealizarClose, #modalRealizarOverlay, #modalRealizarCancelar', fecharModalRealizar);
+
+    // Confirmar realização da aula teste
+    $(document).on('click', '#modalRealizarConfirmar', function () {
+        const turmaId = $('#modalRealizarTurma').val();
+        if (!turmaId) { alert('Selecione a turma.'); return; }
+        const btn = $(this).prop('disabled', true).text('Salvando...');
+
+        $.post(ADMIN_BASE_URL + '/services/update_aula_experimental.php', {
+            id:       modalRealizarAulaId,
+            action:   'realizar',
+            turma_id: turmaId,
+        }, (res) => {
+            fecharModalRealizar();
+            if (res.success) {
+                carregarDados();
+            } else {
+                alert(res.message || 'Erro ao confirmar realização.');
+            }
+        }, 'json').fail(() => {
+            btn.prop('disabled', false).text('Confirmar realização');
+            alert('Erro ao comunicar com o servidor.');
+        });
+    });
 
     // Enviar email de cadastro
     $(document).on('click', '.btn--enviarEmail', function () {
@@ -236,7 +325,11 @@ $(document).ready(() => {
 
     // Fechar modal
     $(document).on('click', '#modalFilaClose, #modalFilaOverlay, #modalFilaCancelar', fecharModalFila);
-    $(document).on('keydown', (e) => { if (e.key === 'Escape') fecharModalFila(); });
+    $(document).on('keydown', (e) => {
+        if (e.key !== 'Escape') return;
+        fecharModalFila();
+        fecharModalRealizar();
+    });
 
     // Aviso de turma lotada
     $(document).on('change', '#modalFilaTurma', function () {

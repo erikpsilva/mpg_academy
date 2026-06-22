@@ -9,6 +9,9 @@ $modoTeste = mpModoTeste($pdo);
 $cfgMatricula = $pdo->query("SELECT valor FROM configuracoes WHERE chave = 'valor_matricula'")->fetch();
 $valorMatricula = $cfgMatricula ? (float) $cfgMatricula['valor'] : 0.0;
 
+$cfgMatriculaAtiva = $pdo->query("SELECT valor FROM configuracoes WHERE chave = 'matricula_ativa'")->fetch();
+$matriculaAtiva = $cfgMatriculaAtiva === false || $cfgMatriculaAtiva['valor'] !== '0';
+
 // Carrega emails de notificação cadastrados
 $stEmails        = $pdo->query("SELECT id, email, nome FROM emails_notificacao WHERE ativo = 1 ORDER BY id");
 $emailsNotificacao = $stEmails->fetchAll();
@@ -39,10 +42,22 @@ $emailsNotificacao = $stEmails->fetchAll();
             <div class="configSection configSection--first">
                 <h3>Matrícula</h3>
                 <div class="configCard">
+
+                    <div class="configRow">
+                        <div class="configRow__info">
+                            <strong>Cobrar taxa de matrícula</strong>
+                            <p>Quando desativado, nenhum aluno novo é cobrado de matrícula, independente do valor configurado abaixo.</p>
+                        </div>
+                        <label class="toggle" title="Ativar/desativar cobrança de matrícula">
+                            <input type="checkbox" id="toggleMatriculaAtiva" <?= $matriculaAtiva ? 'checked' : '' ?>>
+                            <span class="toggle__slider"></span>
+                        </label>
+                    </div>
+
                     <div class="configRow configRow--stack">
                         <div class="configRow__info">
                             <strong>Taxa de matrícula</strong>
-                            <p>Valor cobrado uma única vez quando o aluno é adicionado a uma turma pela primeira vez. Use <strong>0</strong> para desativar a cobrança.</p>
+                            <p>Valor cobrado uma única vez quando o aluno é adicionado a uma turma pela primeira vez (somente se a cobrança estiver ativada acima).</p>
                         </div>
                         <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
                             <span style="color:#aaa;font-size:14px;">R$</span>
@@ -192,6 +207,42 @@ var PK_PROD = "<?= substr(MP_PUBLIC_KEY_PROD, 0, 24) ?>";
             msg.className   = 'configMsg is-error';
         })
         .finally(function () { btn.disabled = false; });
+    });
+}());
+
+// ── Matrícula ativa/inativa ──────────────────────────────────────────────────
+(function () {
+    var toggle = document.getElementById('toggleMatriculaAtiva');
+    var msg    = document.getElementById('matriculaMsg');
+    if (!toggle) return;
+
+    toggle.addEventListener('change', function () {
+        var ativo = this.checked;
+        msg.className = 'configMsg';
+
+        var body = new URLSearchParams({ chave: 'matricula_ativa', valor: ativo ? '1' : '0' });
+        fetch(ADMIN_BASE_URL + '/services/save_configuracao.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            credentials: 'same-origin',
+            body: body.toString(),
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (data.success) {
+                msg.textContent = ativo ? 'Cobrança de matrícula ativada.' : 'Cobrança de matrícula desativada.';
+                msg.className   = 'configMsg is-success';
+            } else {
+                toggle.checked  = !ativo;
+                msg.textContent = 'Erro ao salvar: ' + (data.message || '');
+                msg.className   = 'configMsg is-error';
+            }
+        })
+        .catch(function () {
+            toggle.checked  = !ativo;
+            msg.textContent = 'Erro de comunicação.';
+            msg.className   = 'configMsg is-error';
+        });
     });
 }());
 

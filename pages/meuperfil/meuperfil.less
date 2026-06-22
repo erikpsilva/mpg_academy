@@ -167,6 +167,70 @@
     }
 }
 
+.autoPagCard {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 18px;
+    padding: 14px 18px;
+    border: 1px solid rgba(255, 213, 0, 0.34);
+    border-radius: 8px;
+    background: rgba(255, 213, 0, 0.06);
+    margin-bottom: 16px;
+
+    &__info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: @white;
+        font-weight: 700;
+        font-size: 14px;
+
+        i {
+            color: @yellow;
+            font-size: 18px;
+        }
+    }
+
+    &__switch {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #cfcfcf;
+        font-size: 13px;
+        cursor: pointer;
+        margin-left: auto;
+
+        input {
+            width: 16px;
+            height: 16px;
+            accent-color: @yellow;
+            cursor: pointer;
+        }
+    }
+
+    &__link {
+        background: none;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 6px;
+        color: @white;
+        font-size: 12px;
+        font-weight: 700;
+        padding: 8px 12px;
+        cursor: pointer;
+
+        &:hover {
+            border-color: @yellow;
+            color: @yellow;
+        }
+
+        &--danger:hover {
+            border-color: #e05c5c;
+            color: #e05c5c;
+        }
+    }
+}
+
 @media @tablet-large {
     .studentEditDataActions {
         grid-template-columns: 1fr 1fr;

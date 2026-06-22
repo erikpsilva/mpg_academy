@@ -20,7 +20,7 @@ if ($mensalidadeId <= 0) {
 $pdo = getDbConnection();
 
 $stMens = $pdo->prepare("
-    SELECT m.id, m.referencia, m.tipo, m.descricao, m.valor, m.matricula_valor, m.vencimento, m.status,
+    SELECT m.id, m.referencia, m.tipo, m.descricao, m.valor, m.matricula_valor, m.proporcional_valor, m.vencimento, m.status,
            COALESCE(t.nome, '') AS turma_nome
     FROM mensalidades m
     LEFT JOIN turmas t ON t.id = m.turma_id
@@ -29,14 +29,21 @@ $stMens = $pdo->prepare("
 $stMens->execute([$mensalidadeId, $aluno['id']]);
 $mens = $stMens->fetch();
 
+$stAuto = $pdo->prepare("SELECT auto_pagamento, cartao_final4 FROM alunos WHERE id = ?");
+$stAuto->execute([$aluno['id']]);
+$autoInfo        = $stAuto->fetch();
+$autoPagamentoOn = !empty($autoInfo['auto_pagamento']);
+$cartaoFinal4    = $autoInfo['cartao_final4'] ?? '';
+
 if (!$mens) {
     header('Location: ' . BASE_URL . '/mensalidades');
     exit;
 }
 
-$valor          = (float) $mens['valor'];
-$matriculaValor = (float) ($mens['matricula_valor'] ?? 0);
-$valorMensalidade = $valor - $matriculaValor; // valor da mensalidade sem a matrícula
+$valor             = (float) $mens['valor'];
+$matriculaValor    = (float) ($mens['matricula_valor'] ?? 0);
+$proporcionalValor = (float) ($mens['proporcional_valor'] ?? 0);
+$valorMensalidade  = $valor - $matriculaValor - $proporcionalValor; // valor da mensalidade do mês atual, sem matrícula/proporcional
 $hoje       = new DateTime('today');
 $venc       = new DateTime($mens['vencimento']);
 $isAtrasado = $mens['status'] === 'atrasado';
@@ -92,6 +99,14 @@ $modoTeste = mpModoTeste($pdo);
 .payMethodBtn:hover { border-color: #555; color: #fff; }
 .payMethodBtn.is-active { border-color: #e5c200; color: #e5c200; background: #1f1d00; }
 .payMethodBtn i { display: block; font-size: 20px; margin-bottom: 4px; }
+/* Salvar cartão / cobrança automática */
+.payCard__saveCard {
+    display: flex; align-items: flex-start; gap: 10px; cursor: pointer;
+    background: #1a1a1a; border: 1px solid #333; border-radius: 8px;
+    padding: 12px 14px; margin-bottom: 16px; font-size: 13px; color: #ccc; line-height: 1.4;
+}
+.payCard__saveCard input { width: 16px; height: 16px; margin-top: 1px; accent-color: #e5c200; cursor: pointer; flex-shrink: 0; }
+.payCard__autoNotice { color: #7ecf7e; font-size: 12px; margin-top: 8px; }
 /* Sucesso / Pendente */
 #paymentSuccess { text-align: center; padding: 32px 0; }
 #paymentSuccess h2 { font-size: 22px; margin-bottom: 8px; color: #7ecf7e; }
@@ -134,15 +149,23 @@ $modoTeste = mpModoTeste($pdo);
                 <div class="payCard__summaryRow">
                     <span>Vencimento</span><span><?= $venc->format('d/m/Y') ?></span>
                 </div>
-                <?php if ($matriculaValor > 0): ?>
+                <?php if ($matriculaValor > 0 || $proporcionalValor > 0): ?>
                 <div class="payCard__summaryRow">
                     <span>Mensalidade</span>
                     <span>R$ <?= number_format($valorMensalidade, 2, ',', '.') ?></span>
                 </div>
+                <?php if ($proporcionalValor > 0): ?>
+                <div class="payCard__summaryRow">
+                    <span>Proporcional (mês anterior)</span>
+                    <span>R$ <?= number_format($proporcionalValor, 2, ',', '.') ?></span>
+                </div>
+                <?php endif; ?>
+                <?php if ($matriculaValor > 0): ?>
                 <div class="payCard__summaryRow">
                     <span>Taxa de matrícula</span>
                     <span>R$ <?= number_format($matriculaValor, 2, ',', '.') ?></span>
                 </div>
+                <?php endif; ?>
                 <?php else: ?>
                 <div class="payCard__summaryRow">
                     <span>Valor</span>
@@ -177,6 +200,17 @@ $modoTeste = mpModoTeste($pdo);
 
             <!-- Área cartão -->
             <div id="areaCard">
+                <label class="payCard__saveCard">
+                    <input type="checkbox" id="chkSalvarCartao" <?= $autoPagamentoOn ? 'checked' : '' ?>>
+                    <span>
+                        <?php if ($autoPagamentoOn): ?>
+                            Atualizar cartão salvo e manter cobrança automática mensal ativada
+                            <?php if ($cartaoFinal4): ?>(cartão atual: final <?= htmlspecialchars($cartaoFinal4) ?>)<?php endif; ?>
+                        <?php else: ?>
+                            Salvar este cartão e ativar cobrança automática mensal
+                        <?php endif; ?>
+                    </span>
+                </label>
                 <div id="cardPaymentBrick_container"></div>
             </div>
 
@@ -266,15 +300,22 @@ function selectMethod(method) {
             onReady: function () {},
             onSubmit: function (formData) {
                 return new Promise(function (resolve, reject) {
+                    var salvarCartao = document.getElementById('chkSalvarCartao').checked;
                     fetch(BASE_URL + '/services/site/criar_pagamento.php', {
                         method:      'POST',
                         headers:     { 'Content-Type': 'application/json' },
                         credentials: 'same-origin',
-                        body:        JSON.stringify(Object.assign({}, formData, { mensalidade_id: MENSALIDADE_ID })),
+                        body:        JSON.stringify(Object.assign({}, formData, { mensalidade_id: MENSALIDADE_ID, salvar_cartao: salvarCartao })),
                     })
                     .then(function (r) { return r.json(); })
                     .then(function (data) {
                         if (data.success && data.status === 'approved') {
+                            if (data.cartao_salvo) {
+                                var p = document.createElement('p');
+                                p.className   = 'payCard__autoNotice';
+                                p.textContent = '✓ Cobrança automática ativada para as próximas mensalidades.';
+                                document.getElementById('paymentSuccess').appendChild(p);
+                            }
                             document.getElementById('paymentForm').style.display    = 'none';
                             document.getElementById('paymentSuccess').style.display = '';
                             resolve();

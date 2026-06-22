@@ -57,16 +57,7 @@ function verificarPagamentoMP(PDO $pdo, string $accessToken, int $mensalidadeId,
 
     if (!$payment || ($payment['status'] ?? '') !== 'approved') return false;
 
-    $pdo->prepare("
-        UPDATE mensalidades
-        SET status = 'pago',
-            data_pagamento = COALESCE(data_pagamento, CURDATE()),
-            mp_payment_id  = ?,
-            atualizado_em  = NOW()
-        WHERE id = ? AND status != 'pago'
-    ")->execute([$payment['id'] ?? $mpPaymentId, $mensalidadeId]);
-
-    return true;
+    return mpMarcarMensalidadePaga($pdo, $mensalidadeId, (string) ($payment['id'] ?? $mpPaymentId));
 }
 
 foreach ($pendentes as $m) {

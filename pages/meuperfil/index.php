@@ -5,6 +5,7 @@ if (empty($_SESSION['aluno'])) {
 }
 
 require_once ROOT . '/config/database.php';
+require_once ROOT . '/config/mercadopago.php';
 
 $pdo = getDbConnection();
 $stmt = $pdo->prepare("SELECT * FROM alunos WHERE id = ? LIMIT 1");
@@ -33,6 +34,8 @@ $nascimento   = !empty($perfil['nascimento']) ? date('d/m/Y', strtotime($perfil[
 $cpfFormatado = preg_replace('/(\d{3})(\d{3})(\d{3})(\d{2})/', '$1.$2.$3-$4', $perfil['cpf']);
 
 $estados = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
+
+$mpPublicKey = mpPublicKey($pdo);
 
 function e($v) { return htmlspecialchars($v ?? '', ENT_QUOTES); }
 function sel($opt, $val) { return $opt === $val ? ' selected' : ''; }
@@ -224,6 +227,34 @@ function sel($opt, $val) { return $opt === $val ? ' selected' : ''; }
                         </div>
                     </section>
 
+                    <section class="studentSignupBox studentSignupBox--full" id="autoPagamentoBox">
+                        <h2><i class="icon-creditcard" aria-hidden="true"></i> Pagamento automático</h2>
+                        <p style="color:#aaa;font-size:13px;margin-bottom:16px;">
+                            Ative para que suas mensalidades sejam cobradas automaticamente no cartão, todo mês, sem precisar pagar manualmente.
+                        </p>
+
+                        <?php if (!empty($perfil['cartao_final4'])): ?>
+                        <div class="autoPagCard" id="autoPagCardInfo">
+                            <div class="autoPagCard__info">
+                                <i class="icon-creditcard" aria-hidden="true"></i>
+                                <span><?= e(ucfirst($perfil['cartao_bandeira'] ?? '')) ?> final <?= e($perfil['cartao_final4']) ?></span>
+                            </div>
+                            <label class="autoPagCard__switch">
+                                <input type="checkbox" id="chkAutoPagamento" <?= !empty($perfil['auto_pagamento']) ? 'checked' : '' ?>>
+                                <span>Cobrança automática ativada</span>
+                            </label>
+                            <button type="button" id="btnTrocarCartao" class="autoPagCard__link">Trocar cartão</button>
+                            <button type="button" id="btnRemoverCartao" class="autoPagCard__link autoPagCard__link--danger">Remover cartão</button>
+                        </div>
+                        <?php else: ?>
+                        <div id="autoPagCardInfo" style="display:none;"></div>
+                        <?php endif; ?>
+
+                        <div id="autoPagForm" style="<?= !empty($perfil['cartao_final4']) ? 'display:none;' : '' ?>">
+                            <div id="autoPagBrick_container"></div>
+                        </div>
+                    </section>
+
                     <section class="studentSignupBox">
                         <h2><i class="icon-padlock" aria-hidden="true"></i> Acesso</h2>
 
@@ -259,6 +290,12 @@ function sel($opt, $val) { return $opt === $val ? ' selected' : ''; }
 </main>
 
 <?php include ROOT . '/includes/scripts.php';?>
+<script src="https://sdk.mercadopago.com/js/v2"></script>
+<script>
+var BASE_URL      = "<?= BASE_URL ?>";
+var MP_PUBLIC_KEY = "<?= $mpPublicKey ?>";
+var ALUNO_EMAIL   = "<?= htmlspecialchars($perfil['email'] ?? '', ENT_QUOTES) ?>";
+</script>
 <?php
 $version = time();
 echo '<script src="' . BASE_URL . '/pages/meuperfil/meuperfil.js?' . $version . '"></script>';

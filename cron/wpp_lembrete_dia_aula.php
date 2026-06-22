@@ -10,7 +10,7 @@
 define('CRON_RUN', true);
 require_once dirname(__FILE__, 2) . '/config/app.php';
 require_once dirname(__FILE__, 2) . '/config/database.php';
-require_once dirname(__FILE__, 2) . '/services/whatsapp/zapi.php';
+require_once dirname(__FILE__, 2) . '/services/whatsapp/wpp_aula_teste_lembrete.php';
 
 $pdo = getDbConnection();
 
@@ -35,41 +35,17 @@ $stmt = $pdo->prepare("
 $stmt->execute([$hoje]);
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+$jaEnviado = $pdo->prepare("SELECT id FROM lembrete_teste_log WHERE aula_experimental_id = ? AND tipo = 'dia_aula' AND DATE(enviado_em) = CURDATE() LIMIT 1");
+$logInsert = $pdo->prepare("INSERT INTO lembrete_teste_log (aula_experimental_id, tipo) VALUES (?, 'dia_aula')");
+
+$enviados = 0;
 foreach ($rows as $r) {
-    $horarioFmt = $r['hora_inicio']
-        ? 'às ' . substr($r['hora_inicio'], 0, 5) . 'h'
-        : 'hoje';
+    $jaEnviado->execute([$r['id']]);
+    if ($jaEnviado->fetch()) continue; // já enviado hoje (ex: disparo manual) — evita duplicado
 
-    $endereco = '';
-    if (!empty($r['rua'])) {
-        $endereco = $r['rua'] . ', ' . ($r['numero'] ?? 's/n');
-        if (!empty($r['complemento'])) $endereco .= ' - ' . $r['complemento'];
-        $endereco .= ' - ' . $r['bairro'] . ', ' . $r['cidade'] . '/' . $r['estado'];
-    }
-
-    $nomePrimeiro = explode(' ', trim($r['nome']))[0];
-
-    if (!empty($r['celular'])) {
-        $msg = "Olá, *{$nomePrimeiro}*! 🎾\n\n";
-        $msg .= "Hoje é o dia da sua aula experimental na *MPG Academy*!\n\n";
-        $msg .= "⏰ *Horário:* {$horarioFmt}\n";
-        if ($endereco) $msg .= "📍 *Local:* {$endereco}\n";
-        $msg .= "\nTe esperamos! 😊";
-
-        sendWhatsApp(formatPhoneZapi($r['celular']), $msg);
-    }
-
-    if (!empty($r['is_menor']) && !empty($r['responsavel_celular'])) {
-        $nomeAluno = trim($r['nome']);
-        $nomeResp  = explode(' ', trim($r['responsavel_nome'] ?? 'Responsável'))[0];
-
-        $msgResp = "Olá, *{$nomeResp}*! 🎾\n\n";
-        $msgResp .= "Hoje é o dia da aula experimental de *{$nomeAluno}* na *MPG Academy*!\n\n";
-        $msgResp .= "⏰ *Horário:* {$horarioFmt}\n";
-        if ($endereco) $msgResp .= "📍 *Local:* {$endereco}";
-
-        sendWhatsApp(formatPhoneZapi($r['responsavel_celular']), $msgResp);
-    }
+    wppAulaTesteLembrete($r, 'dia_aula');
+    $logInsert->execute([$r['id']]);
+    $enviados++;
 }
 
-echo "Lembretes dia da aula: " . count($rows) . " enviados.\n";
+echo "Lembretes dia da aula: {$enviados} enviados.\n";

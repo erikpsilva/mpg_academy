@@ -8,7 +8,7 @@
 define('CRON_RUN', true);
 require_once dirname(__FILE__, 2) . '/config/app.php';
 require_once dirname(__FILE__, 2) . '/config/database.php';
-require_once dirname(__FILE__, 2) . '/services/whatsapp/zapi.php';
+require_once dirname(__FILE__, 2) . '/services/whatsapp/wpp_aula_teste_lembrete.php';
 
 $pdo = getDbConnection();
 
@@ -34,51 +34,17 @@ $stmt = $pdo->prepare("
 $stmt->execute([$alvo]);
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-$meses = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
-$diasSemana = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
+$jaEnviado = $pdo->prepare("SELECT id FROM lembrete_teste_log WHERE aula_experimental_id = ? AND tipo = '3dias' AND DATE(enviado_em) = CURDATE() LIMIT 1");
+$logInsert = $pdo->prepare("INSERT INTO lembrete_teste_log (aula_experimental_id, tipo) VALUES (?, '3dias')");
 
+$enviados = 0;
 foreach ($rows as $r) {
-    $dt      = new DateTime($r['data_agendada']);
-    $dataFmt = $dt->format('d') . ' de ' . $meses[(int)$dt->format('n') - 1] . ' de ' . $dt->format('Y')
-             . ' (' . $diasSemana[(int)$dt->format('w')] . ')';
+    $jaEnviado->execute([$r['id']]);
+    if ($jaEnviado->fetch()) continue; // já enviado hoje (ex: disparo manual) — evita duplicado
 
-    $horarioFmt = $r['hora_inicio']
-        ? 'das ' . substr($r['hora_inicio'], 0, 5) . 'h às ' . substr($r['hora_fim'], 0, 5) . 'h'
-        : 'a confirmar';
-
-    $endereco = '';
-    if (!empty($r['rua'])) {
-        $endereco = $r['rua'] . ', ' . ($r['numero'] ?? 's/n');
-        if (!empty($r['complemento'])) $endereco .= ' - ' . $r['complemento'];
-        $endereco .= ' - ' . $r['bairro'] . ', ' . $r['cidade'] . '/' . $r['estado'];
-    }
-
-    $nomePrimeiro = explode(' ', trim($r['nome']))[0];
-
-    if (!empty($r['celular'])) {
-        $msg = "Olá, *{$nomePrimeiro}*! 🎾\n\n";
-        $msg .= "Lembrando que sua aula experimental na *MPG Academy* é em 3 dias!\n\n";
-        $msg .= "📅 *Data:* {$dataFmt}\n";
-        $msg .= "⏰ *Horário:* {$horarioFmt}\n";
-        if ($endereco) $msg .= "📍 *Local:* {$endereco}\n";
-        $msg .= "\nQualquer dúvida é só chamar. Te esperamos!";
-
-        sendWhatsApp(formatPhoneZapi($r['celular']), $msg);
-    }
-
-    // Notifica responsável do menor também
-    if (!empty($r['is_menor']) && !empty($r['responsavel_celular'])) {
-        $nomeAluno = trim($r['nome']);
-        $nomeResp  = explode(' ', trim($r['responsavel_nome'] ?? 'Responsável'))[0];
-
-        $msgResp = "Olá, *{$nomeResp}*! 🎾\n\n";
-        $msgResp .= "Lembrando que a aula experimental de *{$nomeAluno}* na *MPG Academy* é em 3 dias!\n\n";
-        $msgResp .= "📅 *Data:* {$dataFmt}\n";
-        $msgResp .= "⏰ *Horário:* {$horarioFmt}\n";
-        if ($endereco) $msgResp .= "📍 *Local:* {$endereco}";
-
-        sendWhatsApp(formatPhoneZapi($r['responsavel_celular']), $msgResp);
-    }
+    wppAulaTesteLembrete($r, '3dias');
+    $logInsert->execute([$r['id']]);
+    $enviados++;
 }
 
-echo "Lembretes 3 dias: " . count($rows) . " enviados.\n";
+echo "Lembretes 3 dias: {$enviados} enviados.\n";

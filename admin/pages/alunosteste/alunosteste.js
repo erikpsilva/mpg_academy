@@ -141,6 +141,11 @@ const renderBloco = (turma) => {
           '</div>'
         : '';
 
+    const btnLembrete = totalAgendados > 0
+        ? '<button class="btn--testeAcao btn--dispararLembrete" data-turma-id="' + turma.turma_id +
+            '" data-turma-nome="' + $('<span>').text(turma.turma_nome).html() + '">📲 Disparar lembrete</button>'
+        : '';
+
     return '<div class="adminTesteBloco" data-turma-id="' + turma.turma_id + '">' +
         '<div class="adminTesteBloco__head">' +
             '<div class="adminTesteBloco__info">' +
@@ -153,6 +158,7 @@ const renderBloco = (turma) => {
                 '<span class="adminTesteBloco__count">' +
                     turma.alunos_ativos + (turma.max_alunos ? '/' + turma.max_alunos : '') + ' alunos' +
                 '</span>' +
+                btnLembrete +
             '</div>' +
         '</div>' +
         (secaoAgendados || secaoFila
@@ -591,6 +597,24 @@ $(document).ready(() => {
             $(this).data('label', $(this).text());
             atualizar(id, 'promover', $(this));
         }
+    });
+
+    $(document).on('click', '.btn--dispararLembrete', function () {
+        const btn       = $(this);
+        const turmaId   = btn.data('turma-id');
+        const turmaNome = btn.data('turma-nome');
+        const labelOriginal = btn.text();
+
+        if (!confirm('Disparar lembrete de aula experimental por WhatsApp pra quem está agendado em "' + turmaNome + '" (hoje ou em 3 dias)?')) return;
+
+        btn.prop('disabled', true).text('Enviando...');
+        $.post(ADMIN_BASE_URL + '/services/disparar_lembrete_teste.php', { turma_id: turmaId }, (res) => {
+            alert(res.message || (res.success ? 'Lembrete disparado.' : 'Erro ao disparar lembrete.'));
+            btn.prop('disabled', false).text(labelOriginal);
+        }, 'json').fail(() => {
+            alert('Erro ao comunicar com o servidor.');
+            btn.prop('disabled', false).text(labelOriginal);
+        });
     });
 
     $(document).on('click', '.btn--enviarEmailCadastro', function () {

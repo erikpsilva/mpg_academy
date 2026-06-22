@@ -44,9 +44,13 @@ if (empty($_SESSION['_mens_auto']) || $_SESSION['_mens_auto'] !== $_hoje) {
         require_once ROOT . '/config/database.php';
         $__pdo = getDbConnection();
 
-        $__ref  = date('Y-m');
+        // Mesma lógica de gerar_mensalidades.php: fatura é sempre para o mês SEGUINTE
+        // (modelo pré-pago, vencimento dia 5). Usar o mês atual aqui geraria uma fatura
+        // duplicada pra quem entrou no meio do mês, já que a fatura de entrada combinada
+        // (proporcional + mês seguinte) é criada com referencia = mês seguinte, não o atual.
         $__vencMes = new DateTime('first day of next month');
-        $__venc = $__vencMes->format('Y-m') . '-05';
+        $__ref     = $__vencMes->format('Y-m');
+        $__venc    = $__vencMes->format('Y-m') . '-05';
 
         $__ativos = $__pdo->query("
             SELECT ta.aluno_id, ta.turma_id,

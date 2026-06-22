@@ -50,7 +50,23 @@ if ($action === 'realizar') {
         echo json_encode(['success' => false, 'message' => 'Apenas aulas agendadas podem ser marcadas como realizadas.']);
         exit;
     }
-    $pdo->prepare("UPDATE aulas_experimentais SET status = 'realizada' WHERE id = ?")->execute([$id]);
+
+    // Permite confirmar/corrigir em qual turma a aula teste foi de fato realizada
+    // (ex: aluno estava agendado numa turma mas testou em outra por troca de horário).
+    $turmaConfirmada = $turmaId;
+    if (!empty($_POST['turma_id'])) {
+        $candidata = (int) $_POST['turma_id'];
+        if ($candidata > 0 && $candidata !== $turmaId) {
+            $checkTurma = $pdo->prepare("SELECT id FROM turmas WHERE id = ?");
+            $checkTurma->execute([$candidata]);
+            if ($checkTurma->fetch()) {
+                $turmaConfirmada = $candidata;
+            }
+        }
+    }
+
+    $pdo->prepare("UPDATE aulas_experimentais SET status = 'realizada', turma_id = ? WHERE id = ?")
+        ->execute([$turmaConfirmada, $id]);
 
 } elseif ($action === 'cancelar') {
     if (!in_array($aula['status'], ['agendada', 'fila'])) {

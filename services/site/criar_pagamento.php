@@ -29,6 +29,7 @@ if (!$input) {
 $mensalidadeId = (int) ($input['mensalidade_id'] ?? 0);
 $isPix         = ($input['payment_method_id'] ?? '') === 'pix';
 $token         = trim($input['token'] ?? '');
+$salvarCartao  = !empty($input['salvar_cartao']) && !$isPix;
 
 if ($mensalidadeId <= 0 || (!$isPix && empty($token))) {
     http_response_code(400);
@@ -45,7 +46,7 @@ $alunoId = (int) $_SESSION['aluno']['id'];
 
 $stMens = $pdo->prepare("
     SELECT m.id, m.referencia, m.tipo, m.descricao, m.valor, m.vencimento, m.status,
-           a.email AS aluno_email, a.nome AS aluno_nome, a.cpf AS aluno_cpf
+           a.email AS aluno_email, a.nome AS aluno_nome, a.cpf AS aluno_cpf, a.mp_customer_id
     FROM mensalidades m
     JOIN alunos a ON a.id = m.aluno_id
     WHERE m.id = ? AND m.aluno_id = ? AND m.status != 'pago'
@@ -91,6 +92,31 @@ $payer = [
     ],
 ];
 
+$accessToken = mpAccessToken($pdo);
+
+// Se o aluno marcou "salvar cartão / ativar cobrança automática", salva o cartão no
+// customer do MP e gera um novo token a partir dele (token avulso do Brick é uso único,
+// não pode ser reaproveitado pra cobranças futuras). Se algo falhar aqui, não bloqueia o
+// pagamento — segue com o token original e cobra normalmente, só não ativa a recorrência.
+$cartaoSalvo     = false;
+$cartaoInfo      = null;
+$customerIdUsado = null;
+
+if ($salvarCartao) {
+    $customerIdUsado = $mens['mp_customer_id'] ?: mpObterOuCriarCustomer($accessToken, $payer['email']);
+
+    if (!empty($customerIdUsado)) {
+        $cartaoInfo = mpSalvarCartaoCustomer($accessToken, $customerIdUsado, $token);
+        if ($cartaoInfo) {
+            $novoToken = mpGerarTokenCartaoSalvo($accessToken, $cartaoInfo['id'], $customerIdUsado);
+            if ($novoToken) {
+                $token       = $novoToken;
+                $cartaoSalvo = true;
+            }
+        }
+    }
+}
+
 if ($isPix) {
     $paymentData = [
         'transaction_amount' => $total,
@@ -106,7 +132,7 @@ if ($isPix) {
         'description'        => 'MPG Academy — Mensalidade ' . $refLabel,
         'installments'       => (int) ($input['installments'] ?? 1),
         'payment_method_id'  => $input['payment_method_id'] ?? '',
-        'payer'              => $payer,
+        'payer'              => $cartaoSalvo ? ['type' => 'customer', 'id' => $customerIdUsado] : $payer,
         'metadata'           => ['mensalidade_id' => $mensalidadeId],
     ];
     if (!empty($input['issuer_id'])) {
@@ -114,8 +140,21 @@ if ($isPix) {
     }
 }
 
-$accessToken = mpAccessToken($pdo);
-$result      = mpCriarPagamento($accessToken, $paymentData);
+$result = mpCriarPagamento($accessToken, $paymentData);
+
+// Persiste o cartão salvo independente do resultado dessa cobrança específica
+// (o cartão pode ter sido salvo com sucesso mesmo que essa cobrança seja recusada).
+if ($cartaoSalvo && $cartaoInfo) {
+    $bandeira = $cartaoInfo['payment_method']['id'] ?? ($cartaoInfo['payment_method_id'] ?? '');
+    $final4   = $cartaoInfo['last_four_digits'] ?? '';
+    try {
+        $pdo->prepare("
+            UPDATE alunos
+            SET mp_customer_id = ?, mp_card_id = ?, cartao_bandeira = ?, cartao_final4 = ?, auto_pagamento = 1
+            WHERE id = ?
+        ")->execute([$customerIdUsado, $cartaoInfo['id'], $bandeira, $final4, $alunoId]);
+    } catch (PDOException $e) {}
+}
 $body        = $result['body'];
 $status      = $body['status'] ?? '';
 $mpPaymentId = $body['id'] ?? null;
@@ -148,11 +187,12 @@ if (in_array($status, ['approved', 'pending', 'in_process'], true)) {
         } catch (PDOException $e) {}
 
         echo json_encode([
-            'success'    => true,
-            'status'     => 'approved',
-            'payment_id' => $mpPaymentId,
-            'referencia' => $refLabel,
-            'valor_pago' => $total,
+            'success'      => true,
+            'status'       => 'approved',
+            'payment_id'   => $mpPaymentId,
+            'referencia'   => $refLabel,
+            'valor_pago'   => $total,
+            'cartao_salvo' => $cartaoSalvo,
         ]);
 
     } elseif ($isPix) {
@@ -169,11 +209,12 @@ if (in_array($status, ['approved', 'pending', 'in_process'], true)) {
 
     } else {
         echo json_encode([
-            'success'    => true,
-            'status'     => $status,
-            'payment_id' => $mpPaymentId,
-            'referencia' => $refLabel,
-            'valor_pago' => $total,
+            'success'      => true,
+            'status'       => $status,
+            'payment_id'   => $mpPaymentId,
+            'referencia'   => $refLabel,
+            'valor_pago'   => $total,
+            'cartao_salvo' => $cartaoSalvo,
         ]);
     }
 

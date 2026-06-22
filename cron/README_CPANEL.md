@@ -33,6 +33,16 @@
 
 ---
 
+### Cobrança automática (cartão salvo)
+
+**Todo dia às 07:00** — cobra mensalidades pendentes/atrasadas de alunos com pagamento automático ativado
+```
+0 7 * * * php /home/SEU_USUARIO/public_html/mpg_academy/cron/cobranca_automatica.php >> /home/SEU_USUARIO/logs/cobranca_automatica.log 2>&1
+```
+> Roda todo dia (não só perto do dia 5) pra também insistir em quem ficou atrasado. Nunca cobra a mesma mensalidade duas vezes no mesmo dia (controlado por `cobranca_automatica_log`). Recomenda-se rodar antes do `wpp_mensalidade.php` (08:00), assim quem já foi cobrado automaticamente não recebe lembrete de cobrança no mesmo dia.
+
+---
+
 ### Lembrete de treino
 
 **Todo dia às 05:00** — envia 4h antes para turmas que começam às 09h+
