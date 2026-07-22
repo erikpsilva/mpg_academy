@@ -88,14 +88,15 @@ try {
         if (!$turmaNome) continue;
 
         $valorMensalidade = isset($t['valor_mensalidade']) && $t['valor_mensalidade'] !== null ? (float) $t['valor_mensalidade'] : null;
-        $genero     = in_array($t['genero'] ?? '', ['masculino','feminino','misto']) ? $t['genero'] : 'misto';
-        $nivel      = in_array($t['nivel']  ?? '', ['iniciante','intermediario','avancado']) ? $t['nivel'] : 'iniciante';
+        $genero      = in_array($t['genero'] ?? '', ['masculino','feminino','misto']) ? $t['genero'] : 'misto';
+        $nivel       = in_array($t['nivel']  ?? '', ['iniciante','intermediario','avancado']) ? $t['nivel'] : 'iniciante';
+        $faixaEtaria = in_array($t['faixa_etaria'] ?? '', ['adulto','adolescente','infantil']) ? $t['faixa_etaria'] : 'adulto';
         $promoValor = isset($t['promo_valor']) && $t['promo_valor'] !== null ? (float) $t['promo_valor'] : null;
         $promoMeses = isset($t['promo_meses']) && $t['promo_meses'] !== null ? (int) $t['promo_meses'] : null;
         $maxAlunos  = isset($t['max_alunos'])  && $t['max_alunos']  !== null ? (int) $t['max_alunos']  : null;
 
-        $s = $pdo->prepare("INSERT INTO turmas (quadra_id, nome, genero, nivel, valor_mensalidade, promo_valor, promo_meses, max_alunos) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-        $s->execute([$quadraId, $turmaNome, $genero, $nivel, $valorMensalidade, $promoValor, $promoMeses, $maxAlunos]);
+        $s = $pdo->prepare("INSERT INTO turmas (quadra_id, nome, genero, nivel, faixa_etaria, valor_mensalidade, promo_valor, promo_meses, max_alunos) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $s->execute([$quadraId, $turmaNome, $genero, $nivel, $faixaEtaria, $valorMensalidade, $promoValor, $promoMeses, $maxAlunos]);
         $turmaId = (int) $pdo->lastInsertId();
 
         foreach ($t['horario_indices'] ?? [] as $idx) {

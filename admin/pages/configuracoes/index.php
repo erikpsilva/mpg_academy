@@ -103,6 +103,19 @@ $emailsNotificacao = $stEmails->fetchAll();
                         </div>
                     </div>
 
+                    <?php if (($_SESSION['usuario']['nivel_acesso'] ?? '') === 'admin'): ?>
+                    <div class="configRow configRow--stack">
+                        <div class="configRow__info">
+                            <strong>Cobrança automática de hoje</strong>
+                            <p>Cobra agora, na hora, todos os alunos com pagamento automático ativado cujas faturas já venceram — mesmo que os crons das 07:00/15:00 ainda não tenham rodado. Faturas já cobradas com sucesso hoje não são cobradas de novo.</p>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:12px;margin-top:8px;">
+                            <button class="btn btn--primary btn--sm" id="btnRodarCobranca">Rodar cobrança de hoje</button>
+                        </div>
+                        <div id="cobrancaMsg" class="configMsg" style="margin-top:8px;"></div>
+                    </div>
+                    <?php endif; ?>
+
                 </div>
             </div>
 
@@ -285,6 +298,42 @@ var PK_PROD = "<?= substr(MP_PUBLIC_KEY_PROD, 0, 24) ?>";
             toggle.checked = !isTeste;
             msg.textContent   = 'Erro de comunicação.';
             msg.className     = 'configMsg is-error';
+        });
+    });
+}());
+
+// ── Rodar cobrança automática manualmente ────────────────────────────────────
+(function () {
+    var btn = document.getElementById('btnRodarCobranca');
+    var msg = document.getElementById('cobrancaMsg');
+    if (!btn) return;
+
+    btn.addEventListener('click', function () {
+        if (!confirm('Isso vai tentar cobrar agora, na hora, todos os alunos com pagamento automático ativado e fatura já vencida. Faturas já cobradas com sucesso hoje não são cobradas de novo. Continuar?')) return;
+
+        btn.disabled    = true;
+        btn.textContent = 'Cobrando...';
+        msg.className   = 'configMsg';
+        msg.textContent = '';
+
+        fetch(ADMIN_BASE_URL + '/services/rodar_cobranca_automatica.php', {
+            method: 'POST', credentials: 'same-origin',
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            msg.textContent = data.message || (data.success ? 'Concluído.' : 'Erro ao rodar cobrança.');
+            // Verde só se rodou sem nenhuma falha de cobrança — "success:true" da API só
+            // confirma que a chamada funcionou, não que todas as cobranças deram certo.
+            var semFalha = data.success && (!data.falha || data.falha === 0);
+            msg.className = 'configMsg ' + (semFalha ? 'is-success' : 'is-error');
+        })
+        .catch(function () {
+            msg.textContent = 'Erro de comunicação.';
+            msg.className   = 'configMsg is-error';
+        })
+        .finally(function () {
+            btn.disabled    = false;
+            btn.textContent = 'Rodar cobrança de hoje';
         });
     });
 }());

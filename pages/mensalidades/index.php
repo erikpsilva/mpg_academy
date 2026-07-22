@@ -17,10 +17,11 @@ $meses = [
 
 $pdo = getDbConnection();
 
-// Turma ativa do aluno
+// Turma ativa do aluno (+ desconto pessoal, pra calcular o valor real da próxima fatura)
 $stTurma = $pdo->prepare("
     SELECT t.id AS turma_id, t.nome AS turma_nome, t.valor_mensalidade,
-           q.nome AS quadra_nome
+           q.nome AS quadra_nome,
+           ta.desconto, ta.desconto_tipo, ta.desconto_inicio, ta.desconto_fim, ta.desconto_vitalicio
     FROM turma_alunos ta
     JOIN turmas t ON t.id = ta.turma_id
     JOIN quadras q ON q.id = t.quadra_id
@@ -30,9 +31,23 @@ $stTurma = $pdo->prepare("
 $stTurma->execute([$alunoId]);
 $turma = $stTurma->fetch();
 
+// Valor efetivo da mensalidade considerando desconto pessoal/promo vigente (mesma lógica
+// de _daValorCheioAluno() em admin/services/lib_desconto_aula.php)
+function valorEfetivoAluno(float $valorBase, ?float $desconto, string $descontoTipo, ?string $descontoInicio, ?string $descontoFim, $descontoVitalicio, string $hojeStr): float {
+    $descontoAtivo = $desconto !== null && $desconto > 0 && (
+        $descontoVitalicio ||
+        ($descontoInicio === null && $descontoFim === null) ||
+        ($descontoInicio <= $hojeStr && $descontoFim >= $hojeStr)
+    );
+    if (!$descontoAtivo) return $valorBase;
+    return $descontoTipo === 'percentual'
+        ? round($valorBase * (1 - $desconto / 100), 2)
+        : max(0, round($valorBase - $desconto, 2));
+}
+
 // Mensalidades em ordem decrescente com nome da turma
 $stMens = $pdo->prepare("
-    SELECT m.id, m.referencia, m.tipo, m.descricao, m.valor, m.matricula_valor, m.proporcional_valor,
+    SELECT m.id, m.referencia, m.tipo, m.descricao, m.valor, m.matricula_valor, m.proporcional_valor, m.desconto_aula_valor,
            m.vencimento, m.data_pagamento, m.status,
            COALESCE(t.nome, '') AS turma_nome
     FROM mensalidades m
@@ -81,10 +96,8 @@ if (!empty($mensalidades)) {
     $proxDate     = new DateTime("$ano-$mes-01");
     $proxDate->modify('+1 month');
     $proxRef      = $proxDate->format('Y-m');
-    // Vencimento = dia 5 do mês seguinte ao de referência (ciclo fecha dia 30, paga dia 5)
-    $proxVencMes  = clone $proxDate;
-    $proxVencMes->modify('+1 month');
-    $proxVencDate = new DateTime($proxVencMes->format('Y-m') . '-05');
+    // Vencimento = dia 10 do próprio mês de referência da próxima fatura (não do mês seguinte a ele)
+    $proxVencDate = new DateTime($proxRef . '-10');
 
     $diff = (int) $hoje->diff($proxVencDate)->days;
     if ($proxVencDate > $hoje) {
@@ -95,6 +108,18 @@ if (!empty($mensalidades)) {
         $proxDias   = 'vencida há ' . $diff . ' dia' . ($diff === 1 ? '' : 's');
     }
 }
+
+// Valor efetivo da próxima fatura, considerando desconto pessoal/promo — checa a validade do
+// desconto na data em que a fatura seria de fato gerada (1º dia do mês de referência dela),
+// não em "hoje": um desconto que começa a valer só depois de hoje mas antes da geração
+// (ex.: aluno com entrada agendada pra semana que vem) não pode ser ignorado na prévia.
+$valorProximaFatura = ($turma && $proxRef) ? valorEfetivoAluno(
+    (float) $turma['valor_mensalidade'],
+    $turma['desconto'] !== null ? (float) $turma['desconto'] : null,
+    $turma['desconto_tipo'] ?? 'fixo',
+    $turma['desconto_inicio'], $turma['desconto_fim'], $turma['desconto_vitalicio'],
+    $proxRef . '-01'
+) : null;
 
 function refLabel(string $ref, array $meses): string {
     [$a, $m] = explode('-', $ref);
@@ -190,7 +215,7 @@ function fmtMoney(float $val): string {
                     </article>
                     <article>
                         <span>Valor da mensalidade</span>
-                        <strong><?= $turma ? 'R$ ' . number_format((float)$turma['valor_mensalidade'], 2, ',', '.') : '—' ?></strong>
+                        <strong><?= $valorProximaFatura !== null ? 'R$ ' . number_format($valorProximaFatura, 2, ',', '.') : '—' ?></strong>
                     </article>
                     <article>
                         <span>Status</span>
@@ -199,7 +224,6 @@ function fmtMoney(float $val): string {
                         </b>
                         <small>Ser&aacute; cobrada no dia <?= $proxVencDate->format('d/m/Y') ?></small>
                     </article>
-                    <a href="#">Ver detalhes <i class="icon-ver" aria-hidden="true"></i></a>
                 </div>
             </section>
             <?php endif; ?>
@@ -237,6 +261,7 @@ function fmtMoney(float $val): string {
                             : refLabel($m['referencia'], $meses);
                         $matriculaValor    = (float)($m['matricula_valor'] ?? 0);
                         $proporcionalValor = (float)($m['proporcional_valor'] ?? 0);
+                        $descontoAulaValor = (float)($m['desconto_aula_valor'] ?? 0);
                     ?>
 
                     <div class="studentMonthlyTable__row<?= $isLate ? ' studentMonthlyTable__row--late' : '' ?>"
@@ -254,13 +279,16 @@ function fmtMoney(float $val): string {
                         </span>
                         <span data-label="Vencimento"><?= fmtDate($m['vencimento']) ?></span>
                         <span data-label="Valor">
-                            <?php if ($matriculaValor > 0 || $proporcionalValor > 0): ?>
-                                R$ <?= number_format((float)$m['valor'] - $matriculaValor - $proporcionalValor, 2, ',', '.') ?>
+                            <?php if ($matriculaValor > 0 || $proporcionalValor > 0 || $descontoAulaValor > 0): ?>
+                                R$ <?= number_format((float)$m['valor'] - $matriculaValor - $proporcionalValor + $descontoAulaValor, 2, ',', '.') ?>
                                 <?php if ($proporcionalValor > 0): ?>
                                 <small style="display:block;color:#888;font-size:11px;">+ R$ <?= number_format($proporcionalValor, 2, ',', '.') ?> proporcional (mês anterior)</small>
                                 <?php endif; ?>
                                 <?php if ($matriculaValor > 0): ?>
                                 <small style="display:block;color:#888;font-size:11px;">+ R$ <?= number_format($matriculaValor, 2, ',', '.') ?> matrícula</small>
+                                <?php endif; ?>
+                                <?php if ($descontoAulaValor > 0): ?>
+                                <small style="display:block;color:#888;font-size:11px;">- R$ <?= number_format($descontoAulaValor, 2, ',', '.') ?> aula(s) cancelada(s)</small>
                                 <?php endif; ?>
                             <?php else: ?>
                                 R$ <?= number_format((float)$m['valor'], 2, ',', '.') ?>
@@ -341,7 +369,7 @@ function fmtMoney(float $val): string {
                 <i class="icon-information" aria-hidden="true"></i>
                 <div>
                     <h2>Como funcionam as mensalidades?</h2>
-                    <p><i class="icon-check"></i> O vencimento das mensalidades &eacute; todo dia 5 de cada m&ecirc;s.</p>
+                    <p><i class="icon-check"></i> O vencimento das mensalidades &eacute; todo dia 10 de cada m&ecirc;s.</p>
                     <p><i class="icon-check"></i> Ap&oacute;s o vencimento, ser&aacute; cobrada multa de 5% + 0,5% ao dia de atraso.</p>
                     <p><i class="icon-check"></i> Mantenha suas mensalidades em dia e evite cobran&ccedil;as adicionais.</p>
                 </div>

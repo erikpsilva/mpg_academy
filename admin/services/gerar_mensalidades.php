@@ -21,12 +21,12 @@ if (empty($_SESSION['usuario'])) {
 
 require_once dirname(__FILE__, 3) . '/config/database.php';
 
-// Modelo pré-pago: ciclo fecha dia 30, fatura gerada para o mês SEGUINTE com vencimento dia 5.
+// Modelo pré-pago: ciclo fecha dia 30, fatura gerada para o mês SEGUINTE com vencimento dia 10.
 // Executar no dia 30 de cada mês.
 $hoje       = new DateTime();
 $proxMes    = (clone $hoje)->modify('first day of next month');
 $referencia = $proxMes->format('Y-m');            // mês que o aluno vai usar
-$vencimento = $proxMes->format('Y-m') . '-05';    // paga antes de começar a usar
+$vencimento = $proxMes->format('Y-m') . '-10';    // paga antes de começar a usar
 $hojeStr    = $hoje->format('Y-m-d');
 
 $pdo = getDbConnection();

@@ -16,6 +16,7 @@ function wppAulaTesteConfirmacao(array $aluno, array $turma, string $dataFmt, st
 
     $nomePrimeiro = explode(' ', trim($aluno['nome']))[0];
     $endereco     = _montaEndereco($turma);
+    $mapsLink     = $endereco ? googleMapsLink($endereco) : '';
 
     // Mensagem para o aluno
     if (!empty($aluno['celular'])) {
@@ -23,7 +24,10 @@ function wppAulaTesteConfirmacao(array $aluno, array $turma, string $dataFmt, st
         $msg .= "Sua aula experimental na *MPG Academy* está confirmada!\n\n";
         $msg .= "📅 *Data:* {$dataFmt}\n";
         $msg .= "⏰ *Horário:* {$horarioFmt}\n";
-        if ($endereco) $msg .= "📍 *Local:* {$endereco}\n";
+        if ($endereco) {
+            $msg .= "📍 *Local:* {$endereco}\n";
+            $msg .= "🗺️ Ver no mapa: {$mapsLink}\n";
+        }
         $msg .= "\nQualquer dúvida é só chamar. Te esperamos! 😊";
 
         sendWhatsApp(formatPhoneZapi($aluno['celular']), $msg);
@@ -38,7 +42,10 @@ function wppAulaTesteConfirmacao(array $aluno, array $turma, string $dataFmt, st
         $msgResp .= "A aula experimental de *{$nomeAluno}* na *MPG Academy* está confirmada!\n\n";
         $msgResp .= "📅 *Data:* {$dataFmt}\n";
         $msgResp .= "⏰ *Horário:* {$horarioFmt}\n";
-        if ($endereco) $msgResp .= "📍 *Local:* {$endereco}\n";
+        if ($endereco) {
+            $msgResp .= "📍 *Local:* {$endereco}\n";
+            $msgResp .= "🗺️ Ver no mapa: {$mapsLink}\n";
+        }
 
         if ($termoUrl) {
             $msgResp .= "\n✍ Para que *{$nomeAluno}* participe, precisamos da sua assinatura no *Termo de Autorização e Responsabilidade*.\n";
@@ -46,6 +53,57 @@ function wppAulaTesteConfirmacao(array $aluno, array $turma, string $dataFmt, st
         } else {
             $msgResp .= "\nQualquer dúvida estamos à disposição!";
         }
+
+        sendWhatsApp(formatPhoneZapi($aluno['responsavel_celular']), $msgResp);
+    }
+}
+
+/**
+ * Envia mensagem de reagendamento de aula teste via WhatsApp.
+ * Chamado após reagendar um teste cancelado (admin/services/update_aula_experimental.php, action=reagendar).
+ *
+ * @param array $aluno   ['nome', 'celular', 'is_menor', 'responsavel_nome', 'responsavel_celular']
+ * @param array $turma   ['nome', 'rua', 'numero', 'bairro', 'complemento', 'cidade', 'estado']
+ * @param string $dataFmt   Data formatada: "15 de junho de 2026 (segunda-feira)"
+ * @param string $horarioFmt Horário: "das 08h00 às 09h30"
+ */
+function wppAulaTesteReagendada(array $aluno, array $turma, string $dataFmt, string $horarioFmt): void {
+    require_once __DIR__ . '/zapi.php';
+    require_once dirname(__FILE__, 3) . '/config/app.php';
+
+    $nomePrimeiro = explode(' ', trim($aluno['nome']))[0];
+    $endereco     = _montaEndereco($turma);
+    $mapsLink     = $endereco ? googleMapsLink($endereco) : '';
+
+    // Mensagem para o aluno
+    if (!empty($aluno['celular'])) {
+        $msg = "Olá, *{$nomePrimeiro}*! 🎾\n\n";
+        $msg .= "Sua aula experimental na *MPG Academy* foi *reagendada*!\n\n";
+        $msg .= "📅 *Nova data:* {$dataFmt}\n";
+        $msg .= "⏰ *Horário:* {$horarioFmt}\n";
+        if ($endereco) {
+            $msg .= "📍 *Local:* {$endereco}\n";
+            $msg .= "🗺️ Ver no mapa: {$mapsLink}\n";
+        }
+        $msg .= "\nQualquer dúvida é só chamar. Te esperamos! 😊";
+
+        sendWhatsApp(formatPhoneZapi($aluno['celular']), $msg);
+    }
+
+    // Se for menor: notifica também o responsável
+    if (!empty($aluno['is_menor']) && !empty($aluno['responsavel_celular'])) {
+        $nomeAluno = trim($aluno['nome']);
+        $nomeResp  = explode(' ', trim($aluno['responsavel_nome'] ?? 'Responsável'))[0];
+
+        $msgResp = "Olá, *{$nomeResp}*! 🎾\n\n";
+        $msgResp .= "A aula experimental de *{$nomeAluno}* na *MPG Academy* foi *reagendada*!\n\n";
+        $msgResp .= "📅 *Nova data:* {$dataFmt}\n";
+        $msgResp .= "⏰ *Horário:* {$horarioFmt}\n";
+        if ($endereco) {
+            $msgResp .= "📍 *Local:* {$endereco}\n";
+            $msgResp .= "🗺️ Ver no mapa: {$mapsLink}\n";
+        }
+        $msgResp .= "\nQualquer dúvida estamos à disposição!";
 
         sendWhatsApp(formatPhoneZapi($aluno['responsavel_celular']), $msgResp);
     }

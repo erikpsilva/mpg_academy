@@ -80,6 +80,9 @@ fetch(ADMIN_BASE_URL + '/services/get_pagamentos_professor.php', { credentials: 
             var comp = p.comprovante
                 ? '<a href="' + BASE_URL + '/uploads/comprovantes/' + p.comprovante + '" target="_blank" class="meusPgto__comp">Ver comprovante ↗</a>'
                 : '';
+            var anexosHtml = (p.anexos || []).map(function (a) {
+                return '<a href="' + BASE_URL + '/' + a.caminho + '" target="_blank" class="meusPgto__comp">' + a.nome_original + ' ↗</a>';
+            }).join('');
             return '<div class="meusPgto__item">' +
                 '<div class="meusPgto__item-main">' +
                     '<span class="meusPgto__valor">' + fmtValor(p.valor) + '</span>' +
@@ -89,7 +92,7 @@ fetch(ADMIN_BASE_URL + '/services/get_pagamentos_professor.php', { credentials: 
                         (p.observacao ? '<span class="meusPgto__obs">' + p.observacao + '</span>' : '') +
                     '</div>' +
                 '</div>' +
-                comp +
+                (comp || anexosHtml ? '<div class="meusPgto__anexos">' + comp + anexosHtml + '</div>' : '') +
             '</div>';
         }).join('');
     });

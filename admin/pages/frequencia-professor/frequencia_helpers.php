@@ -4,11 +4,13 @@
  * Used by: minha-frequencia (professor view) and frequencia-professor (admin view).
  */
 
-function buildFrequencia(PDO $pdo, int $profId): array {
+function buildFrequencia(PDO $pdo, int $profId, ?string $rIni = null, ?string $rFim = null): array {
     $hoje = date('Y-m-d');
-    $ano  = (int) date('Y');
-    $rIni = "{$ano}-01-01";
-    $rFim = "{$ano}-12-31";
+    if ($rIni === null || $rFim === null) {
+        $ano  = (int) date('Y');
+        $rIni = "{$ano}-01-01";
+        $rFim = "{$ano}-12-31";
+    }
 
     // Turmas + horários
     $rows = $pdo->prepare("
@@ -50,6 +52,16 @@ function buildFrequencia(PDO $pdo, int $profId): array {
     $sf->execute([$profId,$rIni,$rFim]);
     foreach ($sf->fetchAll(PDO::FETCH_ASSOC) as $r) $faltasMap[$r['turma_id'].'_'.$r['data']] = $r['tipo'];
 
+    // Aulas canceladas (turma específica ou turma_id NULL = todas as turmas) — quadra fechada,
+    // feriado etc. Não conta como falta do professor nem é cobrável.
+    $canceladasMap = []; $canceladasGlobal = [];
+    $sca = $pdo->prepare("SELECT turma_id,data,motivo FROM aulas_canceladas WHERE data BETWEEN ? AND ?");
+    $sca->execute([$rIni,$rFim]);
+    foreach ($sca->fetchAll(PDO::FETCH_ASSOC) as $r) {
+        if ($r['turma_id'] === null) $canceladasGlobal[$r['data']] = $r['motivo'];
+        else                          $canceladasMap[$r['turma_id'].'_'.$r['data']] = $r['motivo'];
+    }
+
     // Gera aulas passadas
     $aulas = [];
     foreach ($turmas as $t) {
@@ -59,20 +71,22 @@ function buildFrequencia(PDO $pdo, int $profId): array {
             $fim = strtotime($rFim);
             while ($cur <= $fim && (int)date('w',$cur) !== $h['dow']) $cur = strtotime('+1 day',$cur);
             while ($cur <= $fim) {
-                $d   = date('Y-m-d',$cur);
-                $key = $t['id'].'_'.$d;
+                $d      = date('Y-m-d',$cur);
+                $key    = $t['id'].'_'.$d;
+                $motivo = $canceladasMap[$key] ?? $canceladasGlobal[$d] ?? null;
                 if ($d > $hoje) {
                     // Datas futuras: inclui apenas se tiver falta registrada (planejada)
                     if (!isset($faltasMap[$key])) { $cur = strtotime('+7 days',$cur); continue; }
                     $st = 'falta';
                 } else {
-                    if (isset($faltasMap[$key]))   $st = 'falta';
-                    elseif (isset($conc[$key]))    $st = 'concluida';
-                    else                           $st = 'pendente';
+                    if ($motivo !== null)           $st = 'cancelada';
+                    elseif (isset($faltasMap[$key])) $st = 'falta';
+                    elseif (isset($conc[$key]))      $st = 'concluida';
+                    else                              $st = 'pendente';
                 }
                 $aulas[] = ['data'=>$d,'mes'=>substr($d,0,7),'turma_id'=>$t['id'],'turma_nome'=>$t['nome'],
                             'hi'=>$h['hi'],'hf'=>$h['hf'],'dur'=>$h['dur'],'dow'=>$h['dow'],
-                            'status'=>$st,'falta_tipo'=>$faltasMap[$key]??null];
+                            'status'=>$st,'falta_tipo'=>$faltasMap[$key]??null,'cancelada_motivo'=>$motivo];
                 $cur = strtotime('+7 days',$cur);
             }
         }
@@ -138,7 +152,9 @@ function renderFrequenciaView(array $porMes, array $stats): void {
                 <span class="freqProf__turmaNome"><?= htmlspecialchars($a['turma_nome']) ?></span>
                 <span class="freqProf__horario"><?= $a['hi'] ?> – <?= $a['hf'] ?> <em><?= $dur ?></em></span>
             </div>
-            <?php if ($a['status'] === 'falta'): ?>
+            <?php if ($a['status'] === 'cancelada'): ?>
+                <span class="freqProf__tag freqProf__tag--cancelada" title="<?= htmlspecialchars($a['cancelada_motivo'] ?? '') ?>">🚫 Cancelada</span>
+            <?php elseif ($a['status'] === 'falta'): ?>
                 <span class="freqProf__tag freqProf__tag--falta">✕ <?= $a['falta_tipo'] === 'planejada' ? 'Planejada' : 'Sem aviso' ?></span>
             <?php elseif ($a['status'] === 'concluida'): ?>
                 <span class="freqProf__tag freqProf__tag--concluida">✓ Concluída</span>

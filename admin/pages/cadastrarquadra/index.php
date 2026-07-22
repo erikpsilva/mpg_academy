@@ -21,7 +21,7 @@ if ($editId > 0) {
     $editData['horarios'] = $hStmt->fetchAll();
 
     $tStmt = $pdo->prepare("
-        SELECT t.id, t.nome, t.genero, t.nivel, t.valor_mensalidade, t.promo_valor, t.promo_meses, t.max_alunos, GROUP_CONCAT(th.horario_id ORDER BY th.horario_id SEPARATOR ',') AS horario_ids
+        SELECT t.id, t.nome, t.genero, t.nivel, t.faixa_etaria, t.valor_mensalidade, t.promo_valor, t.promo_meses, t.max_alunos, GROUP_CONCAT(th.horario_id ORDER BY th.horario_id SEPARATOR ',') AS horario_ids
         FROM turmas t
         LEFT JOIN turma_horarios th ON th.turma_id = t.id
         WHERE t.quadra_id = ?

@@ -68,6 +68,31 @@ if (count($dateParts) !== 3 || !checkdate((int)$dateParts[1], (int)$dateParts[0]
 }
 $nascimentoDb = sprintf('%04d-%02d-%02d', $dateParts[2], $dateParts[1], $dateParts[0]);
 
+// Menor de idade é sempre recalculado no servidor (nunca confiar no client) —
+// determina se o cadastro exige dados do responsável e gera o termo pendente.
+$hoje  = new DateTime();
+$nasc  = new DateTime($nascimentoDb);
+$idade = $hoje->diff($nasc)->y;
+$isMenor = $idade < 18;
+
+$responsavelNome = $responsavelCpf = $responsavelCelular = $responsavelParentesco = null;
+if ($isMenor) {
+    $responsavelNome       = trim($_POST['responsavel_nome'] ?? '');
+    $responsavelParentesco = trim($_POST['responsavel_parentesco'] ?? '');
+    $responsavelCpf        = preg_replace('/[^\d]/', '', $_POST['responsavel_cpf'] ?? '');
+    $responsavelCelular    = trim($_POST['responsavel_celular'] ?? '');
+
+    if (!in_array($responsavelParentesco, ['pai', 'mae', 'responsavel_legal'], true)) {
+        $responsavelParentesco = 'responsavel_legal';
+    }
+
+    if ($responsavelNome === '' || strlen($responsavelCpf) !== 11 || $responsavelCelular === '') {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Preencha os dados do responsável — o aluno é menor de idade.']);
+        exit;
+    }
+}
+
 $pdo = getDbConnection();
 
 $check = $pdo->prepare("SELECT id FROM alunos WHERE email = ? OR cpf = ? LIMIT 1");
@@ -114,9 +139,11 @@ $senhaHash = password_hash($senha, PASSWORD_BCRYPT);
 
 $stmt = $pdo->prepare("
     INSERT INTO alunos
-        (nome, email, cpf, nascimento, sexo, celular, whatsapp, cep, rua, numero, bairro, complemento, cidade, estado, foto, senha, origem, status)
+        (nome, email, cpf, nascimento, sexo, celular, whatsapp, cep, rua, numero, bairro, complemento, cidade, estado, foto, senha, origem, status,
+         is_menor, responsavel_nome, responsavel_parentesco, responsavel_cpf, responsavel_celular, termo_status)
     VALUES
-        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ativo')
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ativo',
+         ?, ?, ?, ?, ?, ?)
 ");
 
 $stmt->execute([
@@ -137,6 +164,12 @@ $stmt->execute([
     $fotoPath,
     $senhaHash,
     $origem ?: null,
+    $isMenor ? 1 : 0,
+    $responsavelNome,
+    $responsavelParentesco,
+    $responsavelCpf,
+    $responsavelCelular,
+    $isMenor ? 'pendente' : 'nao_aplicavel',
 ]);
 
 http_response_code(201);

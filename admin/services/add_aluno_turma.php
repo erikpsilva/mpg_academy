@@ -36,6 +36,8 @@ if ($turmaId <= 0 || $alunoId <= 0) {
 
 $pdo = getDbConnection();
 
+// Conta aulas programadas (por dia da semana da turma) no intervalo — não exclui
+// feriados/cancelamentos, o aluno paga por mês tenha aula ou não.
 function contarAulasTurma(PDO $pdo, int $turmaId, string $dataInicio, string $dataFim): int {
     $st = $pdo->prepare("
         SELECT DISTINCT qh.dia_semana
@@ -47,22 +49,11 @@ function contarAulasTurma(PDO $pdo, int $turmaId, string $dataInicio, string $da
     $diasSemana = array_map('intval', $st->fetchAll(PDO::FETCH_COLUMN));
     if (empty($diasSemana)) return 0;
 
-    $st2 = $pdo->prepare("
-        SELECT DATE_FORMAT(data, '%Y-%m-%d')
-        FROM aulas_canceladas
-        WHERE data BETWEEN ? AND ? AND (turma_id = ? OR turma_id IS NULL)
-    ");
-    $st2->execute([$dataInicio, $dataFim, $turmaId]);
-    $canceladas = $st2->fetchAll(PDO::FETCH_COLUMN);
-
     $count   = 0;
     $current = new DateTime($dataInicio);
     $fim     = new DateTime($dataFim);
     while ($current <= $fim) {
-        $dow = (int) $current->format('w');
-        if (in_array($dow, $diasSemana, true) && !in_array($current->format('Y-m-d'), $canceladas, true)) {
-            $count++;
-        }
+        if (in_array((int) $current->format('w'), $diasSemana, true)) $count++;
         $current->modify('+1 day');
     }
     return $count;
@@ -118,92 +109,55 @@ $descontoVitalicio = 0;
 $mensalidadesParaGerar = [];
 
 if ($turmaData && $turmaData['valor_mensalidade'] !== null) {
-    $entrada          = new DateTime($dataInicio);
-    $entryDay         = (int) $entrada->format('j');
-    $valorBase        = (float) $turmaData['valor_mensalidade'];
-    // Prazo de 5 dias para o aluno pagar a primeira fatura
-    $vencInicial      = (clone $entrada)->modify('+5 days')->format('Y-m-d');
+    $entrada     = new DateTime($dataInicio);
+    $valorBase   = (float) $turmaData['valor_mensalidade'];
+    // Fatura de entrada tem só 3 dias de prazo pra pagamento, contados de HOJE (quando a
+    // cobrança é gerada) — não da data de entrada, que pode ser uma data futura (ex.: o
+    // próximo sábado que o aluno vai jogar), o que jogaria o vencimento pra muito mais longe.
+    $vencInicial = (new DateTime())->modify('+3 days')->format('Y-m-d');
 
     $temPromo = $turmaData['promo_valor'] !== null
              && $turmaData['promo_meses'] !== null
              && (float) $turmaData['promo_valor'] < $valorBase;
 
-    // Exceção: aluno entrou nos 5 primeiros dias do mês (dentro de 5 dias após o fechamento
-    // do ciclo no dia 30 do mês anterior) → mês cheio, sem cobrança proporcional
-    $isExcecao = ($entryDay <= 5);
-
+    // Ciclo continua fechando dia 30 e a geração mensal recorrente continua vencendo dia 10
+    // (gerar_mensalidades.php / auth_check.php) — mas todo aluno novo já paga, na hora, o
+    // proporcional das aulas que vai fazer no PRÓPRIO mês de entrada (não mais combinado
+    // com o mês seguinte). Vencimento curto (3 dias) pra essa fatura de entrada.
     if ($temPromo) {
         $promoValor = (float) $turmaData['promo_valor'];
         $promoMeses = (int) $turmaData['promo_meses'];
 
-        if ($isExcecao) {
-            // Dia 1–5: mês cheio ao valor promocional, pago na entrada.
-            // Mês de entrada = mês 1 da promoção. Os meses seguintes são gerados pelo cron.
-            $mensalidadesParaGerar[] = [
-                'referencia' => $entrada->format('Y-m'),
-                'valor'      => $promoValor,
-                'vencimento' => $vencInicial,
-            ];
+        $proportional = calcProporcional($pdo, $turmaId, $entrada, $dataInicio, $promoValor);
 
-            // descontoFim = 1º dia do mês (promo_meses - 1) após o mês de entrada.
-            // Garante que o cron aplica desconto apenas nos meses 2..promo_meses.
-            $fimPromo = new DateTime($entrada->format('Y-m') . '-01');
-            $fimPromo->modify('+' . ($promoMeses - 1) . ' months');
+        $mensalidadesParaGerar[] = [
+            'referencia'         => $entrada->format('Y-m'),
+            'valor'              => round($proportional, 2),
+            'proporcional_valor' => $proportional,
+            'vencimento'         => $vencInicial,
+        ];
 
-            $desconto       = round($valorBase - $promoValor, 2);
-            $descontoInicio = $dataInicio;
-            $descontoFim    = $fimPromo->format('Y-m-d');
+        // O mês de entrada (cobrado acima, proporcional ao valor promo) é um bônus à parte —
+        // não conta como um dos meses da promoção. Os promo_meses de preço promocional cheio
+        // começam a valer só a partir do mês SEGUINTE, aplicados pela geração mensal recorrente.
+        $nextMonth = new DateTime($entrada->format('Y-m') . '-01');
+        $nextMonth->modify('+1 month');
+        $fimPromo = clone $nextMonth;
+        $fimPromo->modify('+' . ($promoMeses - 1) . ' months');
 
-        } else {
-            // Dia 6–30: o proporcional do mês de entrada NÃO vira fatura própria — ele é
-            // somado à fatura cheia do mês seguinte (mesmo vencimento dia 5), discriminado
-            // em proporcional_valor pra aparecer separado pro aluno.
-            $proportional = calcProporcional($pdo, $turmaId, $entrada, $dataInicio, $promoValor);
-
-            $nextMonth = new DateTime($entrada->format('Y-m') . '-01');
-            $nextMonth->modify('+1 month');
-
-            $mensalidadesParaGerar[] = [
-                'referencia'         => $nextMonth->format('Y-m'),
-                'valor'              => round($proportional + $promoValor, 2),
-                'proporcional_valor' => $proportional,
-                'vencimento'         => $nextMonth->format('Y-m') . '-05',
-            ];
-
-            // descontoFim = 1º dia do mês (promo_meses - 1) após o nextMonth.
-            // Cron aplica desconto nos meses 2..promo_meses (o mês 1, nextMonth, já saiu
-            // junto da fatura combinada acima — o cron pula ele pelo check de referencia).
-            $fimPromo = clone $nextMonth;
-            $fimPromo->modify('+' . ($promoMeses - 1) . ' months');
-
-            $desconto       = round($valorBase - $promoValor, 2);
-            $descontoInicio = $dataInicio;
-            $descontoFim    = $fimPromo->format('Y-m-d');
-        }
+        $desconto       = round($valorBase - $promoValor, 2);
+        $descontoInicio = $dataInicio;
+        $descontoFim    = $fimPromo->format('Y-m-d');
 
     } else {
-        // Sem promoção.
-        if ($isExcecao) {
-            $mensalidadesParaGerar[] = [
-                'referencia' => $entrada->format('Y-m'),
-                'valor'      => $valorBase,
-                'vencimento' => $vencInicial,
-            ];
-        } else {
-            // Dia 6–30: idem ao caso com promoção — proporcional somado à fatura cheia
-            // do mês seguinte, discriminado em proporcional_valor.
-            $proportional = calcProporcional($pdo, $turmaId, $entrada, $dataInicio, $valorBase);
+        $proportional = calcProporcional($pdo, $turmaId, $entrada, $dataInicio, $valorBase);
 
-            $nextMonth = new DateTime($entrada->format('Y-m') . '-01');
-            $nextMonth->modify('+1 month');
-
-            $mensalidadesParaGerar[] = [
-                'referencia'         => $nextMonth->format('Y-m'),
-                'valor'              => round($proportional + $valorBase, 2),
-                'proporcional_valor' => $proportional,
-                'vencimento'         => $nextMonth->format('Y-m') . '-05',
-            ];
-        }
+        $mensalidadesParaGerar[] = [
+            'referencia'         => $entrada->format('Y-m'),
+            'valor'              => round($proportional, 2),
+            'proporcional_valor' => $proportional,
+            'vencimento'         => $vencInicial,
+        ];
     }
 }
 
@@ -249,9 +203,20 @@ try {
     $stmt->execute([$turmaId, $alunoId, $dataInicio, $desconto, $descontoTipo, $descontoInicio, $descontoFim, $descontoVitalicio]);
 
     if (!empty($mensalidadesParaGerar)) {
+        // A chave única de mensalidades é (aluno_id, referencia) — sem turma_id. Se o aluno
+        // trocou de turma no meio do ciclo, já existe uma fatura pendente daquele mês presa na
+        // turma antiga; o INSERT IGNORE sozinho seria silenciosamente bloqueado por ela, deixando
+        // a fatura com a turma/valor errados. Por isso atualizamos a fatura existente pra turma
+        // nova (exceto se ela já estiver paga — fatura paga nunca é alterada).
         $stmtMens = $pdo->prepare("
-            INSERT IGNORE INTO mensalidades (aluno_id, turma_id, referencia, valor, matricula_valor, proporcional_valor, vencimento, status)
+            INSERT INTO mensalidades (aluno_id, turma_id, referencia, valor, matricula_valor, proporcional_valor, vencimento, status)
             VALUES (?, ?, ?, ?, ?, ?, ?, 'pendente')
+            ON DUPLICATE KEY UPDATE
+                turma_id           = IF(status = 'pago', turma_id, VALUES(turma_id)),
+                valor              = IF(status = 'pago', valor, VALUES(valor)),
+                matricula_valor    = IF(status = 'pago', matricula_valor, VALUES(matricula_valor)),
+                proporcional_valor = IF(status = 'pago', proporcional_valor, VALUES(proporcional_valor)),
+                vencimento         = IF(status = 'pago', vencimento, VALUES(vencimento))
         ");
         foreach ($mensalidadesParaGerar as $m) {
             $stmtMens->execute([

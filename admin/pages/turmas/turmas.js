@@ -2,6 +2,7 @@
 const DIAS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 const NIVEL_LABEL  = { iniciante: 'Iniciante', intermediario: 'Intermediário', avancado: 'Avançado' };
 const GENERO_LABEL = { masculino: 'Masculino', feminino: 'Feminino', misto: 'Misto' };
+const FAIXA_LABEL  = { adulto: 'Adulto', adolescente: 'Adolescente', infantil: 'Infantil' };
 
 const fmt = (n) => parseFloat(n).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -31,6 +32,7 @@ const vagasLabel = (vagas, max) => {
 const cardHtml = (t) => {
     const nivel  = NIVEL_LABEL[t.nivel]   || t.nivel;
     const genero = GENERO_LABEL[t.genero] || t.genero;
+    const faixa  = FAIXA_LABEL[t.faixa_etaria] || t.faixa_etaria;
     const ativos = t.alunos_ativos;
     const max    = t.max_alunos;
     const vagas  = t.vagas;
@@ -72,6 +74,7 @@ const cardHtml = (t) => {
                 '<span class="adminTurmasCard__status ' + statusCls + '">' + (t.status === 'ativa' ? 'Ativa' : 'Inativa') + '</span>' +
                 '<span class="adminTurmasCard__nivel">' + nivel + '</span>' +
                 '<span class="adminTurmasCard__genero">' + genero + '</span>' +
+                '<span class="adminTurmasCard__faixa">' + faixa + '</span>' +
             '</div>' +
             vagasLabel(vagas, max) +
         '</div>' +

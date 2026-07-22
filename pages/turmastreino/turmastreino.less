@@ -264,6 +264,32 @@
         }
     }
 
+    &__age {
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 999px;
+        display: inline-flex;
+        font-size: 11px;
+        font-weight: 900;
+        min-height: 26px;
+        padding: 6px 12px 0;
+        text-transform: uppercase;
+
+        &--adulto {
+            border-color: rgba(166, 124, 255, 0.9);
+            color: #b596ff;
+        }
+
+        &--adolescente {
+            border-color: rgba(31, 214, 181, 0.9);
+            color: #4fe3c8;
+        }
+
+        &--infantil {
+            border-color: rgba(255, 213, 74, 0.9);
+            color: #ffd54a;
+        }
+    }
+
     &__promo {
         align-items: center;
         background: @yellow;

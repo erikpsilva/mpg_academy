@@ -6,7 +6,45 @@ $(document).ready(() => {
         $('#studentBirthDate').mask('99/99/9999');
         $('#studentCep').mask('99999-999');
         $('.studentPhone').mask('(99) 99999-9999');
+        $('#responsavelCpf').mask('999.999.999-99');
     }
+
+    // ─── Menor de idade: calcula a partir da data de nascimento ────────────────
+    var menorSection = $('#menorSection');
+    var responsavelFields = ['responsavel_nome', 'responsavel_parentesco', 'responsavel_cpf', 'responsavel_celular'];
+    var isMenor = false;
+
+    function calcularIdade(dataStr) {
+        var parts = dataStr.split('/');
+        if (parts.length !== 3) return null;
+        var d = parseInt(parts[0], 10), m = parseInt(parts[1], 10), a = parseInt(parts[2], 10);
+        if (!d || !m || !a) return null;
+        var hoje = new Date();
+        var nascimento = new Date(a, m - 1, d);
+        if (isNaN(nascimento.getTime())) return null;
+        var idade = hoje.getFullYear() - nascimento.getFullYear();
+        var aindaNaoFezAniversario = (hoje.getMonth() < nascimento.getMonth())
+            || (hoje.getMonth() === nascimento.getMonth() && hoje.getDate() < nascimento.getDate());
+        if (aindaNaoFezAniversario) idade--;
+        return idade;
+    }
+
+    function toggleMenorSection() {
+        var idade = calcularIdade($('#studentBirthDate').val());
+        isMenor = idade !== null && idade < 18;
+
+        menorSection.toggle(isMenor);
+        responsavelFields.forEach(function (name) {
+            $('[name="' + name + '"]').prop('required', isMenor);
+        });
+        if (!isMenor) {
+            responsavelFields.forEach(function (name) {
+                fieldOk('[name="' + name + '"]');
+            });
+        }
+    }
+
+    $('#studentBirthDate').on('blur input', toggleMenorSection);
 
     // ─── Utilitários de validação ─────────────────────────────────────────────
     function validarCPF(cpf) {
@@ -130,6 +168,29 @@ $(document).ready(() => {
                 const senha = $('[name="senha"]').val();
                 if (!val) return 'Confirme sua senha.';
                 if (val !== senha) return 'As senhas não coincidem.';
+                return '';
+            },
+            responsavel_nome() {
+                if (!isMenor) return '';
+                if (!val.trim()) return 'Nome do responsável é obrigatório.';
+                if (val.trim().length < 3) return 'Mínimo de 3 caracteres.';
+                return '';
+            },
+            responsavel_parentesco() {
+                if (!isMenor) return '';
+                if (!val) return 'Selecione o parentesco.';
+                return '';
+            },
+            responsavel_cpf() {
+                if (!isMenor) return '';
+                if (!val.trim()) return 'CPF do responsável é obrigatório.';
+                if (!validarCPF(val)) return 'CPF inválido. Verifique os dígitos.';
+                return '';
+            },
+            responsavel_celular() {
+                if (!isMenor) return '';
+                if (!val.trim()) return 'Celular do responsável é obrigatório.';
+                if (!telefoneValido(val)) return 'Celular inválido. Inclua o DDD.';
                 return '';
             },
         };

@@ -63,7 +63,10 @@ foreach ($rows as $r) {
     $msg  = "Olá, *{$nomePrimeiro}*! 🎾\n\n";
     $msg .= "Hoje é dia de treino na *MPG Academy*!\n\n";
     $msg .= "⏰ *Horário:* {$horarioFmt}\n";
-    if ($endereco) $msg .= "📍 *Local:* {$endereco}\n";
+    if ($endereco) {
+        $msg .= "📍 *Local:* {$endereco}\n";
+        $msg .= "🗺️ Ver no mapa: " . googleMapsLink($endereco) . "\n";
+    }
     $msg .= "\nTe esperamos!";
 
     if (sendWhatsApp(formatPhoneZapi($r['celular']), $msg)) {

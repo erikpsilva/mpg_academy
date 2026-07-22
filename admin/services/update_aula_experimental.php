@@ -22,7 +22,7 @@ if (empty($_SESSION['usuario'])) {
 $id     = (int) ($_POST['id']     ?? 0);
 $action = trim($_POST['action']   ?? '');
 
-if ($id <= 0 || !in_array($action, ['realizar', 'cancelar', 'promover'])) {
+if ($id <= 0 || !in_array($action, ['realizar', 'cancelar', 'promover', 'reagendar'])) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Parâmetros inválidos.']);
     exit;
@@ -110,6 +110,94 @@ if ($action === 'realizar') {
     }
 
     $pdo->prepare("UPDATE aulas_experimentais SET status = 'agendada' WHERE id = ?")->execute([$id]);
+
+} elseif ($action === 'reagendar') {
+    if ($aula['status'] !== 'cancelada') {
+        http_response_code(409);
+        echo json_encode(['success' => false, 'message' => 'Apenas testes cancelados podem ser reagendados.']);
+        exit;
+    }
+
+    $dataAgendada = trim($_POST['data_agendada'] ?? '');
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $dataAgendada)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Informe a nova data do teste.']);
+        exit;
+    }
+
+    // Permite escolher outra turma; default mantém a turma original
+    $turmaConfirmada = $turmaId;
+    if (!empty($_POST['turma_id'])) {
+        $candidata = (int) $_POST['turma_id'];
+        if ($candidata > 0) $turmaConfirmada = $candidata;
+    }
+
+    $turmaStmt = $pdo->prepare("
+        SELECT t.nome, t.max_alunos,
+               q.nome AS quadra_nome, q.rua, q.numero, q.bairro, q.complemento, q.cidade, q.estado
+        FROM turmas t
+        LEFT JOIN quadras q ON q.id = t.quadra_id
+        WHERE t.id = ? AND t.status = 'ativa'
+    ");
+    $turmaStmt->execute([$turmaConfirmada]);
+    $turmaData = $turmaStmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$turmaData) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'message' => 'Turma não encontrada ou inativa.']);
+        exit;
+    }
+
+    // Mesma checagem de vagas usada em "promover"
+    if ($turmaData['max_alunos'] !== null) {
+        $stmtAtivos = $pdo->prepare("SELECT COUNT(*) FROM turma_alunos WHERE turma_id = ? AND status = 'ativo'");
+        $stmtAtivos->execute([$turmaConfirmada]);
+        $countAtivos = (int) $stmtAtivos->fetchColumn();
+
+        $stmtAgend = $pdo->prepare("SELECT COUNT(*) FROM aulas_experimentais WHERE turma_id = ? AND status = 'agendada'");
+        $stmtAgend->execute([$turmaConfirmada]);
+        $countAgendadas = (int) $stmtAgend->fetchColumn();
+
+        if ((int) $turmaData['max_alunos'] - $countAtivos - $countAgendadas <= 0) {
+            http_response_code(409);
+            echo json_encode(['success' => false, 'message' => 'Sem vagas de teste disponíveis nessa turma.']);
+            exit;
+        }
+    }
+
+    $pdo->prepare("UPDATE aulas_experimentais SET status = 'agendada', turma_id = ?, data_agendada = ? WHERE id = ?")
+        ->execute([$turmaConfirmada, $dataAgendada, $id]);
+
+    // Dispara WhatsApp de reagendamento
+    $alunoStmt = $pdo->prepare("SELECT nome, celular, is_menor, responsavel_nome, responsavel_celular FROM alunos_teste WHERE id = ?");
+    $alunoStmt->execute([(int) $aula['aluno_teste_id']]);
+    $alunoData = $alunoStmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($alunoData) {
+        $diasSemana = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
+        $meses      = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+        $dt         = new DateTime($dataAgendada);
+        $dataFmt    = $dt->format('d') . ' de ' . $meses[(int) $dt->format('n') - 1] . ' de ' . $dt->format('Y')
+                    . ' (' . $diasSemana[(int) $dt->format('w')] . ')';
+
+        $horarioStmt = $pdo->prepare("
+            SELECT qh.hora_inicio, qh.hora_fim
+            FROM turma_horarios th
+            JOIN quadra_horarios qh ON qh.id = th.horario_id
+            WHERE th.turma_id = ?
+            ORDER BY qh.hora_inicio
+            LIMIT 1
+        ");
+        $horarioStmt->execute([$turmaConfirmada]);
+        $horario = $horarioStmt->fetch(PDO::FETCH_ASSOC);
+
+        $horarioFmt = $horario
+            ? 'das ' . substr($horario['hora_inicio'], 0, 5) . 'h às ' . substr($horario['hora_fim'], 0, 5) . 'h'
+            : 'a confirmar';
+
+        require_once dirname(__FILE__, 3) . '/services/whatsapp/wpp_aula_teste_confirmacao.php';
+        wppAulaTesteReagendada($alunoData, $turmaData, $dataFmt, $horarioFmt);
+    }
 }
 
 echo json_encode(['success' => true]);

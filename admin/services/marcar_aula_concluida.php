@@ -2,20 +2,26 @@
 if (session_status() === PHP_SESSION_NONE) session_start();
 header('Content-Type: application/json');
 
-if (empty($_SESSION['usuario']) || $_SESSION['usuario']['nivel_acesso'] !== 'professor') {
+if (empty($_SESSION['usuario'])) {
     http_response_code(403);
     echo json_encode(['success' => false, 'message' => 'Acesso não autorizado.']);
     exit;
 }
 
 require_once dirname(__FILE__, 3) . '/config/database.php';
-$pdo    = getDbConnection();
-$profId = (int) $_SESSION['usuario']['professor_id'];
+$pdo = getDbConnection();
+
+// Professor só marca as próprias aulas; admin/editor/leitor informa qual professor.
+if ($_SESSION['usuario']['nivel_acesso'] === 'professor') {
+    $profId = (int) $_SESSION['usuario']['professor_id'];
+} else {
+    $profId = (int) ($_POST['professor_id'] ?? 0);
+}
 
 $turmaId = (int) ($_POST['turma_id'] ?? 0);
 $data    = trim($_POST['data'] ?? '');
 
-if (!$turmaId || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $data)) {
+if (!$profId || !$turmaId || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $data)) {
     echo json_encode(['success' => false, 'message' => 'Dados inválidos.']);
     exit;
 }

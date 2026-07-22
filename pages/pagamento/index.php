@@ -20,7 +20,7 @@ if ($mensalidadeId <= 0) {
 $pdo = getDbConnection();
 
 $stMens = $pdo->prepare("
-    SELECT m.id, m.referencia, m.tipo, m.descricao, m.valor, m.matricula_valor, m.proporcional_valor, m.vencimento, m.status,
+    SELECT m.id, m.referencia, m.tipo, m.descricao, m.valor, m.matricula_valor, m.proporcional_valor, m.desconto_aula_valor, m.vencimento, m.status,
            COALESCE(t.nome, '') AS turma_nome
     FROM mensalidades m
     LEFT JOIN turmas t ON t.id = m.turma_id
@@ -43,7 +43,8 @@ if (!$mens) {
 $valor             = (float) $mens['valor'];
 $matriculaValor    = (float) ($mens['matricula_valor'] ?? 0);
 $proporcionalValor = (float) ($mens['proporcional_valor'] ?? 0);
-$valorMensalidade  = $valor - $matriculaValor - $proporcionalValor; // valor da mensalidade do mês atual, sem matrícula/proporcional
+$descontoAulaValor = (float) ($mens['desconto_aula_valor'] ?? 0);
+$valorMensalidade  = $valor - $matriculaValor - $proporcionalValor + $descontoAulaValor; // valor da mensalidade do mês atual, sem matrícula/proporcional/desconto de aula cancelada
 $hoje       = new DateTime('today');
 $venc       = new DateTime($mens['vencimento']);
 $isAtrasado = $mens['status'] === 'atrasado';
@@ -149,7 +150,7 @@ $modoTeste = mpModoTeste($pdo);
                 <div class="payCard__summaryRow">
                     <span>Vencimento</span><span><?= $venc->format('d/m/Y') ?></span>
                 </div>
-                <?php if ($matriculaValor > 0 || $proporcionalValor > 0): ?>
+                <?php if ($matriculaValor > 0 || $proporcionalValor > 0 || $descontoAulaValor > 0): ?>
                 <div class="payCard__summaryRow">
                     <span>Mensalidade</span>
                     <span>R$ <?= number_format($valorMensalidade, 2, ',', '.') ?></span>
@@ -164,6 +165,12 @@ $modoTeste = mpModoTeste($pdo);
                 <div class="payCard__summaryRow">
                     <span>Taxa de matrícula</span>
                     <span>R$ <?= number_format($matriculaValor, 2, ',', '.') ?></span>
+                </div>
+                <?php endif; ?>
+                <?php if ($descontoAulaValor > 0): ?>
+                <div class="payCard__summaryRow">
+                    <span>Desconto (aula cancelada)</span>
+                    <span>- R$ <?= number_format($descontoAulaValor, 2, ',', '.') ?></span>
                 </div>
                 <?php endif; ?>
                 <?php else: ?>

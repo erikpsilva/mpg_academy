@@ -12,88 +12,38 @@ if (empty($_SESSION['usuario'])) {
 }
 
 require_once dirname(__FILE__, 3) . '/config/database.php';
+require_once dirname(__FILE__) . '/lib_pagamento_professor.php';
 $pdo = getDbConnection();
 
-$hoje = date('Y-m');
-$mes  = preg_replace('/[^0-9\-]/', '', $_GET['mes'] ?? $hoje);
-if (!preg_match('/^\d{4}-\d{2}$/', $mes)) $mes = $hoje;
+// ── Saldo em caixa: acumulado desde sempre, direto de lancamentos_financeiros ──
+// (única fonte de verdade — todo pagamento real gera um lançamento lá)
+$totais = $pdo->query("
+    SELECT
+        COALESCE(SUM(CASE WHEN tipo = 'receita' THEN valor ELSE 0 END), 0) AS entradas,
+        COALESCE(SUM(CASE WHEN tipo = 'despesa' THEN valor ELSE 0 END), 0) AS saidas
+    FROM lancamentos_financeiros
+")->fetch(PDO::FETCH_ASSOC);
 
-// não permite consultar meses futuros
-if ($mes > $hoje) $mes = $hoje;
+$entradas = (float) $totais['entradas'];
+$saidas   = (float) $totais['saidas'];
 
-$primeiroDia = $mes . '-01';
-$ultimoDia   = date('Y-m-t', strtotime($primeiroDia));
-$aberto      = ($mes === $hoje);
+// ── Dívida em aberto: parcelas de dívidas da empresa ainda pendentes ──────────
+$dividaPendente = (float) $pdo->query("
+    SELECT COALESCE(SUM(valor), 0) FROM parcelas_dividas WHERE status = 'pendente'
+")->fetchColumn();
 
-// ── Entradas reais ─────────────────────────────────────────────────────────
-
-// Mensalidades pagas no mês de referência
-$stMens = $pdo->prepare("
-    SELECT COALESCE(SUM(valor), 0) AS total, COUNT(*) AS qtd
-    FROM mensalidades
-    WHERE referencia = ? AND status = 'pago'
-");
-$stMens->execute([$mes]);
-$mensRow = $stMens->fetch(PDO::FETCH_ASSOC);
-
-// Lançamentos de receita com competência no mês
-$stRecLanc = $pdo->prepare("
-    SELECT COALESCE(SUM(valor), 0) FROM lancamentos_financeiros
-    WHERE competencia = ? AND tipo = 'receita'
-");
-$stRecLanc->execute([$mes]);
-$receitasLanc = (float)$stRecLanc->fetchColumn();
-
-// ── Saídas reais ───────────────────────────────────────────────────────────
-
-// Parcelas de dívidas pagas com vencimento no mês
-$stParc = $pdo->prepare("
-    SELECT pd.id, pd.numero, pd.valor, pd.data_vencimento, pd.status,
-           d.descricao AS divida_nome
-    FROM parcelas_dividas pd
-    JOIN dividas d ON d.id = pd.divida_id
-    WHERE pd.data_vencimento BETWEEN ? AND ?
-      AND pd.status IN ('pago', 'adiantado')
-    ORDER BY pd.data_vencimento ASC
-");
-$stParc->execute([$primeiroDia, $ultimoDia]);
-$parcelasRows = $stParc->fetchAll(PDO::FETCH_ASSOC);
-$totalParcelas = array_sum(array_column($parcelasRows, 'valor'));
-
-// Lançamentos de despesa com competência no mês
-$stDespLanc = $pdo->prepare("
-    SELECT COALESCE(SUM(valor), 0) FROM lancamentos_financeiros
-    WHERE competencia = ? AND tipo = 'despesa'
-");
-$stDespLanc->execute([$mes]);
-$despesasLanc = (float)$stDespLanc->fetchColumn();
-
-// ── Totais ─────────────────────────────────────────────────────────────────
-$totalEntradas = (float)$mensRow['total'] + $receitasLanc;
-$totalSaidas   = $totalParcelas + $despesasLanc;
-$saldo         = $totalEntradas - $totalSaidas;
+// ── Professores a pagar: saldo devido acumulado de cada professor ativo ──────
+$profIds = $pdo->query("SELECT id FROM professores WHERE status = 'ativo'")->fetchAll(PDO::FETCH_COLUMN);
+$professoresAPagar = 0.0;
+foreach ($profIds as $profId) {
+    $professoresAPagar += max(0, calcularValorDevido($pdo, (int) $profId)['valor_devido']);
+}
 
 echo json_encode([
-    'success'  => true,
-    'mes'      => $mes,
-    'aberto'   => $aberto,
-    'entradas' => [
-        'mensalidades'       => (float)$mensRow['total'],
-        'mensalidades_qtd'   => (int)$mensRow['qtd'],
-        'lancamentos'        => $receitasLanc,
-        'total'              => $totalEntradas,
-    ],
-    'saidas' => [
-        'parcelas'        => $totalParcelas,
-        'parcelas_detalhe'=> array_map(function($p) {
-            return [
-                'nome'       => $p['divida_nome'] . ' (parcela ' . $p['numero'] . ')',
-                'valor'      => (float)$p['valor'],
-                'vencimento' => $p['data_vencimento'],
-            ];
-        }, $parcelasRows),
-        'lancamentos'     => $despesasLanc,
-        'total'           => $totalSaidas,
-    ],
-    'saldo' => $saldo,
+    'success'             => true,
+    'entradas'            => $entradas,
+    'saidas'              => $saidas,
+    'saldo'               => $entradas - $saidas,
+    'divida_pendente'     => $dividaPendente,
+    'professores_a_pagar' => $professoresAPagar,
 ]);

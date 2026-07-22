@@ -73,6 +73,45 @@
             </div>
         </section>
 
+        <section class="studentSignupBox studentSignupBox--full studentSignupBox--menor" id="menorSection" style="display:none;">
+            <h2><i class="icon-comunidade" aria-hidden="true"></i> Dados do responsável</h2>
+            <p class="studentSignupBox__notice">
+                Identificamos que o aluno é menor de idade. Preencha os dados do responsável abaixo — depois do cadastro,
+                será gerado um termo de responsabilidade para ele(a) assinar na área do aluno.
+            </p>
+
+            <div class="studentSignupGrid studentSignupGrid--full">
+                <label class="studentField studentField--full">
+                    <span class="studentField__icon" aria-hidden="true"><i class="icon-user"></i></span>
+                    <span class="studentField__label">Nome completo do responsável <b>*</b></span>
+                    <input type="text" name="responsavel_nome" id="responsavelNome" placeholder="Nome completo do pai, mãe ou responsável legal">
+                </label>
+
+                <label class="studentField">
+                    <span class="studentField__icon" aria-hidden="true"><i class="icon-user"></i></span>
+                    <span class="studentField__label">Parentesco <b>*</b></span>
+                    <select name="responsavel_parentesco" id="responsavelParentesco">
+                        <option value="">Selecione</option>
+                        <option value="pai">Pai</option>
+                        <option value="mae">Mãe</option>
+                        <option value="responsavel_legal">Responsável legal</option>
+                    </select>
+                </label>
+
+                <label class="studentField">
+                    <span class="studentField__icon" aria-hidden="true"><i class="icon-cpf"></i></span>
+                    <span class="studentField__label">CPF do responsável <b>*</b></span>
+                    <input type="text" name="responsavel_cpf" id="responsavelCpf" placeholder="000.000.000-00">
+                </label>
+
+                <label class="studentField">
+                    <span class="studentField__icon" aria-hidden="true"><i class="icon-celphone"></i></span>
+                    <span class="studentField__label">Celular do responsável <b>*</b></span>
+                    <input type="text" name="responsavel_celular" id="responsavelCelular" class="studentPhone" placeholder="(11) 99999-9999">
+                </label>
+            </div>
+        </section>
+
         <div class="studentSignupForm__columns">
             <section class="studentSignupBox">
                 <h2><i class="icon-contact" aria-hidden="true"></i> Contato</h2>

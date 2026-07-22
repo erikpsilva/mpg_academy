@@ -20,6 +20,7 @@ if (empty($_SESSION['usuario'])) {
 }
 
 require_once dirname(__FILE__, 3) . '/config/database.php';
+require_once dirname(__FILE__) . '/lib_desconto_aula.php';
 
 $alunoId = (int) ($_POST['aluno_id'] ?? 0);
 $turmaId = (int) ($_POST['turma_id'] ?? 0);
@@ -34,6 +35,21 @@ $remover = ($_POST['remover'] ?? '') === '1';
 
 $pdo = getDbConnection();
 
+// Recalcula o valor das faturas pendentes/atrasadas já geradas pra esse aluno+turma,
+// aplicando o desconto (novo, alterado ou removido) que acabou de ser salvo — sem isso,
+// faturas geradas antes da mudança ficam com o valor antigo (bug: valor errado na tela
+// de mensalidades e no aviso de cobrança via WhatsApp).
+function recalcularFaturasPendentes(PDO $pdo, int $alunoId, int $turmaId): void {
+    $stmt = $pdo->prepare("
+        SELECT DISTINCT referencia FROM mensalidades
+        WHERE aluno_id = ? AND turma_id = ? AND tipo = 'mensalidade' AND status IN ('pendente','atrasado')
+    ");
+    $stmt->execute([$alunoId, $turmaId]);
+    foreach ($stmt->fetchAll(PDO::FETCH_COLUMN) as $referencia) {
+        recalcularDescontoAulaTurma($pdo, $turmaId, $referencia);
+    }
+}
+
 if ($remover) {
     $stmt = $pdo->prepare("
         UPDATE turma_alunos
@@ -42,6 +58,7 @@ if ($remover) {
         WHERE turma_id = ? AND aluno_id = ? AND status = 'ativo'
     ");
     $stmt->execute([$turmaId, $alunoId]);
+    recalcularFaturasPendentes($pdo, $alunoId, $turmaId);
     echo json_encode(['success' => true]);
     exit;
 }
@@ -77,5 +94,7 @@ if ($stmt->rowCount() === 0) {
     echo json_encode(['success' => false, 'message' => 'Vínculo não encontrado.']);
     exit;
 }
+
+recalcularFaturasPendentes($pdo, $alunoId, $turmaId);
 
 echo json_encode(['success' => true]);

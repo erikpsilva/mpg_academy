@@ -21,7 +21,7 @@ if ($id > 0) {
     $horarios = $horarios->fetchAll();
 
     $turmas = $pdo->prepare("
-        SELECT t.id, t.nome, t.genero, t.nivel, t.valor_mensalidade, t.promo_valor, t.promo_meses,
+        SELECT t.id, t.nome, t.genero, t.nivel, t.faixa_etaria, t.valor_mensalidade, t.promo_valor, t.promo_meses,
                GROUP_CONCAT(th.horario_id ORDER BY qh.dia_semana, qh.hora_inicio SEPARATOR ',') AS horario_ids
         FROM turmas t
         LEFT JOIN turma_horarios th ON th.turma_id = t.id
@@ -158,9 +158,11 @@ $diasCurto = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
                                     $nivelMap  = ['iniciante' => 'quadras__nivelBadge--ini', 'intermediario' => 'quadras__nivelBadge--int', 'avancado' => 'quadras__nivelBadge--ava'];
                                     $generoMap = ['masculino' => 'quadras__generoBadge--m', 'feminino' => 'quadras__generoBadge--f', 'misto' => 'quadras__generoBadge--x'];
                                     $nivelLabel = ['iniciante' => 'Iniciante', 'intermediario' => 'Intermediário', 'avancado' => 'Avançado'];
+                                    $faixaMap   = ['adulto' => 'quadras__faixaBadge--adu', 'adolescente' => 'quadras__faixaBadge--ado', 'infantil' => 'quadras__faixaBadge--inf'];
                                     ?>
                                     <span class="quadras__nivelBadge <?= $nivelMap[$t['nivel']] ?? '' ?>"><?= $nivelLabel[$t['nivel']] ?? ucfirst($t['nivel']) ?></span>
                                     <span class="quadras__generoBadge <?= $generoMap[$t['genero']] ?? '' ?>"><?= ucfirst($t['genero']) ?></span>
+                                    <span class="quadras__faixaBadge <?= $faixaMap[$t['faixa_etaria']] ?? '' ?>"><?= ucfirst($t['faixa_etaria']) ?></span>
                                 </div>
                                 <ul class="quadras__turmaHorarios">
                                     <?php foreach ($ids as $hid):

@@ -80,41 +80,52 @@ try {
     $params[] = $id;
     $pdo->prepare('UPDATE dividas SET ' . implode(', ', $set) . ' WHERE id = ?')->execute($params);
 
-    // Regenerate pending installments if requested
-    if ($regenerar && $valorTotal > 0 && $numParcelas > 0 && $dataInicio !== '') {
-        // Keep paid/advanced installments; delete pending ones
-        $stPagas = $pdo->prepare("
-            SELECT numero, valor FROM parcelas_dividas
-            WHERE divida_id = ? AND status IN ('pago','adiantado')
-            ORDER BY numero
-        ");
-        $stPagas->execute([$id]);
-        $pagas       = $stPagas->fetchAll(PDO::FETCH_ASSOC);
-        $nPagas      = count($pagas);
-        $valorJaPago = (float) array_sum(array_column($pagas, 'valor'));
+    // Regenerate pending installments if requested. Usa o valor_total/num_parcelas
+    // ATUAIS da dívida (não o que veio no POST) — o modal deixa esses campos em branco
+    // quando o usuário só quer mudar a data/regenerar, então confiar só no POST fazia
+    // a regeneração ser pulada silenciosamente sempre que o valor não era redigitado.
+    if ($regenerar && $dataInicio !== '') {
+        $stCur = $pdo->prepare("SELECT valor_total, num_parcelas FROM dividas WHERE id = ?");
+        $stCur->execute([$id]);
+        $cur              = $stCur->fetch(PDO::FETCH_ASSOC);
+        $valorTotalAtual  = (float) $cur['valor_total'];
+        $numParcelasAtual = (int) $cur['num_parcelas'];
 
-        $pdo->prepare("DELETE FROM parcelas_dividas WHERE divida_id = ? AND status = 'pendente'")->execute([$id]);
-
-        $nNovos = $numParcelas - $nPagas;
-        if ($nNovos > 0) {
-            $valorRestante = max(0, $valorTotal - $valorJaPago);
-            $centavos      = (int) round($valorRestante * 100);
-            $parcCentavos  = intdiv($centavos, $nNovos);
-            $restoCentavos = $centavos - $parcCentavos * $nNovos;
-
-            $dtBase = new DateTime($dataInicio);
-            $stNew  = $pdo->prepare("
-                INSERT INTO parcelas_dividas (divida_id, numero, valor, data_vencimento)
-                VALUES (?, ?, ?, ?)
+        if ($valorTotalAtual > 0 && $numParcelasAtual > 0) {
+            // Keep paid/advanced installments; delete pending ones
+            $stPagas = $pdo->prepare("
+                SELECT numero, valor FROM parcelas_dividas
+                WHERE divida_id = ? AND status IN ('pago','adiantado')
+                ORDER BY numero
             ");
-            for ($i = 0; $i < $nNovos; $i++) {
-                $parcNum  = $nPagas + $i + 1;
-                $venc     = clone $dtBase;
-                if ($nPagas + $i > 0) $venc->modify('+' . ($nPagas + $i) . ' month');
-                $valorParc = $i === $nNovos - 1
-                    ? round(($parcCentavos + $restoCentavos) / 100, 2)
-                    : round($parcCentavos / 100, 2);
-                $stNew->execute([$id, $parcNum, $valorParc, $venc->format('Y-m-d')]);
+            $stPagas->execute([$id]);
+            $pagas       = $stPagas->fetchAll(PDO::FETCH_ASSOC);
+            $nPagas      = count($pagas);
+            $valorJaPago = (float) array_sum(array_column($pagas, 'valor'));
+
+            $pdo->prepare("DELETE FROM parcelas_dividas WHERE divida_id = ? AND status = 'pendente'")->execute([$id]);
+
+            $nNovos = $numParcelasAtual - $nPagas;
+            if ($nNovos > 0) {
+                $valorRestante = max(0, $valorTotalAtual - $valorJaPago);
+                $centavos      = (int) round($valorRestante * 100);
+                $parcCentavos  = intdiv($centavos, $nNovos);
+                $restoCentavos = $centavos - $parcCentavos * $nNovos;
+
+                $dtBase = new DateTime($dataInicio);
+                $stNew  = $pdo->prepare("
+                    INSERT INTO parcelas_dividas (divida_id, numero, valor, data_vencimento)
+                    VALUES (?, ?, ?, ?)
+                ");
+                for ($i = 0; $i < $nNovos; $i++) {
+                    $parcNum  = $nPagas + $i + 1;
+                    $venc     = clone $dtBase;
+                    if ($nPagas + $i > 0) $venc->modify('+' . ($nPagas + $i) . ' month');
+                    $valorParc = $i === $nNovos - 1
+                        ? round(($parcCentavos + $restoCentavos) / 100, 2)
+                        : round($parcCentavos / 100, 2);
+                    $stNew->execute([$id, $parcNum, $valorParc, $venc->format('Y-m-d')]);
+                }
             }
         }
     }

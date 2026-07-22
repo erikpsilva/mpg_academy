@@ -18,7 +18,7 @@ $pdo = getDbConnection();
 
 $stmt = $pdo->prepare("
     SELECT
-        t.id, t.nome, t.nivel, t.genero, t.status,
+        t.id, t.nome, t.nivel, t.genero, t.faixa_etaria, t.status,
         t.valor_mensalidade, t.promo_valor, t.promo_meses, t.max_alunos,
         q.id AS quadra_id, q.nome AS quadra_nome,
         GROUP_CONCAT(

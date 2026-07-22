@@ -53,6 +53,17 @@ try {
         VALUES (?, ?, ?)
     ")->execute([$turmaIdSave, $data, $motivo ?: null]);
 
+    // Aula cancelada não muda a cobrança do aluno — ele paga por mês, tenha aula ou não.
+
+    // Se algum professor já tinha marcado essa aula como concluída, desfaz — não é cobrável
+    // (turma_id NULL = cancela para todas as turmas daquele dia)
+    if ($turmaIdSave !== null) {
+        $pdo->prepare("DELETE FROM professor_aulas_concluidas WHERE turma_id = ? AND data = ?")
+            ->execute([$turmaIdSave, $data]);
+    } else {
+        $pdo->prepare("DELETE FROM professor_aulas_concluidas WHERE data = ?")->execute([$data]);
+    }
+
     echo json_encode(['success' => true]);
 } catch (PDOException $e) {
     http_response_code(500);

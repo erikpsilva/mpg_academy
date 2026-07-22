@@ -77,13 +77,6 @@
             </li>
 
             <li class="sidebar__item">
-                <a href="<?= BASE_URL ?>/admin/previsao"
-                   class="sidebar__link <?= ($subRoute === 'previsao') ? 'sidebar__link--active' : '' ?>">
-                    Previsão Financeira
-                </a>
-            </li>
-
-            <li class="sidebar__item">
                 <a href="<?= BASE_URL ?>/admin/patrocinadores"
                    class="sidebar__link <?= ($subRoute === 'patrocinadores') ? 'sidebar__link--active' : '' ?>">
                     Patrocinadores
@@ -101,6 +94,13 @@
             </li>
 
 <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/mensalidades"
+                   class="sidebar__link <?= ($subRoute === 'mensalidades') ? 'sidebar__link--active' : '' ?>">
+                    Mensalidades
+                </a>
+            </li>
+
+            <li class="sidebar__item">
                 <a href="<?= BASE_URL ?>/admin/filadeespera"
                    class="sidebar__link <?= ($subRoute === 'filadeespera') ? 'sidebar__link--active' : '' ?>">
                     Fila de Espera
@@ -118,6 +118,13 @@
                 <a href="<?= BASE_URL ?>/admin/todosalunos-teste"
                    class="sidebar__link <?= ($subRoute === 'todosalunos-teste') ? 'sidebar__link--active' : '' ?>">
                     Todos Alunos Teste
+                </a>
+            </li>
+
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/testescancelados"
+                   class="sidebar__link <?= ($subRoute === 'testescancelados') ? 'sidebar__link--active' : '' ?>">
+                    Testes Cancelados
                 </a>
             </li>
 
@@ -156,6 +163,13 @@
                 <a href="<?= BASE_URL ?>/admin/professores"
                    class="sidebar__link <?= ($subRoute === 'professores') ? 'sidebar__link--active' : '' ?>">
                     Professores
+                </a>
+            </li>
+
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/historico-aulas"
+                   class="sidebar__link <?= ($subRoute === 'historico-aulas') ? 'sidebar__link--active' : '' ?>">
+                    Histórico de Aulas
                 </a>
             </li>
 

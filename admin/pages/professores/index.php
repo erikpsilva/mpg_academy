@@ -94,8 +94,7 @@ function fmtBrlLabel(?float $v): string {
             <div class="profGrid profGrid--head">
                 <span>Nome</span>
                 <span>E-mail</span>
-                <span>Aula 1h30</span>
-                <span>Aula 2h00</span>
+                <span>Valores</span>
                 <span>Dia pgto</span>
                 <span>Ações</span>
             </div>
@@ -109,14 +108,16 @@ function fmtBrlLabel(?float $v): string {
 
             <?php foreach ($professores as $p): ?>
             <div class="profGrid">
-                <div>
+                <div class="profGrid__identity">
                     <span class="profGrid__nome"><?= htmlspecialchars($p['nome'] . ' ' . $p['sobrenome']) ?></span>
                     <small class="profGrid__date"><?= date('d/m/Y', strtotime($p['criado_em'])) ?></small>
                 </div>
-                <span class="profGrid__email"><?= htmlspecialchars($p['email']) ?></span>
-                <span><?= fmtBrlLabel($p['valor_aula_90min'] !== null ? (float)$p['valor_aula_90min'] : null) ?></span>
-                <span><?= fmtBrlLabel($p['valor_aula_120min'] !== null ? (float)$p['valor_aula_120min'] : null) ?></span>
-                <span><?= $p['dia_pagamento'] ? 'Dia ' . (int)$p['dia_pagamento'] : '—' ?></span>
+                <a class="profGrid__email" href="mailto:<?= htmlspecialchars($p['email']) ?>"><?= htmlspecialchars($p['email']) ?></a>
+                <div class="profGrid__rates">
+                    <span><small>Aula 1h30</small><?= fmtBrlLabel($p['valor_aula_90min'] !== null ? (float)$p['valor_aula_90min'] : null) ?></span>
+                    <span><small>Aula 2h00</small><?= fmtBrlLabel($p['valor_aula_120min'] !== null ? (float)$p['valor_aula_120min'] : null) ?></span>
+                </div>
+                <span class="profGrid__payday"><?= $p['dia_pagamento'] ? 'Dia ' . (int)$p['dia_pagamento'] : '—' ?></span>
                 <div class="profGrid__actions">
                     <a href="<?= ADMIN_BASE_URL ?>/professores?id=<?= $p['id'] ?>" class="btn btn--sm btn--gray">Editar</a>
                     <button class="btn btn--sm btn--success btnPagarProf"
@@ -131,6 +132,13 @@ function fmtBrlLabel(?float $v): string {
                     </button>
                     <a href="<?= ADMIN_BASE_URL ?>/frequencia-professor?prof_id=<?= $p['id'] ?>"
                        class="btn btn--sm btn--gray">Frequência</a>
+                    <?php if (($_SESSION['usuario']['nivel_acesso'] ?? '') === 'admin' && $p['status'] === 'ativo'): ?>
+                    <button class="btn btn--sm btn--gray btnVisaoProf"
+                            data-id="<?= $p['id'] ?>"
+                            data-nome="<?= htmlspecialchars($p['nome'] . ' ' . $p['sobrenome']) ?>">
+                        Visão do Professor
+                    </button>
+                    <?php endif; ?>
                     <button class="btn btn--sm btn--error btnExcluirProf"
                             data-id="<?= $p['id'] ?>"
                             data-nome="<?= htmlspecialchars($p['nome'] . ' ' . $p['sobrenome']) ?>">
@@ -139,6 +147,26 @@ function fmtBrlLabel(?float $v): string {
                 </div>
             </div>
             <?php endforeach; ?>
+        </div>
+
+        <div class="profDevidos">
+            <div class="profDevidos__header">
+                <h3>Valores Devidos por Mês</h3>
+                <div class="historicoAulas__mesFiltro" id="devidosMesFiltro">
+                    <a href="#" class="historicoAulas__mesNav" id="devidosMesPrev">&#8592;</a>
+                    <label class="historicoAulas__mesLabel">
+                        <span id="devidosMesLabel">—</span>
+                        <input type="month" id="devidosMesInput">
+                    </label>
+                    <a href="#" class="historicoAulas__mesNav" id="devidosMesNext">&#8594;</a>
+                </div>
+            </div>
+            <table class="profDevidos__table">
+                <thead><tr><th>Professor</th><th>Ganho</th><th>Pago</th><th>Saldo</th><th>Status</th><th></th></tr></thead>
+                <tbody id="devidosMesBody">
+                    <tr><td colspan="6" class="profDevidos__empty">Carregando...</td></tr>
+                </tbody>
+            </table>
         </div>
     </section>
 
@@ -429,29 +457,36 @@ function fmtBrlLabel(?float $v): string {
             <h3>Registrar Pagamento &mdash; <span id="pgtoProfNome"></span></h3>
             <button class="pgtoModal__close" id="pgtoModalClose" type="button">✕</button>
         </div>
+        <div class="pgtoModal__extratoWrap">
+            <h4>Extrato mensal</h4>
+            <div id="pgtoExtrato"></div>
+        </div>
         <form id="formPgto" autocomplete="off">
             <input type="hidden" name="professor_id" id="pgtoProfId">
             <div class="pgtoModal__grid">
                 <div class="pgtoModal__field">
+                    <label>Mês de referência <span>*</span></label>
+                    <input type="month" name="competencia" id="pgtoCompetencia" class="input" required>
+                </div>
+                <div class="pgtoModal__field">
                     <label>Valor pago (R$) <span>*</span></label>
                     <input type="text" name="valor" id="pgtoValor" class="input" placeholder="0,00" required>
                 </div>
-                <div class="pgtoModal__field">
-                    <label>Data do pagamento <span>*</span></label>
-                    <input type="date" name="data_pagamento" id="pgtoData" class="input" required>
-                </div>
             </div>
             <div class="pgtoModal__field">
-                <label>Referência</label>
-                <input type="text" name="referencia" class="input" placeholder="Ex: Junho 2026">
+                <label>Data do pagamento <span>*</span></label>
+                <input type="date" name="data_pagamento" id="pgtoData" class="input" required>
             </div>
             <div class="pgtoModal__field">
                 <label>Observação</label>
                 <input type="text" name="observacao" class="input" placeholder="Observação interna">
             </div>
             <div class="pgtoModal__field">
-                <label>Comprovante <small>(PDF, JPG ou PNG — máx. 5&nbsp;MB)</small></label>
-                <input type="file" name="comprovante" id="pgtoFile" class="pgtoModal__file" accept=".pdf,.jpg,.jpeg,.png">
+                <label>Comprovantes <small>(PDF, imagem, Word, Excel · máx 10&nbsp;MB cada — pode escolher vários)</small></label>
+                <input type="file" id="pgtoAnexosInput" multiple style="display:none"
+                       accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.doc,.docx,.xls,.xlsx,.txt">
+                <button type="button" class="btn btn--gray btn--sm" id="btnSelecionarPgtoAnexo">+ Adicionar arquivo(s)</button>
+                <div id="filaPgtoAnexos" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;"></div>
             </div>
             <div class="pgtoModal__actions">
                 <button type="submit" class="btn btn--success" id="btnSalvarPgto">Registrar pagamento</button>
@@ -555,6 +590,70 @@ function fmtBrlLabel(?float $v): string {
 <script>
 var ADMIN_BASE_URL = "<?= ADMIN_BASE_URL ?>";
 
+// ── Valores Devidos por Mês ──────────────────────────────────────────────────────
+var devidosMesAtual = new Date().toISOString().slice(0, 7);
+var STATUS_LABEL_DEVIDOS = { pago: 'Pago', parcial: 'Parcial', pendente: 'Pendente', sem_aulas: 'Sem aulas' };
+var MESES_SHORT_DEVIDOS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+function brlDevidos(v) {
+    return 'R$ ' + parseFloat(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function mesLabelDevidos(ym) {
+    var p = ym.split('-');
+    return MESES_SHORT_DEVIDOS[parseInt(p[1], 10) - 1] + ' de ' + p[0];
+}
+
+function carregarDevidosMes() {
+    document.getElementById('devidosMesLabel').textContent = mesLabelDevidos(devidosMesAtual);
+    document.getElementById('devidosMesInput').value = devidosMesAtual;
+    document.getElementById('devidosMesBody').innerHTML = '<tr><td colspan="6" class="profDevidos__empty">Carregando...</td></tr>';
+
+    fetch(ADMIN_BASE_URL + '/services/get_devidos_mes.php?mes=' + devidosMesAtual, { credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (!data.success || !data.professores.length) {
+                document.getElementById('devidosMesBody').innerHTML = '<tr><td colspan="6" class="profDevidos__empty">Nenhum professor ativo.</td></tr>';
+                return;
+            }
+            document.getElementById('devidosMesBody').innerHTML = data.professores.map(function (p) {
+                var temAtividade = p.status !== 'sem_aulas';
+                var rotulo = p.status === 'pago' ? 'Consultar' : 'Pagar';
+                var classeBtn = p.status === 'pago' ? 'btn--gray' : 'btn--success';
+                return '<tr>' +
+                    '<td>' + p.nome + '</td>' +
+                    '<td>' + brlDevidos(p.ganho) + '</td>' +
+                    '<td>' + brlDevidos(p.pago) + '</td>' +
+                    '<td>' + brlDevidos(p.saldo) + '</td>' +
+                    '<td><span class="pgtoExtrato__badge pgtoExtrato__badge--' + p.status + '">' + STATUS_LABEL_DEVIDOS[p.status] + '</span></td>' +
+                    '<td>' + (temAtividade
+                        ? '<button class="btn btn--sm ' + classeBtn + ' btnPagarMes" data-id="' + p.professor_id + '" data-nome="' + p.nome + '">' + rotulo + '</button>'
+                        : '') +
+                    '</td>' +
+                '</tr>';
+            }).join('');
+        });
+}
+
+function mudarMesDevidos(delta) {
+    var p = devidosMesAtual.split('-');
+    var d = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1 + delta, 1);
+    devidosMesAtual = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    carregarDevidosMes();
+}
+
+document.getElementById('devidosMesPrev')?.addEventListener('click', function (e) { e.preventDefault(); mudarMesDevidos(-1); });
+document.getElementById('devidosMesNext')?.addEventListener('click', function (e) { e.preventDefault(); mudarMesDevidos(1); });
+document.getElementById('devidosMesInput')?.addEventListener('change', function () {
+    if (this.value) { devidosMesAtual = this.value; carregarDevidosMes(); }
+});
+if (document.getElementById('devidosMesBody')) carregarDevidosMes();
+
+document.addEventListener('click', function (e) {
+    var btn = e.target.closest('.btnPagarMes');
+    if (!btn) return;
+    abrirPgtoModal(btn.dataset.id, btn.dataset.nome, devidosMesAtual);
+});
+
 // ── Máscaras ──────────────────────────────────────────────────────────────────
 function maskCpf(el) {
     el.addEventListener('input', function () {
@@ -656,31 +755,90 @@ if (document.getElementById('pgtoValor')) maskValor(document.getElementById('pgt
 var pgtoModal     = document.getElementById('pgtoModal');
 var pgtoProfAtual = 0;
 
-function carregarPagamentos(profId) {
+function brlProf(v) {
+    return 'R$ ' + parseFloat(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function mesLabel(ym) {
+    var p = ym.split('-');
+    return MESES_SHORT_PROF[parseInt(p[1], 10) - 1] + '/' + p[0];
+}
+var MESES_SHORT_PROF = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+var STATUS_LABEL_PROF = { pago: 'Pago', parcial: 'Parcial', pendente: 'Pendente' };
+
+var pgtoExtratoAtual = [];
+
+function preencherValorSugerido(mes) {
+    var item = pgtoExtratoAtual.find(function (e) { return e.mes === mes; });
+    var valorEl = document.getElementById('pgtoValor');
+    if (!valorEl) return;
+    var saldo = item ? item.saldo : 0;
+    valorEl.value = saldo > 0 ? saldo.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.') : '';
+}
+
+function carregarPagamentos(profId, competenciaForcada) {
     document.getElementById('pgtoLista').innerHTML = '<span class="pgtoModal__empty">Carregando...</span>';
+    document.getElementById('pgtoExtrato').innerHTML = '<span class="pgtoModal__empty">Carregando...</span>';
     fetch(ADMIN_BASE_URL + '/services/get_pagamentos_professor.php?professor_id=' + profId, { credentials: 'same-origin' })
         .then(function (r) { return r.json(); })
         .then(function (data) {
             if (!data.success) return;
+
+            pgtoExtratoAtual = data.extrato || [];
+
+            if (!pgtoExtratoAtual.length) {
+                document.getElementById('pgtoExtrato').innerHTML = '<span class="pgtoModal__empty">Nenhuma aula concluída ainda.</span>';
+            } else {
+                document.getElementById('pgtoExtrato').innerHTML =
+                    '<table class="pgtoExtrato">' +
+                    '<thead><tr><th>Mês</th><th>Ganho</th><th>Pago</th><th>Status</th></tr></thead>' +
+                    '<tbody>' + pgtoExtratoAtual.map(function (e) {
+                        return '<tr>' +
+                            '<td>' + mesLabel(e.mes) + '</td>' +
+                            '<td>' + brlProf(e.ganho) + '</td>' +
+                            '<td>' + brlProf(e.pago) + '</td>' +
+                            '<td><span class="pgtoExtrato__badge pgtoExtrato__badge--' + e.status + '">' + STATUS_LABEL_PROF[e.status] + '</span></td>' +
+                        '</tr>';
+                    }).join('') + '</tbody></table>';
+            }
+
+            // Mês de referência: o que foi passado explicitamente (clicou "Pagar" num mês
+            // específico na seção de baixo) ou, senão, o mais antigo ainda não totalmente pago
+            var pendentes = pgtoExtratoAtual.filter(function (e) { return e.status !== 'pago'; });
+            var mesSugerido = competenciaForcada || (pendentes.length
+                ? pendentes.reduce(function (a, b) { return a.mes < b.mes ? a : b; }).mes
+                : new Date().toISOString().slice(0, 7));
+            document.getElementById('pgtoCompetencia').value = mesSugerido;
+            preencherValorSugerido(mesSugerido);
+
             if (!data.pagamentos.length) {
                 document.getElementById('pgtoLista').innerHTML = '<span class="pgtoModal__empty">Nenhum pagamento registrado.</span>';
                 return;
             }
-            var baseComp = ADMIN_BASE_URL.replace('/admin', '') + '/uploads/comprovantes/';
+            var baseUrl       = ADMIN_BASE_URL.replace('/admin', '');
+            var baseCompLegacy = baseUrl + '/uploads/comprovantes/';
             document.getElementById('pgtoLista').innerHTML = data.pagamentos.map(function (p) {
                 var valor = 'R$ ' + parseFloat(p.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                var comp  = p.comprovante
-                    ? '<a href="' + baseComp + p.comprovante + '" target="_blank" class="pgtoItem__comp">Comprovante ↗</a>'
-                    : '';
+                var anexosHtml = '';
+                if (p.comprovante) {
+                    anexosHtml += '<a href="' + baseCompLegacy + p.comprovante + '" target="_blank" class="pgtoItem__comp">Comprovante ↗</a>';
+                }
+                (p.anexos || []).forEach(function (a) {
+                    anexosHtml += '<span class="pgtoItem__anexo">' +
+                        '<a href="' + baseUrl + '/' + a.caminho + '" target="_blank">' + a.nome_original + ' ↗</a>' +
+                        '<button type="button" class="btnDelPgtoAnexo" data-id="' + a.id + '" title="Remover">✕</button>' +
+                    '</span>';
+                });
                 return '<div class="pgtoItem">' +
                     '<div class="pgtoItem__info">' +
                         '<span class="pgtoItem__valor">' + valor + '</span>' +
                         '<div class="pgtoItem__meta">' +
                             '<span class="pgtoItem__data">' + formatDateBR(p.data_pagamento) + '</span>' +
+                            (p.competencia ? '<span class="pgtoItem__ref">Ref. ' + mesLabel(p.competencia) + '</span>' : '') +
                             (p.referencia ? '<span class="pgtoItem__ref">' + p.referencia + '</span>' : '') +
                             (p.observacao ? '<span class="pgtoItem__obs">' + p.observacao + '</span>' : '') +
                         '</div>' +
-                        comp +
+                        (anexosHtml ? '<div class="pgtoItem__anexos">' + anexosHtml + '</div>' : '') +
                     '</div>' +
                     '<button class="btn btn--sm btn--error btnDelPgto" data-id="' + p.id + '" type="button">✕</button>' +
                 '</div>';
@@ -688,16 +846,26 @@ function carregarPagamentos(profId) {
         });
 }
 
-document.addEventListener('click', function (e) {
-    var btn = e.target.closest('.btnPagarProf');
-    if (!btn) return;
-    pgtoProfAtual = btn.dataset.id;
-    document.getElementById('pgtoProfNome').textContent = btn.dataset.nome;
+function abrirPgtoModal(profId, profNome, competenciaForcada) {
+    pgtoProfAtual = profId;
+    document.getElementById('pgtoProfNome').textContent = profNome;
     document.getElementById('pgtoProfId').value         = pgtoProfAtual;
     document.getElementById('pgtoData').value           = new Date().toISOString().slice(0, 10);
     document.getElementById('pgtoMsg').style.display    = 'none';
+    filaPgtoAnexos = [];
+    renderFilaPgtoAnexos();
     pgtoModal.classList.add('pgtoModal--open');
-    carregarPagamentos(pgtoProfAtual);
+    carregarPagamentos(pgtoProfAtual, competenciaForcada);
+}
+
+document.addEventListener('click', function (e) {
+    var btn = e.target.closest('.btnPagarProf');
+    if (!btn) return;
+    abrirPgtoModal(btn.dataset.id, btn.dataset.nome);
+});
+
+document.getElementById('pgtoCompetencia')?.addEventListener('change', function () {
+    preencherValorSugerido(this.value);
 });
 
 function fecharPgtoModal() {
@@ -708,32 +876,85 @@ document.getElementById('pgtoModalClose')?.addEventListener('click',  fecharPgto
 document.getElementById('pgtoModalClose2')?.addEventListener('click', fecharPgtoModal);
 pgtoModal?.addEventListener('click', function (e) { if (e.target === this) fecharPgtoModal(); });
 
+// ── Fila de anexos do pagamento (acumula antes de enviar) ─────────────────────
+var filaPgtoAnexos = [];
+var inputPgtoAnexos = document.getElementById('pgtoAnexosInput');
+var filaPgtoEl      = document.getElementById('filaPgtoAnexos');
+
+document.getElementById('btnSelecionarPgtoAnexo')?.addEventListener('click', function () {
+    inputPgtoAnexos.click();
+});
+
+inputPgtoAnexos?.addEventListener('change', function () {
+    Array.from(this.files).forEach(function (f) {
+        if (!filaPgtoAnexos.find(function (x) { return x.name === f.name; })) {
+            filaPgtoAnexos.push(f);
+        }
+    });
+    this.value = '';
+    renderFilaPgtoAnexos();
+});
+
+function renderFilaPgtoAnexos() {
+    filaPgtoEl.innerHTML = filaPgtoAnexos.map(function (f, i) {
+        return '<span class="pgtoAnexoFila" data-idx="' + i + '">📎 ' + f.name +
+            '<button type="button" class="btnRemoverFilaPgto" data-idx="' + i + '">✕</button></span>';
+    }).join('');
+}
+
+filaPgtoEl?.addEventListener('click', function (e) {
+    var btn = e.target.closest('.btnRemoverFilaPgto');
+    if (!btn) return;
+    filaPgtoAnexos.splice(parseInt(btn.dataset.idx), 1);
+    renderFilaPgtoAnexos();
+});
+
 document.getElementById('formPgto')?.addEventListener('submit', function (e) {
     e.preventDefault();
-    var btn = document.getElementById('btnSalvarPgto');
-    var msg = document.getElementById('pgtoMsg');
+    var btn  = document.getElementById('btnSalvarPgto');
+    var msg  = document.getElementById('pgtoMsg');
+    var form = this;
     btn.disabled    = true;
     btn.textContent = 'Registrando...';
     msg.style.display = 'none';
 
     fetch(ADMIN_BASE_URL + '/services/save_pagamento_professor.php', {
-        method: 'POST', credentials: 'same-origin', body: new FormData(this),
+        method: 'POST', credentials: 'same-origin', body: new FormData(form),
     })
     .then(function (r) { return r.json(); })
     .then(function (data) {
-        if (data.success) {
-            document.getElementById('formPgto').reset();
+        if (!data.success) {
+            msg.textContent   = data.message || 'Erro ao registrar.';
+            msg.style.color   = '#cf7e7e';
+            msg.style.display = '';
+            btn.disabled      = false;
+            btn.textContent   = 'Registrar pagamento';
+            return;
+        }
+
+        function finalizar() {
+            form.reset();
             document.getElementById('pgtoProfId').value = pgtoProfAtual;
+            filaPgtoAnexos = [];
+            renderFilaPgtoAnexos();
             carregarPagamentos(pgtoProfAtual);
             msg.textContent   = 'Pagamento registrado com sucesso!';
             msg.style.color   = '#4ade80';
-        } else {
-            msg.textContent   = data.message || 'Erro ao registrar.';
-            msg.style.color   = '#cf7e7e';
+            msg.style.display = '';
+            btn.disabled      = false;
+            btn.textContent   = 'Registrar pagamento';
         }
-        msg.style.display = '';
-        btn.disabled      = false;
-        btn.textContent   = 'Registrar pagamento';
+
+        if (filaPgtoAnexos.length) {
+            var fdAnexos = new FormData();
+            fdAnexos.append('pagamento_id', data.id);
+            filaPgtoAnexos.forEach(function (f) { fdAnexos.append('anexos[]', f); });
+            fetch(ADMIN_BASE_URL + '/services/save_pagamento_anexo.php', {
+                method: 'POST', credentials: 'same-origin', body: fdAnexos,
+            }).then(finalizar).catch(finalizar);
+        } else {
+            finalizar();
+        }
     });
 });
 
@@ -743,6 +964,18 @@ document.addEventListener('click', function (e) {
     if (!confirm('Remover este pagamento?')) return;
     var fd = new FormData(); fd.append('id', btn.dataset.id);
     fetch(ADMIN_BASE_URL + '/services/delete_pagamento_professor.php', {
+        method: 'POST', credentials: 'same-origin', body: fd,
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) { if (data.success) carregarPagamentos(pgtoProfAtual); });
+});
+
+document.addEventListener('click', function (e) {
+    var btn = e.target.closest('.btnDelPgtoAnexo');
+    if (!btn) return;
+    if (!confirm('Remover este anexo?')) return;
+    var fd = new FormData(); fd.append('id', btn.dataset.id);
+    fetch(ADMIN_BASE_URL + '/services/delete_pagamento_anexo.php', {
         method: 'POST', credentials: 'same-origin', body: fd,
     })
     .then(function (r) { return r.json(); })
@@ -855,6 +1088,27 @@ document.addEventListener('click', function (e) {
     })
     .then(function (r) { return r.json(); })
     .then(function (data) { if (data.success) carregarFaltas(faltaProfAtual); });
+});
+
+// ── Visão do Professor (impersonar) ──────────────────────────────────────────
+document.addEventListener('click', function (e) {
+    var btn = e.target.closest('.btnVisaoProf');
+    if (!btn) return;
+    if (!confirm('Entrar como ' + btn.dataset.nome + '? Você verá o sistema exatamente como o professor vê.')) return;
+    btn.disabled = true;
+    var fd = new FormData(); fd.append('professor_id', btn.dataset.id);
+    fetch(ADMIN_BASE_URL + '/services/impersonate_start.php', {
+        method: 'POST', credentials: 'same-origin', body: fd,
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+        if (data.success) {
+            window.location.href = ADMIN_BASE_URL + '/area-professor';
+        } else {
+            alert(data.message || 'Erro ao entrar como professor.');
+            btn.disabled = false;
+        }
+    });
 });
 
 // ── Excluir professor ─────────────────────────────────────────────────────────

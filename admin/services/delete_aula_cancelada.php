@@ -30,14 +30,17 @@ require_once dirname(__FILE__, 3) . '/config/database.php';
 $pdo = getDbConnection();
 
 try {
-    $st = $pdo->prepare("DELETE FROM aulas_canceladas WHERE id = ?");
-    $st->execute([$id]);
+    $regSt = $pdo->prepare("SELECT turma_id, data FROM aulas_canceladas WHERE id = ?");
+    $regSt->execute([$id]);
+    $reg = $regSt->fetch();
 
-    if ($st->rowCount() === 0) {
+    if (!$reg) {
         http_response_code(404);
         echo json_encode(['success' => false, 'message' => 'Registro não encontrado.']);
         exit;
     }
+
+    $pdo->prepare("DELETE FROM aulas_canceladas WHERE id = ?")->execute([$id]);
 
     echo json_encode(['success' => true]);
 } catch (PDOException $e) {

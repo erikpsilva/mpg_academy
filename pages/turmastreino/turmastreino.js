@@ -1,6 +1,7 @@
 
 const DIAS = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
 const NIVEL_LABEL = { iniciante: 'Iniciante', intermediario: 'Intermediário', avancado: 'Avançado' };
+const FAIXA_LABEL = { adulto: 'Adulto', adolescente: 'Adolescente', infantil: 'Infantil' };
 const IMGS = ['imgTumra01.png', 'imgTumra02.png', 'imgTumra03.png'];
 const WA = 'https://wa.me/5511972330097';
 
@@ -16,6 +17,7 @@ const cardHtml = (t, idx) => {
     const nivel     = NIVEL_LABEL[t.nivel] || t.nivel;
     const generoMap = { masculino: 'Masculino', feminino: 'Feminino', misto: 'Misto' };
     const generoLabel = generoMap[t.genero] || t.genero;
+    const faixaLabel  = FAIXA_LABEL[t.faixa_etaria] || t.faixa_etaria;
 
     const schedule = (t.horarios || []).map(h =>
         '<div>' +
@@ -40,6 +42,7 @@ const cardHtml = (t, idx) => {
                 '<div class="turmaCard__tags">' +
                     '<span class="turmaCard__level">' + nivel + '</span>' +
                     '<span class="turmaCard__gender turmaCard__gender--' + t.genero + '">' + generoLabel + '</span>' +
+                    '<span class="turmaCard__age turmaCard__age--' + t.faixa_etaria + '">' + faixaLabel + '</span>' +
                 '</div>' +
                 (featured ? '<span class="turmaCard__promo">Promoção <i class="icon-thumbtacks" aria-hidden="true"></i></span>' : '') +
             '</div>' +

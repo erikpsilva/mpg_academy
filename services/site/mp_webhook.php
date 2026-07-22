@@ -42,7 +42,7 @@ try {
             if ($payment && ($payment['status'] ?? '') === 'approved') {
                 $mensalidadeId = (int) ($payment['metadata']['mensalidade_id'] ?? 0);
                 if ($mensalidadeId > 0) {
-                    mpMarcarMensalidadePaga($pdo, $mensalidadeId, (string) $payment['id']);
+                    mpMarcarMensalidadePaga($pdo, $mensalidadeId, (string) $payment['id'], $payment);
                 }
             }
         } else {

@@ -28,6 +28,7 @@ $catLabels = [
     'administrativo' => 'Administrativo',
     'patrocinio'     => 'Patrocínios',
     'outros_receita' => 'Outras Receitas',
+    'taxa_mercadopago' => 'Taxas Mercado Pago',
     'outros'         => 'Outros',
 ];
 
@@ -63,8 +64,10 @@ function syncMensalidades(PDO $pdo): void {
     $meses = ['01'=>'Jan','02'=>'Fev','03'=>'Mar','04'=>'Abr','05'=>'Mai','06'=>'Jun',
               '07'=>'Jul','08'=>'Ago','09'=>'Set','10'=>'Out','11'=>'Nov','12'=>'Dez'];
     foreach ($st->fetchAll() as $m) {
-        // Competência = mês em que o pagamento foi recebido (data_pagamento)
-        $competencia = substr($m['data_pagamento'], 0, 7);
+        // Competência = mês de referência da mensalidade (vencimento), não a data em que
+        // o pagamento foi recebido — uma fatura de julho paga antes do vencimento continua
+        // pertencendo a julho.
+        $competencia = $m['referencia'];
         [$a, $me]    = explode('-', $m['referencia']);
         $refLabel    = ($meses[$me] ?? $me) . '/' . $a;
         $desc = 'Mensalidade ' . $refLabel . ' — ' . $m['aluno_nome'] . ' (' . $m['turma_nome'] . ')';
@@ -121,13 +124,28 @@ if ($aba === 'dashboard') {
 }
 
 // ── Lançamentos: lista ────────────────────────────────────────────────────────
+$categoriaFiltro = $_GET['categoria'] ?? '';
+$buscaFiltro     = trim($_GET['busca'] ?? '');
+
 $lancamentos = [];
 if ($aba === 'lancamentos') {
     syncMensalidades($pdo);
+
+    $whereL  = ['competencia = ?'];
+    $paramsL = [$mes];
+    if ($categoriaFiltro !== '' && isset($catLabels[$categoriaFiltro])) {
+        $whereL[]  = 'categoria = ?';
+        $paramsL[] = $categoriaFiltro;
+    }
+    if ($buscaFiltro !== '') {
+        $whereL[]  = 'descricao LIKE ?';
+        $paramsL[] = '%' . $buscaFiltro . '%';
+    }
+
     $stL = $pdo->prepare("
-        SELECT * FROM lancamentos_financeiros WHERE competencia = ? ORDER BY data DESC, id DESC
+        SELECT * FROM lancamentos_financeiros WHERE " . implode(' AND ', $whereL) . " ORDER BY data DESC, id DESC
     ");
-    $stL->execute([$mes]);
+    $stL->execute($paramsL);
     $lancamentos = $stL->fetchAll();
 }
 
@@ -195,6 +213,34 @@ if ($aba === 'divida') {
             text-decoration:none; font-size:16px; transition:.15s; }
 .finMes a:hover { border-color:#e5c200; color:#e5c200; }
 .finMes strong  { font-size:17px; color:#eee; min-width:200px; text-align:center; }
+
+/* ── Filtros ── */
+.finFilters { display:flex; justify-content:space-between; align-items:flex-end; gap:12px;
+              margin-bottom:16px; flex-wrap:wrap; }
+.finFilters__form { display:flex; align-items:flex-end; gap:10px; flex-wrap:wrap; }
+.finFilters__field { display:flex; flex-direction:column; gap:5px; min-width:180px; }
+.finFilters__field--search { min-width:260px; }
+.finFilters__label { color:#888; font-size:11px; font-weight:700; letter-spacing:.04em;
+                     text-transform:uppercase; }
+.finFilters .input { background:rgba(255,255,255,.055); border:1px solid rgba(255,255,255,.16);
+                     border-radius:7px; color:#eee; font-family:inherit; font-size:13px;
+                     height:40px; line-height:40px; margin:0; padding:0 13px;
+                     transition:.18s all; width:100%; }
+.finFilters .input::placeholder { color:rgba(255,255,255,.4); }
+.finFilters .input:hover { border-color:rgba(229,194,0,.28); background:rgba(255,255,255,.075); }
+.finFilters .input:focus { border-color:#e5c200; box-shadow:0 0 0 3px rgba(229,194,0,.12); outline:none; }
+.finFilters select.input { -webkit-appearance:none; appearance:none;
+                           background-image:linear-gradient(45deg, transparent 50%, #e5c200 50%),
+                                            linear-gradient(135deg, #e5c200 50%, transparent 50%);
+                           background-position:calc(100% - 18px) 17px, calc(100% - 12px) 17px;
+                           background-repeat:no-repeat; background-size:6px 6px, 6px 6px;
+                           padding-right:42px; }
+.finFilters select.input option { background:#1a1a1a; color:#eee; }
+@media (max-width:640px) {
+    .finFilters, .finFilters__form { align-items:stretch; flex-direction:column; }
+    .finFilters__field, .finFilters__field--search { min-width:0; width:100%; }
+    .finFilters .btn { justify-content:center; width:100%; }
+}
 
 /* ── Cards de resumo ── */
 .finCards { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:28px; }
@@ -627,7 +673,34 @@ if ($aba === 'divida') {
     <?php elseif ($aba === 'lancamentos'): ?>
     <!-- ── LANÇAMENTOS ────────────────────────────────────────────────── -->
 
-        <div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
+        <p style="font-size:12px;color:#777;margin:-10px 0 16px;">
+            O mês selecionado acima filtra pela <strong>competência</strong> (mês de referência do lançamento) —
+            uma mensalidade de julho paga em junho aparece no mês de julho, não no mês em que o valor entrou.
+        </p>
+
+        <div class="finFilters">
+            <form method="GET" action="" class="finFilters__form">
+                <input type="hidden" name="aba" value="lancamentos">
+                <input type="hidden" name="mes" value="<?= htmlspecialchars($mes) ?>">
+                <div class="finFilters__field">
+                    <label class="finFilters__label">Categoria</label>
+                    <select name="categoria" class="input" onchange="this.form.submit()">
+                        <option value="">Todas as categorias</option>
+                        <?php foreach ($catLabels as $catKey => $catLbl): ?>
+                        <option value="<?= $catKey ?>" <?= $categoriaFiltro === $catKey ? 'selected' : '' ?>><?= $catLbl ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="finFilters__field finFilters__field--search">
+                    <label class="finFilters__label">Buscar (aluno, descrição...)</label>
+                    <input type="text" name="busca" value="<?= htmlspecialchars($buscaFiltro) ?>"
+                           placeholder="Ex: nome do aluno" class="input">
+                </div>
+                <button type="submit" class="btn btn--gray btn--sm">Filtrar</button>
+                <?php if ($categoriaFiltro !== '' || $buscaFiltro !== ''): ?>
+                <a href="?aba=lancamentos&mes=<?= htmlspecialchars($mes) ?>" class="btn btn--gray btn--sm">Limpar</a>
+                <?php endif; ?>
+            </form>
             <button class="btn btn--primary" id="btnNovoLancamento">+ Novo Lançamento</button>
         </div>
 
@@ -639,7 +712,7 @@ if ($aba === 'divida') {
                 </tr></thead>
                 <tbody>
                 <?php if (empty($lancamentos)): ?>
-                <tr><td colspan="7" style="text-align:center;color:#444;padding:28px;">Nenhum lançamento em <?= $mesLabel ?>.</td></tr>
+                <tr><td colspan="7" style="text-align:center;color:#444;padding:28px;">Nenhum lançamento encontrado<?= ($categoriaFiltro !== '' || $buscaFiltro !== '') ? ' para este filtro' : ' em ' . $mesLabel ?>.</td></tr>
                 <?php else: ?>
                 <?php foreach ($lancamentos as $l): ?>
                 <tr>
@@ -652,8 +725,17 @@ if ($aba === 'divida') {
                     <td><?= $l['tipo'] === 'receita' ? '<span class="badge-rec">Receita</span>' : '<span class="badge-desp">Despesa</span>' ?></td>
                     <td><?= $l['origem'] === 'auto' ? '<span class="badge-auto">Auto</span>' : '<span style="font-size:11px;color:#777;">Manual</span>' ?></td>
                     <td style="font-weight:700;color:<?= $l['tipo'] === 'receita' ? '#79ff45' : '#ff7070' ?>;"><?= fmtR((float)$l['valor']) ?></td>
-                    <td>
+                    <td style="white-space:nowrap;">
                         <?php if ($l['origem'] === 'manual'): ?>
+                        <button class="btn btn--sm btn--gray btnEditarLanc" style="margin-right:6px;"
+                                data-id="<?= $l['id'] ?>"
+                                data-tipo="<?= $l['tipo'] ?>"
+                                data-categoria="<?= htmlspecialchars($l['categoria']) ?>"
+                                data-descricao="<?= htmlspecialchars($l['descricao']) ?>"
+                                data-valor="<?= $l['valor'] ?>"
+                                data-data="<?= $l['data'] ?>"
+                                data-competencia="<?= htmlspecialchars($l['competencia']) ?>"
+                                data-observacao="<?= htmlspecialchars($l['observacao'] ?? '') ?>">Editar</button>
                         <button class="btn btn--sm btn--error btnDeleteLanc" data-id="<?= $l['id'] ?>" data-desc="<?= htmlspecialchars($l['descricao']) ?>">Excluir</button>
                         <?php endif; ?>
                     </td>
@@ -750,13 +832,13 @@ if ($aba === 'divida') {
 <div class="finModal" id="modalLancamento">
     <div class="finModal__box">
         <div class="finModal__head">
-            <h3>Novo Lançamento</h3>
+            <h3 id="lancModalTitulo">Novo Lançamento</h3>
             <button id="closeModalLanc">&times;</button>
         </div>
         <form id="formLancamento">
-            <input type="hidden" name="competencia" value="<?= $mes ?>">
+            <input type="hidden" name="id" id="lancId" value="">
             <div class="finModal__body">
-                <div class="finRow2">
+                <div class="finRow3">
                     <div class="finField">
                         <label>Tipo <span>*</span></label>
                         <select name="tipo" class="input" id="lancTipo" required>
@@ -767,6 +849,10 @@ if ($aba === 'divida') {
                     <div class="finField">
                         <label>Data <span>*</span></label>
                         <input type="date" name="data" class="input" value="<?= date('Y-m-d') ?>" required>
+                    </div>
+                    <div class="finField">
+                        <label>Mês de referência <span>*</span></label>
+                        <input type="month" name="competencia" class="input" value="<?= $mes ?>" required>
                     </div>
                 </div>
                 <div class="finRow2">
@@ -801,7 +887,7 @@ if ($aba === 'divida') {
             </div>
             <div class="finModalActions">
                 <button type="button" class="btn btn--gray" id="cancelarLanc">Cancelar</button>
-                <button type="submit" class="btn btn--primary">Salvar lançamento</button>
+                <button type="submit" class="btn btn--primary" id="btnSalvarLanc">Salvar lançamento</button>
             </div>
         </form>
     </div>
@@ -1025,22 +1111,60 @@ function openModal(id)  { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
 // ── Lançamento modal ──────────────────────────────────────────────────────────
-var btnNovoLanc = document.getElementById('btnNovoLancamento');
-if (btnNovoLanc) {
-    maskValor(document.getElementById('lancValor'));
-    btnNovoLanc.addEventListener('click', function () { openModal('modalLancamento'); });
+var btnNovoLanc     = document.getElementById('btnNovoLancamento');
+var formLancamento  = document.getElementById('formLancamento');
+if (formLancamento) {
+    var lancValorEl = document.getElementById('lancValor');
+    maskValor(lancValorEl);
+
+    function resetFormLancamento() {
+        formLancamento.reset();
+        document.getElementById('lancId').value = '';
+        document.getElementById('lancModalTitulo').textContent = 'Novo Lançamento';
+        document.getElementById('btnSalvarLanc').textContent   = 'Salvar lançamento';
+        formLancamento.querySelector('[name=data]').value        = '<?= date('Y-m-d') ?>';
+        formLancamento.querySelector('[name=competencia]').value = '<?= $mes ?>';
+    }
+
+    if (btnNovoLanc) {
+        btnNovoLanc.addEventListener('click', function () {
+            resetFormLancamento();
+            openModal('modalLancamento');
+        });
+    }
     document.getElementById('closeModalLanc').addEventListener('click',  function () { closeModal('modalLancamento'); });
     document.getElementById('cancelarLanc').addEventListener('click',    function () { closeModal('modalLancamento'); });
 
-    document.getElementById('formLancamento').addEventListener('submit', function (e) {
+    // Editar lançamento (delegação — botões são gerados dinamicamente por linha)
+    document.addEventListener('click', function (e) {
+        var btn = e.target.closest('.btnEditarLanc');
+        if (!btn) return;
+        resetFormLancamento();
+        document.getElementById('lancId').value                        = btn.dataset.id;
+        formLancamento.querySelector('[name=tipo]').value               = btn.dataset.tipo;
+        formLancamento.querySelector('[name=categoria]').value          = btn.dataset.categoria;
+        formLancamento.querySelector('[name=descricao]').value          = btn.dataset.descricao;
+        formLancamento.querySelector('[name=observacao]').value         = btn.dataset.observacao;
+        formLancamento.querySelector('[name=data]').value                = btn.dataset.data;
+        formLancamento.querySelector('[name=competencia]').value         = btn.dataset.competencia;
+        lancValorEl.value = parseFloat(btn.dataset.valor).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        document.getElementById('lancModalTitulo').textContent = 'Editar Lançamento';
+        document.getElementById('btnSalvarLanc').textContent   = 'Salvar alterações';
+        openModal('modalLancamento');
+    });
+
+    formLancamento.addEventListener('submit', function (e) {
         e.preventDefault();
         var btn = this.querySelector('[type=submit]');
+        var isEdit   = !!document.getElementById('lancId').value;
+        var endpoint = isEdit ? 'update_lancamento.php' : 'save_lancamento.php';
+        var textoOriginal = btn.textContent;
         btn.disabled = true; btn.textContent = 'Salvando...';
-        fetch(ADMIN_BASE_URL + '/services/save_lancamento.php', {
+        fetch(ADMIN_BASE_URL + '/services/' + endpoint, {
             method: 'POST', credentials: 'same-origin', body: new FormData(this),
         }).then(r => r.json()).then(d => {
             if (d.success) location.reload();
-            else { alert(d.message || 'Erro.'); btn.disabled = false; btn.textContent = 'Salvar lançamento'; }
+            else { alert(d.message || 'Erro.'); btn.disabled = false; btn.textContent = textoOriginal; }
         });
     });
 }

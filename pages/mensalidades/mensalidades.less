@@ -130,7 +130,7 @@
 
     &__box {
         display: grid;
-        grid-template-columns: 1fr 1fr 1.2fr 180px;
+        grid-template-columns: 1fr 1fr 1.2fr;
         align-items: center;
         gap: 0;
         padding: 20px;
@@ -144,6 +144,10 @@
 
             &:first-child {
                 padding-left: 0;
+            }
+
+            &:last-child {
+                border-right: 0;
             }
 
             span,
@@ -161,27 +165,6 @@
                 line-height: 1.15;
                 font-weight: 900;
                 margin: 5px 0;
-            }
-        }
-
-        > a {
-            width: 100%;
-            min-height: 48px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            border: 1px solid @yellow;
-            border-radius: 6px;
-            color: @yellow;
-            font-size: 13px;
-            font-weight: 900;
-            text-transform: uppercase;
-            .transition(0.25s all);
-
-            &:hover {
-                background: @yellow;
-                color: #060606;
             }
         }
     }
@@ -477,10 +460,6 @@
         article {
             padding: 0;
             border-right: 0;
-        }
-
-        > a {
-            grid-column: 1 / -1;
         }
     }
 

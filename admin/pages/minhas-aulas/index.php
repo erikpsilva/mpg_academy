@@ -50,6 +50,14 @@ $sf = $pdo->prepare("SELECT turma_id,data,tipo FROM professor_faltas WHERE profe
 $sf->execute([$profId,$rIni,$rFim]);
 foreach ($sf->fetchAll(PDO::FETCH_ASSOC) as $r) $faltasMap[$r['turma_id'].'_'.$r['data']] = $r['tipo'];
 
+// Aulas canceladas (turma específica ou turma_id NULL = todas as turmas)
+$canceladasMap = []; $canceladasGlobal = [];
+$sca = $pdo->query("SELECT turma_id,data,motivo FROM aulas_canceladas WHERE data BETWEEN '$rIni' AND '$rFim'");
+foreach ($sca->fetchAll(PDO::FETCH_ASSOC) as $r) {
+    if ($r['turma_id'] === null) $canceladasGlobal[$r['data']] = $r['motivo'];
+    else                          $canceladasMap[$r['turma_id'].'_'.$r['data']] = $r['motivo'];
+}
+
 // Gera calendário
 $aulas = [];
 foreach ($turmas as $t) {
@@ -59,16 +67,23 @@ foreach ($turmas as $t) {
         $fim = strtotime($rFim);
         while ($cur <= $fim && (int)date('w',$cur) !== $h['dow']) $cur = strtotime('+1 day',$cur);
         while ($cur <= $fim) {
-            $d   = date('Y-m-d',$cur);
-            $key = $t['id'].'_'.$d;
+            $d      = date('Y-m-d',$cur);
+            $key    = $t['id'].'_'.$d;
+            $motivo = $canceladasMap[$key] ?? $canceladasGlobal[$d] ?? null;
             if ($d <= $hoje) {
-                if (isset($faltasMap[$key]))   $st = 'falta';
-                elseif (isset($conc[$key]))    $st = 'concluida';
-                else                           $st = 'pendente';
-            } else { $st = 'programada'; }
+                if ($motivo !== null)           $st = 'cancelada';
+                elseif (isset($faltasMap[$key])) $st = 'falta';
+                elseif (isset($conc[$key]))      $st = 'concluida';
+                else                              $st = 'pendente';
+            } else {
+                // Data futura: só sai do "programada" se já tiver falta ou cancelamento registrado
+                if ($motivo !== null)            $st = 'cancelada';
+                elseif (isset($faltasMap[$key])) $st = 'falta';
+                else                              $st = 'programada';
+            }
             $aulas[] = ['data'=>$d,'mes'=>substr($d,0,7),'turma_id'=>$t['id'],'turma_nome'=>$t['nome'],
                         'hi'=>$h['hi'],'hf'=>$h['hf'],'dur'=>$h['dur'],'dow'=>$h['dow'],
-                        'status'=>$st,'falta_tipo'=>$faltasMap[$key]??null];
+                        'status'=>$st,'falta_tipo'=>$faltasMap[$key]??null,'cancelada_motivo'=>$motivo];
             $cur = strtotime('+7 days',$cur);
         }
     }
@@ -143,7 +158,11 @@ $DIAS  = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
             <span class="minhasAulas__turmaNome"><?= htmlspecialchars($a['turma_nome']) ?></span>
             <span class="minhasAulas__horario"><?= $a['hi'] ?> – <?= $a['hf'] ?> <em><?= $dur ?></em></span>
         </div>
-        <?php if ($a['status'] === 'falta'): ?>
+        <?php if ($a['status'] === 'cancelada'): ?>
+            <div class="minhasAulas__statusTag minhasAulas__statusTag--cancelada" title="<?= htmlspecialchars($a['cancelada_motivo'] ?? '') ?>">
+                🚫 Cancelada
+            </div>
+        <?php elseif ($a['status'] === 'falta'): ?>
             <div class="minhasAulas__statusTag minhasAulas__statusTag--falta">
                 ✕ <?= $a['falta_tipo'] === 'planejada' ? 'Falta planejada' : 'Falta sem aviso' ?>
             </div>

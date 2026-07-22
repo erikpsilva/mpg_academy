@@ -61,18 +61,9 @@ if (!$mens) {
 }
 
 $valor = (float) $mens['valor'];
-$hoje  = new DateTime('today');
-$venc  = new DateTime($mens['vencimento']);
-
-if ($mens['status'] === 'atrasado') {
-    $dias  = (int) $venc->diff($hoje)->days;
-    $multa = $valor * 0.05;
-    $base  = $valor + $multa;
-    $juros = $base * 0.005 * $dias;
-    $total = round($base + $juros, 2);
-} else {
-    $total = $valor;
-}
+$total = $mens['status'] === 'atrasado'
+    ? mpCalcularMultaJuros($valor, $mens['vencimento'])['total']
+    : $valor;
 
 $isAvulso = ($mens['tipo'] ?? 'mensalidade') === 'avulso';
 if ($isAvulso) {
@@ -108,9 +99,9 @@ if ($salvarCartao) {
     if (!empty($customerIdUsado)) {
         $cartaoInfo = mpSalvarCartaoCustomer($accessToken, $customerIdUsado, $token);
         if ($cartaoInfo) {
-            $novoToken = mpGerarTokenCartaoSalvo($accessToken, $cartaoInfo['id'], $customerIdUsado);
-            if ($novoToken) {
-                $token       = $novoToken;
+            $tokenResult = mpGerarTokenCartaoSalvo($accessToken, $cartaoInfo['id'], $customerIdUsado);
+            if ($tokenResult['token']) {
+                $token       = $tokenResult['token'];
                 $cartaoSalvo = true;
             }
         }
@@ -170,21 +161,9 @@ if (in_array($status, ['approved', 'pending', 'in_process'], true)) {
     }
 
     if ($status === 'approved') {
-        $pdo->prepare("
-            UPDATE mensalidades
-            SET status = 'pago', data_pagamento = CURDATE(), atualizado_em = NOW()
-            WHERE id = ?
-        ")->execute([$mensalidadeId]);
-
-        $competencia = date('Y-m');
-        $descLanc    = 'Mensalidade ' . $refLabel . ' — ' . $mens['aluno_nome'] . ' (via MP)';
-        try {
-            $pdo->prepare("
-                INSERT IGNORE INTO lancamentos_financeiros
-                    (competencia, data, tipo, categoria, descricao, valor, origem, referencia_tipo, referencia_id)
-                VALUES (?, CURDATE(), 'receita', 'mensalidade', ?, ?, 'auto', 'mensalidade', ?)
-            ")->execute([$competencia, $descLanc, $total, $mensalidadeId]);
-        } catch (PDOException $e) {}
+        // $total pode incluir multa/juros quando a fatura está atrasada — passado como
+        // valorCobrado pra refletir no lançamento de receita e no cálculo da taxa do MP.
+        mpMarcarMensalidadePaga($pdo, $mensalidadeId, (string) $mpPaymentId, $body, $total);
 
         echo json_encode([
             'success'      => true,

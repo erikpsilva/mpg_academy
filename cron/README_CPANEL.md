@@ -16,6 +16,11 @@
 0 8 * * * php /home/SEU_USUARIO/public_html/mpg_academy/cron/wpp_lembrete_3dias.php >> /home/SEU_USUARIO/logs/wpp_3dias.log 2>&1
 ```
 
+**Véspera (1 dia antes)** — executa todo dia às 18:00
+```
+0 18 * * * php /home/SEU_USUARIO/public_html/mpg_academy/cron/wpp_lembrete_amanha.php >> /home/SEU_USUARIO/logs/wpp_amanha.log 2>&1
+```
+
 **No dia da aula** — executa todo dia às 06:00 (3h antes das aulas das 09h)
 ```
 0 6 * * * php /home/SEU_USUARIO/public_html/mpg_academy/cron/wpp_lembrete_dia_aula.php >> /home/SEU_USUARIO/logs/wpp_dia_aula.log 2>&1
@@ -35,11 +40,12 @@
 
 ### Cobrança automática (cartão salvo)
 
-**Todo dia às 07:00** — cobra mensalidades pendentes/atrasadas de alunos com pagamento automático ativado
+**Duas vezes por dia — 07:00 e 15:00** — cobra mensalidades pendentes/atrasadas de alunos com pagamento automático ativado
 ```
 0 7 * * * php /home/SEU_USUARIO/public_html/mpg_academy/cron/cobranca_automatica.php >> /home/SEU_USUARIO/logs/cobranca_automatica.log 2>&1
+0 15 * * * php /home/SEU_USUARIO/public_html/mpg_academy/cron/cobranca_automatica.php >> /home/SEU_USUARIO/logs/cobranca_automatica.log 2>&1
 ```
-> Roda todo dia (não só perto do dia 5) pra também insistir em quem ficou atrasado. Nunca cobra a mesma mensalidade duas vezes no mesmo dia (controlado por `cobranca_automatica_log`). Recomenda-se rodar antes do `wpp_mensalidade.php` (08:00), assim quem já foi cobrado automaticamente não recebe lembrete de cobrança no mesmo dia.
+> Nunca cobra a mesma mensalidade duas vezes com **sucesso** no mesmo dia (controlado por `cobranca_automatica_log`, que guarda só a tentativa mais recente do dia). Mas se a rodada da manhã **falhar** (cartão sem saldo, instabilidade da API etc.), a rodada da tarde tenta de novo antes de esperar até o dia seguinte — melhora a chance de cobrar no mesmo dia sem risco de cobrança duplicada. Recomenda-se rodar a primeira antes do `wpp_mensalidade.php` (08:00), assim quem já foi cobrado automaticamente de manhã não recebe lembrete de cobrança no mesmo dia.
 
 ---
 

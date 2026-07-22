@@ -28,6 +28,10 @@ $st = $pdo->prepare("SELECT comprovante FROM professor_pagamentos WHERE id = ?")
 $st->execute([$id]);
 $row = $st->fetch(PDO::FETCH_ASSOC);
 
+$pdo->prepare("
+    DELETE FROM lancamentos_financeiros WHERE referencia_tipo = 'professor_pagamento' AND referencia_id = ?
+")->execute([$id]);
+
 $pdo->prepare("DELETE FROM professor_pagamentos WHERE id = ?")->execute([$id]);
 
 if (!empty($row['comprovante'])) {

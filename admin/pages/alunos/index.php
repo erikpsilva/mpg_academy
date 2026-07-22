@@ -15,6 +15,12 @@ if ($id > 0) {
         exit;
     }
 
+    $parentescoLabels = [
+        'pai'               => 'Pai',
+        'mae'               => 'Mãe',
+        'responsavel_legal' => 'Responsável legal',
+    ];
+
     $turmasStmt = $pdo->prepare("
         SELECT t.id, t.nome, t.valor_mensalidade, t.promo_valor, t.promo_meses,
                q.nome AS quadra_nome, ta.data_entrada,
@@ -139,11 +145,29 @@ if ($id > 0) {
 .fpFlash { font-size: 11px; font-weight: 700; display: none; }
 .fpFlash--ok  { color: #7ecf7e; }
 .fpFlash--err { color: #ff5a5a; }
+/* Dar mais prazo (vencimento) */
+.fpPrazoWrap { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+.fpPrazoBtn {
+    background: none; border: 1px solid #333; border-radius: 5px;
+    color: #888; font-size: 11px; padding: 3px 8px; cursor: pointer;
+}
+.fpPrazoBtn:hover { border-color: #e5c200; color: #e5c200; }
+.fpPrazoInput {
+    background: #1a1a1a; border: 1px solid #333; border-radius: 6px;
+    color: #ddd; font-size: 12px; padding: 4px 6px;
+}
+.fpPrazoSave {
+    background: #e5c200; color: #111; border: none; border-radius: 5px;
+    font-size: 11px; font-weight: 700; padding: 4px 9px; cursor: pointer;
+}
 /* Matrícula tag */
 .fpMatricula {
     display: inline-block; background: #1f1d00; color: #e5c200;
     border: 1px solid #3a3600; border-radius: 3px; font-size: 10px;
     padding: 1px 5px; margin-top: 3px; vertical-align: middle;
+}
+.fpMatricula--atraso {
+    background: #2a1414; color: #ff8080; border-color: #4a2020;
 }
 .faturasPanel__empty { text-align: center; color: #555; padding: 40px 0; font-size: 14px; }
 .faturasPanel__loading { text-align: center; color: #555; padding: 40px 0; }
@@ -177,6 +201,15 @@ if ($id > 0) {
                         + Cobrança extra
                     </button>
                     <?php if ($_SESSION['usuario']['nivel_acesso'] === 'admin'): ?>
+                    <button class="btn btn--outline btn--sm" id="btnAlterarSenha">
+                        &#128273; Alterar Senha
+                    </button>
+                    <?php if ($aluno['status'] === 'ativo'): ?>
+                    <button class="btn btn--outline btn--sm" id="btnVisaoAluno"
+                            data-id="<?= $aluno['id'] ?>" data-nome="<?= htmlspecialchars($aluno['nome']) ?>">
+                        &#128065; Visão do Aluno
+                    </button>
+                    <?php endif; ?>
                     <button class="btn btn--error"
                             id="btnExcluir"
                             data-id="<?= $aluno['id'] ?>"
@@ -262,6 +295,20 @@ if ($id > 0) {
                 </div>
 
                 <aside class="alunos__detailAside">
+
+                    <?php if (!empty($aluno['is_menor'])): ?>
+                    <div class="alunos__detalheCard">
+                        <div class="alunos__detalheGrupo">
+                            <h4>Dados do Responsável</h4>
+                            <ul class="alunos__detalheList">
+                                <li><span>Nome</span><strong><?= htmlspecialchars($aluno['responsavel_nome'] ?? '—') ?></strong></li>
+                                <li><span>Parentesco</span><strong><?= htmlspecialchars($parentescoLabels[$aluno['responsavel_parentesco']] ?? ($aluno['responsavel_parentesco'] ?? '—')) ?></strong></li>
+                                <li><span>CPF</span><strong><?= htmlspecialchars($aluno['responsavel_cpf'] ?? '—') ?></strong></li>
+                                <li><span>Celular</span><strong><?= htmlspecialchars($aluno['responsavel_celular'] ?? '—') ?></strong></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <?php endif; ?>
 
                     <?php if ($termoAluno): ?>
                     <div class="alunos__detalheCard alunos__termoCard">
@@ -479,6 +526,28 @@ if ($id > 0) {
                 <div class="confirmModal__actions cobrancaModal__actions">
                     <button class="btn btn--gray" id="cobrancaCancelar">Cancelar</button>
                     <button class="btn btn--primary" id="cobrancaSalvar">Criar cobrança</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de alterar senha do aluno -->
+        <div class="confirmModal" id="senhaModal">
+            <div class="confirmModal__box cobrancaModal__box">
+                <h3>Alterar senha do aluno</h3>
+                <p class="cobrancaModal__intro">
+                    Define uma nova senha de acesso para <strong><?= $aluno ? htmlspecialchars($aluno['nome']) : '' ?></strong>. Ele poderá trocá-la depois.
+                </p>
+                <div class="cobrancaModal__form">
+                    <label class="cobrancaModal__label">
+                        <span>Nova senha <em>*</em></span>
+                        <input type="text" id="senhaNova" class="input cobrancaModal__input"
+                               placeholder="Mínimo 6 caracteres" maxlength="100" autocomplete="off">
+                    </label>
+                </div>
+                <div id="senhaMsg" class="cobrancaModal__msg"></div>
+                <div class="confirmModal__actions cobrancaModal__actions">
+                    <button class="btn btn--gray" id="senhaCancelar">Cancelar</button>
+                    <button class="btn btn--primary" id="senhaSalvar">Salvar nova senha</button>
                 </div>
             </div>
         </div>

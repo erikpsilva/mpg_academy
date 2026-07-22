@@ -605,7 +605,7 @@ $(document).ready(() => {
         const turmaNome = btn.data('turma-nome');
         const labelOriginal = btn.text();
 
-        if (!confirm('Disparar lembrete de aula experimental por WhatsApp pra quem está agendado em "' + turmaNome + '" (hoje ou em 3 dias)?')) return;
+        if (!confirm('Disparar lembrete de aula experimental por WhatsApp pra quem está agendado em "' + turmaNome + '" (hoje, amanhã ou em 3 dias)?')) return;
 
         btn.prop('disabled', true).text('Enviando...');
         $.post(ADMIN_BASE_URL + '/services/disparar_lembrete_teste.php', { turma_id: turmaId }, (res) => {

@@ -1,4 +1,14 @@
 <style>
+.header__impersonating {
+    display: flex; align-items: center; gap: 10px; margin-right: 16px;
+    background: rgba(229, 194, 0, .1); border: 1px solid rgba(229, 194, 0, .35);
+    border-radius: 8px; padding: 8px 14px; font-size: 12px; color: #e5c200;
+}
+.header__impersonating strong { color: #fff; }
+.header__impersonating a {
+    color: #e5c200; font-weight: 700; text-decoration: underline; white-space: nowrap;
+}
+.header__impersonating a:hover { color: #fff; }
 .header__notif { position: relative; margin-right: 16px; }
 .header__notifBtn {
     position: relative; display: inline-flex; align-items: center; justify-content: center;
@@ -63,6 +73,13 @@
             </div>
 
             <div class="col-6 header__user">
+
+                <?php if (!empty($_SESSION['_impersonator'])): ?>
+                <div class="header__impersonating">
+                    Visualizando como <strong><?= htmlspecialchars($_SESSION['usuario']['nome_completo']) ?></strong>
+                    <a href="<?= ADMIN_BASE_URL ?>/services/impersonate_stop.php">Voltar para admin</a>
+                </div>
+                <?php endif; ?>
 
                 <!-- Sino de notificações -->
                 <div class="header__notif" id="headerNotif">

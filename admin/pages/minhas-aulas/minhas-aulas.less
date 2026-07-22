@@ -1,3 +1,57 @@
+// ── Filtro de mês (Histórico de Aulas — admin) ────────────────────────────────
+.historicoAulas__mesFiltro {
+    align-items: center;
+    display: flex;
+    gap: 14px;
+    margin-bottom: 24px;
+}
+
+.historicoAulas__mesNav {
+    align-items: center;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid @borderColor;
+    border-radius: 8px;
+    color: rgba(255,255,255,0.7);
+    display: inline-flex;
+    height: 32px;
+    justify-content: center;
+    text-decoration: none;
+    width: 32px;
+    .transition(0.15s all);
+
+    &:hover { border-color: @alert; color: @alert; }
+}
+
+.historicoAulas__mesLabel {
+    align-items: center;
+    color: @white;
+    display: inline-flex;
+    font-size: 17px;
+    font-weight: @bold;
+    gap: 10px;
+    min-width: 200px;
+    position: relative;
+    text-align: center;
+
+    input[type="month"] {
+        background: transparent;
+        border: 0;
+        color: transparent;
+        cursor: pointer;
+        height: 100%;
+        left: 0;
+        position: absolute;
+        top: 0;
+        width: 100%;
+
+        &::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+            filter: invert(1);
+            opacity: .7;
+        }
+    }
+}
+
 // ── Minhas Aulas (área do professor) ─────────────────────────────────────────
 
 .minhasAulas {
@@ -148,6 +202,7 @@
 
         &--falta      { background: rgba(239,68,68,.12); color: #f87171; }
         &--programada { background: rgba(255,255,255,.06); color: rgba(255,255,255,.4); }
+        &--cancelada  { background: rgba(148,163,184,.12); color: #94a3b8; }
     }
 
     &__btn {

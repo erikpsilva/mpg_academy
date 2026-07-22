@@ -9,7 +9,7 @@ require_once dirname(__FILE__, 3) . '/config/database.php';
 $pdo = getDbConnection();
 
 $stmt = $pdo->prepare("
-    SELECT t.id, t.nome, t.nivel, t.genero, t.valor_mensalidade, t.promo_valor, t.promo_meses,
+    SELECT t.id, t.nome, t.nivel, t.genero, t.faixa_etaria, t.valor_mensalidade, t.promo_valor, t.promo_meses,
            q.nome AS quadra_nome,
            CONCAT(q.rua, ', ', q.numero, ' – ', q.bairro, ', ', q.cidade, '/', q.estado) AS quadra_endereco,
            GROUP_CONCAT(

@@ -37,6 +37,12 @@ try {
         ON DUPLICATE KEY UPDATE tipo = VALUES(tipo), observacao = VALUES(observacao)
     ")->execute([$profId, $turmaId, $data, $tipo, $obs]);
 
+    // Uma falta anula qualquer marcação de "aula concluída" pro mesmo dia — sem isso, o dia
+    // continuaria contando como aula dada (e, portanto, cobrável) mesmo depois de corrigido.
+    $pdo->prepare("
+        DELETE FROM professor_aulas_concluidas WHERE professor_id = ? AND turma_id = ? AND data = ?
+    ")->execute([$profId, $turmaId, $data]);
+
     echo json_encode(['success' => true]);
 } catch (PDOException $e) {
     http_response_code(500);

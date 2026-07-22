@@ -355,6 +355,73 @@ const initDetalhe = () => {
         });
     });
 
+    // ── Alterar senha do aluno ──────────────────────────────────────────────
+    const senhaModal = document.getElementById('senhaModal');
+    const btnSenha   = document.getElementById('btnAlterarSenha');
+
+    if (btnSenha && senhaModal) {
+        btnSenha.addEventListener('click', () => {
+            document.getElementById('senhaNova').value    = '';
+            document.getElementById('senhaMsg').style.display = 'none';
+            senhaModal.classList.add('confirmModal--open');
+        });
+
+        document.getElementById('senhaCancelar').addEventListener('click', () => {
+            senhaModal.classList.remove('confirmModal--open');
+        });
+
+        senhaModal.addEventListener('click', e => {
+            if (e.target === senhaModal) senhaModal.classList.remove('confirmModal--open');
+        });
+
+        document.getElementById('senhaSalvar').addEventListener('click', function () {
+            const btn   = this;
+            const senha = document.getElementById('senhaNova').value;
+            const msg   = document.getElementById('senhaMsg');
+
+            if (senha.length < 6) {
+                msg.textContent   = 'A senha precisa ter no mínimo 6 caracteres.';
+                msg.style.color   = '#cf7e7e';
+                msg.style.display = '';
+                return;
+            }
+
+            btn.disabled    = true;
+            btn.textContent = 'Salvando...';
+            msg.style.display = 'none';
+
+            const fd = new FormData();
+            fd.append('id',    ALUNO_ID);
+            fd.append('senha', senha);
+
+            fetch(ADMIN_BASE_URL + '/services/reset_senha_aluno.php', {
+                method: 'POST', credentials: 'same-origin', body: fd,
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    msg.textContent   = 'Senha alterada com sucesso!';
+                    msg.style.color   = '#7ecf7e';
+                    msg.style.display = '';
+                    setTimeout(() => { senhaModal.classList.remove('confirmModal--open'); }, 1200);
+                } else {
+                    msg.textContent   = data.message || 'Erro ao alterar senha.';
+                    msg.style.color   = '#cf7e7e';
+                    msg.style.display = '';
+                }
+                btn.disabled    = false;
+                btn.textContent = 'Salvar nova senha';
+            })
+            .catch(() => {
+                msg.textContent   = 'Erro de comunicação.';
+                msg.style.color   = '#cf7e7e';
+                msg.style.display = '';
+                btn.disabled      = false;
+                btn.textContent   = 'Salvar nova senha';
+            });
+        });
+    }
+
     // ── Cobrança extra ───────────────────────────────────────────────────────
     const cobrancaModal = document.getElementById('cobrancaModal');
     const btnNova       = document.getElementById('btnNovaCobranca');
@@ -437,6 +504,32 @@ const initDetalhe = () => {
         });
     }
 
+    // Visão do Aluno (impersonar)
+    $('#btnVisaoAluno').on('click', function () {
+        const btn = $(this);
+        const nome = btn.data('nome');
+        if (!confirm('Entrar como ' + nome + '? Você verá o site exatamente como o aluno vê.')) return;
+        btn.prop('disabled', true);
+        const fd = new FormData();
+        fd.append('aluno_id', btn.data('id'));
+        fetch(ADMIN_BASE_URL + '/services/impersonate_aluno_start.php', {
+            method: 'POST', credentials: 'same-origin', body: fd,
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = ADMIN_BASE_URL.replace('/admin', '') + '/areadoaluno';
+            } else {
+                alert(data.message || 'Erro ao entrar como aluno.');
+                btn.prop('disabled', false);
+            }
+        })
+        .catch(() => {
+            alert('Erro de comunicação.');
+            btn.prop('disabled', false);
+        });
+    });
+
     // Exclusão do aluno
     let alunoIdParaExcluir = 0;
 
@@ -513,6 +606,13 @@ const renderFaturas = (lista) => {
         const proporcionalTag = m.proporcional_valor && parseFloat(m.proporcional_valor) > 0
             ? '<br><span class="fpMatricula">+ proporcional ' + fmtVal(m.proporcional_valor) + '</span>'
             : '';
+        const descontoAulaTag = m.desconto_aula_valor && parseFloat(m.desconto_aula_valor) > 0
+            ? '<br><span class="fpMatricula">- ' + fmtVal(m.desconto_aula_valor) + ' aula(s) cancelada(s)</span>'
+            : '';
+        const jurosTag = m.status === 'atrasado' && m.valor_total_atraso
+            ? '<br><span class="fpMatricula fpMatricula--atraso">+ ' + fmtVal((parseFloat(m.multa) + parseFloat(m.juros)).toFixed(2))
+                + ' multa/juros (' + m.dias_atraso + 'd) &rarr; total ' + fmtVal(m.valor_total_atraso) + '</span>'
+            : '';
 
         const colorClass = m.status === 'pago' ? 'is-pago' : (m.status === 'atrasado' ? 'is-atrasado' : 'is-pendente');
 
@@ -527,11 +627,19 @@ const renderFaturas = (lista) => {
             ? '<span style="color:#555">—</span>'
             : $('<span>').text(m.turma_nome).html();
 
+        const prazoWrap = m.status !== 'pago'
+            ? '<div class="fpPrazoWrap" data-id="' + m.id + '">'
+                + '<button type="button" class="fpPrazoBtn" title="Dar mais prazo (remove multa/juros se a nova data não estiver vencida)">Prazo</button>'
+                + '<input type="date" class="fpPrazoInput" style="display:none" value="' + m.vencimento + '">'
+                + '<button type="button" class="fpPrazoSave" style="display:none">Salvar</button>'
+              + '</div>'
+            : '';
+
         return '<tr data-id="' + m.id + '">'
             + '<td>' + refCell + '</td>'
             + '<td>' + turmaCell + '</td>'
-            + '<td>' + fmtVal(m.valor) + proporcionalTag + matriculaTag + '</td>'
-            + '<td>' + fmtData(m.vencimento) + '</td>'
+            + '<td>' + fmtVal(m.valor) + proporcionalTag + matriculaTag + descontoAulaTag + jurosTag + '</td>'
+            + '<td>' + fmtData(m.vencimento) + prazoWrap + '</td>'
             + '<td class="fpCellPago">' + (m.data_pagamento ? fmtData(m.data_pagamento) : '<span style="color:#444">—</span>') + '</td>'
             + '<td>'
                 + '<div class="fpStatusWrap">'
@@ -556,6 +664,53 @@ const renderFaturas = (lista) => {
         + '</table>';
 
     // Bind events
+
+    // Dar mais prazo (estende vencimento; se a nova data não estiver vencida, some com a multa/juros)
+    body.querySelectorAll('.fpPrazoBtn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const wrap = this.closest('.fpPrazoWrap');
+            wrap.querySelector('.fpPrazoInput').style.display = '';
+            wrap.querySelector('.fpPrazoSave').style.display = '';
+            this.style.display = 'none';
+        });
+    });
+
+    body.querySelectorAll('.fpPrazoSave').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const wrap     = this.closest('.fpPrazoWrap');
+            const id       = wrap.dataset.id;
+            const novaData = wrap.querySelector('.fpPrazoInput').value;
+            if (!novaData) return;
+
+            const novaDataFmt = novaData.split('-').reverse().join('/');
+            if (!confirm('Alterar o vencimento dessa fatura para ' + novaDataFmt + '? Se a nova data não estiver vencida, a fatura sai de atraso e a multa/juros somem.')) return;
+
+            this.disabled = true;
+            const fd = new FormData();
+            fd.append('id', id);
+            fd.append('novo_vencimento', novaData);
+
+            fetch(ADMIN_BASE_URL + '/services/estender_prazo_mensalidade.php', {
+                method: 'POST', credentials: 'same-origin', body: fd,
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    fetch(ADMIN_BASE_URL + '/services/get_mensalidades_aluno.php?aluno_id=' + ALUNO_ID, { credentials: 'same-origin' })
+                        .then(r => r.json())
+                        .then(d => { if (d.success) renderFaturas(d.mensalidades); });
+                } else {
+                    alert(data.message || 'Erro ao alterar prazo.');
+                    this.disabled = false;
+                }
+            })
+            .catch(() => {
+                alert('Erro de comunicação.');
+                this.disabled = false;
+            });
+        });
+    });
+
     body.querySelectorAll('.fpStatusSelect').forEach(sel => {
         sel.addEventListener('change', function () {
             const wrap    = this.closest('.fpStatusWrap');
@@ -568,6 +723,7 @@ const renderFaturas = (lista) => {
             if (this.value === 'pago') {
                 dateInp.style.display = '';
                 saveBtn.style.display = '';
+                salvarStatusFatura(this.closest('tr').dataset.id, 'pago', dateInp.value, wrap);
             } else {
                 dateInp.style.display = 'none';
                 saveBtn.style.display = 'none';

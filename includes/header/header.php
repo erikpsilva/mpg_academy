@@ -12,20 +12,32 @@ if ($aluno && !empty($aluno['id'])) {
     if (!defined('ROOT')) define('ROOT', dirname(__FILE__, 3));
     require_once ROOT . '/config/database.php';
     $__pdo  = getDbConnection();
-    $__stmt = $__pdo->prepare("SELECT foto, nome, email, celular FROM alunos WHERE id = ?");
+    $__stmt = $__pdo->prepare("SELECT foto, nome, email, celular, termo_status FROM alunos WHERE id = ?");
     $__stmt->execute([$aluno['id']]);
     $__fresh = $__stmt->fetch(PDO::FETCH_ASSOC);
     if ($__fresh) {
-        $_SESSION['aluno']['foto']    = $__fresh['foto'];
-        $_SESSION['aluno']['nome']    = $__fresh['nome'];
-        $_SESSION['aluno']['email']   = $__fresh['email'];
-        $_SESSION['aluno']['celular'] = $__fresh['celular'];
+        $_SESSION['aluno']['foto']         = $__fresh['foto'];
+        $_SESSION['aluno']['nome']         = $__fresh['nome'];
+        $_SESSION['aluno']['email']        = $__fresh['email'];
+        $_SESSION['aluno']['celular']      = $__fresh['celular'];
+        $_SESSION['aluno']['termo_status'] = $__fresh['termo_status'];
         $aluno = $_SESSION['aluno'];
     }
 }
 
 $primeiroNome = $aluno ? explode(' ', $aluno['nome'])[0] : '';
 ?>
+<?php if (!empty($_SESSION['_impersonator_aluno'])): ?>
+<div style="position:relative;z-index:1001;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;background:#1a1a1a;color:#e5c200;font-size:13px;padding:9px 16px;text-align:center;">
+    Você (admin) está vendo o site como <strong style="color:#fff;"><?= htmlspecialchars($_SESSION['aluno']['nome'] ?? '') ?></strong>
+    <a href="<?= BASE_URL ?>/admin/services/impersonate_aluno_stop.php" style="color:#e5c200;font-weight:700;text-decoration:underline;">Voltar para admin</a>
+</div>
+<?php endif; ?>
+<?php if ($isStudentArea && $aluno && ($aluno['termo_status'] ?? '') === 'pendente'): ?>
+<a href="<?= BASE_URL ?>/termoresponsabilidade" style="position:relative;z-index:1001;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;background:#ffd500;color:#0b0d0f;font-size:13px;font-weight:800;padding:9px 16px;text-align:center;text-decoration:none;">
+    ⚠️ O aluno é menor de idade — o responsável precisa assinar o termo de responsabilidade. Clique aqui para assinar.
+</a>
+<?php endif; ?>
 <header class="header<?= $isStudentArea ? ' header--studentArea' : '' ?>">
     <div class="container">
         <div class="header__inner">

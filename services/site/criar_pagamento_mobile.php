@@ -39,17 +39,9 @@ if (!$mens) {
 
 // Calcula total correto no backend
 $valor = (float) $mens['valor'];
-$hoje  = new DateTime('today');
-$venc  = new DateTime($mens['vencimento']);
-$total = $valor;
-
-if ($mens['status'] === 'atrasado') {
-    $dias  = (int) $venc->diff($hoje)->days;
-    $multa = $valor * 0.05;
-    $base  = $valor + $multa;
-    $juros = $base * 0.005 * $dias;
-    $total = round($base + $juros, 2);
-}
+$total = $mens['status'] === 'atrasado'
+    ? mpCalcularMultaJuros($valor, $mens['vencimento'])['total']
+    : $valor;
 
 $meses = ['01'=>'Jan','02'=>'Fev','03'=>'Mar','04'=>'Abr','05'=>'Mai','06'=>'Jun',
           '07'=>'Jul','08'=>'Ago','09'=>'Set','10'=>'Out','11'=>'Nov','12'=>'Dez'];
@@ -86,13 +78,9 @@ $mpPaymentId = $body['id'] ?? null;
 
 if (in_array($status, ['approved','pending','in_process'], true)) {
     if ($status === 'approved') {
-        $pdo->prepare("UPDATE mensalidades SET status='pago', data_pagamento=CURDATE(), mp_payment_id=?, atualizado_em=NOW() WHERE id=?")
-            ->execute([$mpPaymentId, $mensalidadeId]);
-        // Registra no livro-caixa
-        try {
-            $pdo->prepare("INSERT IGNORE INTO lancamentos_financeiros (competencia,data,tipo,categoria,descricao,valor,origem,referencia_tipo,referencia_id) VALUES (?,CURDATE(),'receita','mensalidade',?,?,'auto','mensalidade',?)")
-                ->execute([date('Y-m'), 'Mensalidade ' . $refLabel . ' — ' . $aluno['nome'], $total, $mensalidadeId]);
-        } catch (PDOException $e) {}
+        // $total pode incluir multa/juros quando a fatura está atrasada — passado como
+        // valorCobrado pra refletir no lançamento de receita e no cálculo da taxa do MP.
+        mpMarcarMensalidadePaga($pdo, $mensalidadeId, (string) $mpPaymentId, $body, $total);
     }
     echo json_encode(['success'=>true,'status'=>$status,'payment_id'=>$body['id']??null]);
 } else {

@@ -64,3 +64,13 @@ function formatPhoneZapi(string $phone): string {
     // Adiciona DDI 55
     return '55' . $digits;
 }
+
+/**
+ * Gera um link do Google Maps que busca exatamente o endereço informado.
+ * Usado nas mensagens de WhatsApp em vez de deixar o WhatsApp tentar
+ * detectar/geocodificar o endereço em texto puro sozinho (o que pode
+ * levar pro lugar errado quando o parser dele erra a leitura).
+ */
+function googleMapsLink(string $endereco): string {
+    return 'https://www.google.com/maps/search/?api=1&query=' . urlencode($endereco);
+}

@@ -57,7 +57,7 @@ function verificarPagamentoMP(PDO $pdo, string $accessToken, int $mensalidadeId,
 
     if (!$payment || ($payment['status'] ?? '') !== 'approved') return false;
 
-    return mpMarcarMensalidadePaga($pdo, $mensalidadeId, (string) ($payment['id'] ?? $mpPaymentId));
+    return mpMarcarMensalidadePaga($pdo, $mensalidadeId, (string) ($payment['id'] ?? $mpPaymentId), $payment);
 }
 
 foreach ($pendentes as $m) {

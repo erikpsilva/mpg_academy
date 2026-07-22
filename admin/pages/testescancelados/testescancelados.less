@@ -1,0 +1,19 @@
+@import "../../styles/modules/variables.less";
+@import "../../styles/modules/mixin.less";
+
+.badge--cancelada {
+    background: rgba(239,68,68,.12);
+    border: 1px solid rgba(239,68,68,.3);
+    color: #f87171;
+}
+
+.btn--acaoTodos.btn--reagendarTeste {
+    background: rgba(99,179,237,.12);
+    border: 1px solid rgba(99,179,237,.3);
+    color: #63b3ed;
+
+    &:hover:not(:disabled) {
+        background: #63b3ed;
+        color: #111;
+    }
+}

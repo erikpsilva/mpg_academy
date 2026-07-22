@@ -45,12 +45,12 @@ if (empty($_SESSION['_mens_auto']) || $_SESSION['_mens_auto'] !== $_hoje) {
         $__pdo = getDbConnection();
 
         // Mesma lógica de gerar_mensalidades.php: fatura é sempre para o mês SEGUINTE
-        // (modelo pré-pago, vencimento dia 5). Usar o mês atual aqui geraria uma fatura
+        // (modelo pré-pago, vencimento dia 10). Usar o mês atual aqui geraria uma fatura
         // duplicada pra quem entrou no meio do mês, já que a fatura de entrada combinada
         // (proporcional + mês seguinte) é criada com referencia = mês seguinte, não o atual.
         $__vencMes = new DateTime('first day of next month');
         $__ref     = $__vencMes->format('Y-m');
-        $__venc    = $__vencMes->format('Y-m') . '-05';
+        $__venc    = $__vencMes->format('Y-m') . '-10';
 
         $__ativos = $__pdo->query("
             SELECT ta.aluno_id, ta.turma_id,
@@ -92,5 +92,25 @@ if (empty($_SESSION['_mens_auto']) || $_SESSION['_mens_auto'] !== $_hoje) {
         $_SESSION['_mens_auto'] = $_hoje;
     } catch (Throwable $__e) {
         error_log('[mpg-auto-mens] ' . $__e->getMessage());
+    }
+}
+
+// ── Cobrança automática de mensalidades (uma vez por dia por sessão) ──────────
+// Fallback caso o cron do cPanel (cron/cobranca_automatica.php) não esteja configurado
+// ou não rode num dia — sem isso, um aluno com cartão salvo e vencimento hoje só seria
+// cobrado quando o cron externo rodasse, o que depende de configuração fora do sistema.
+// Nunca roda em ambiente local (APP_IS_LOCAL) — evita disparar cobrança real no Mercado
+// Pago sempre que alguém navega o painel admin durante desenvolvimento/testes.
+require_once ROOT . '/config/app.php';
+if (!APP_IS_LOCAL && (empty($_SESSION['_cobranca_auto']) || $_SESSION['_cobranca_auto'] !== $_hoje)) {
+    try {
+        require_once ROOT . '/config/database.php';
+        require_once ROOT . '/config/mercadopago.php';
+        $__pdoCobranca = getDbConnection();
+        mpExecutarCobrancaAutomatica($__pdoCobranca);
+
+        $_SESSION['_cobranca_auto'] = $_hoje;
+    } catch (Throwable $__e) {
+        error_log('[mpg-auto-cobranca] ' . $__e->getMessage());
     }
 }

@@ -152,6 +152,14 @@ const addTurma = (dbId) => {
                     '<option value="avancado">Avançado</option>' +
                 '</select>' +
             '</div>' +
+            '<div class="formGroup__item">' +
+                '<label>Faixa Etária</label>' +
+                '<select class="input turma-faixa-etaria">' +
+                    '<option value="adulto">Adulto</option>' +
+                    '<option value="adolescente">Adolescente</option>' +
+                    '<option value="infantil">Infantil</option>' +
+                '</select>' +
+            '</div>' +
         '</div>' +
         '<div class="turma-item__promoToggle">' +
             '<label class="cadastrarQuadra__checkLabel">' +
@@ -236,6 +244,7 @@ const prefillEdit = (editData) => {
         if (t.valor_mensalidade != null) turmaEl.find('.turma-valor').val(t.valor_mensalidade);
         turmaEl.find('.turma-genero').val(t.genero || 'misto');
         turmaEl.find('.turma-nivel').val(t.nivel  || 'iniciante');
+        turmaEl.find('.turma-faixa-etaria').val(t.faixa_etaria || 'adulto');
         if (t.promo_valor != null && t.promo_meses != null) {
             turmaEl.find('.turma-promo-toggle').prop('checked', true);
             turmaEl.find('.turma-item__promoFields').show();
@@ -304,8 +313,9 @@ const coletarDados = () => {
         const valorRaw = $(this).find('.turma-valor').val();
         const valor = valorRaw !== '' ? parseFloat(valorRaw) : null;
 
-        const genero = $(this).find('.turma-genero').val() || 'misto';
-        const nivel  = $(this).find('.turma-nivel').val()  || 'iniciante';
+        const genero      = $(this).find('.turma-genero').val()       || 'misto';
+        const nivel       = $(this).find('.turma-nivel').val()        || 'iniciante';
+        const faixaEtaria = $(this).find('.turma-faixa-etaria').val() || 'adulto';
 
         const temPromo   = $(this).find('.turma-promo-toggle').is(':checked');
         const promoValor = temPromo ? (parseFloat($(this).find('.turma-promo-valor').val()) || null) : null;
@@ -315,7 +325,7 @@ const coletarDados = () => {
         const maxAlunos = maxRaw !== '' ? (parseInt(maxRaw) || null) : null;
         const dbId      = $(this).data('dbId') || null; // data-db-id → jQuery converte para dbId
 
-        turmas.push({ id: dbId, nome, horario_indices: indices, valor_mensalidade: valor, genero, nivel, promo_valor: promoValor, promo_meses: promoMeses, max_alunos: maxAlunos });
+        turmas.push({ id: dbId, nome, horario_indices: indices, valor_mensalidade: valor, genero, nivel, faixa_etaria: faixaEtaria, promo_valor: promoValor, promo_meses: promoMeses, max_alunos: maxAlunos });
     });
 
     return {

@@ -12,7 +12,54 @@ define('MP_ACCESS_TOKEN_TEST', 'APP_USR-3700588200978728-053113-3b92864eb4a9feb7
 define('MP_WEBHOOK_SECRET_PROD', '8ece70705c82ef0423d89b0099e6df8bef86804614d1608e22e892078538b658');
 define('MP_WEBHOOK_SECRET_TEST', '');
 
+// ─── Tradução dos códigos de rejeição mais comuns do MP (pra log/diagnóstico) ──
+const MP_STATUS_DETAIL_PT = [
+    'cc_rejected_insufficient_amount'        => 'saldo/limite insuficiente',
+    'cc_rejected_bad_filled_security_code'   => 'CVV incorreto ou não fornecido — cartão exige revalidação, não suporta cobrança recorrente sem CVV',
+    'cc_rejected_bad_filled_date'            => 'data de validade incorreta',
+    'cc_rejected_bad_filled_card_number'     => 'número do cartão incorreto',
+    'cc_rejected_bad_filled_other'           => 'dado do cartão incorreto',
+    'cc_rejected_call_for_authorize'         => 'banco exige autorização manual (aluno precisa ligar pro banco)',
+    'cc_rejected_card_disabled'              => 'cartão desabilitado — aluno precisa ligar pro banco',
+    'cc_rejected_card_error'                 => 'não foi possível processar o cartão',
+    'cc_rejected_duplicated_payment'         => 'pagamento duplicado (já existe um igual recente)',
+    'cc_rejected_high_risk'                  => 'recusado por análise antifraude do Mercado Pago',
+    'cc_rejected_max_attempts'               => 'excedeu tentativas com esse cartão',
+    'cc_rejected_other_reason'               => 'recusado pelo banco emissor (motivo genérico, sem detalhe)',
+    'cc_rejected_invalid_installments'       => 'parcelamento inválido',
+    'cc_rejected_blacklist'                  => 'cartão/titular bloqueado',
+];
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/**
+ * Calcula multa (5%) + juros (0,5% ao dia) de uma fatura atrasada — mesma regra usada
+ * em toda cobrança (site, mobile, cobrança automática). Se a fatura não estiver
+ * vencida, retorna tudo zerado e total = valor original.
+ */
+function mpCalcularMultaJuros(float $valor, string $vencimento, ?string $hoje = null): array
+{
+    $hoje   = $hoje ?? date('Y-m-d');
+    $vencDt = new DateTime(substr($vencimento, 0, 10));
+    $hojeDt = new DateTime(substr($hoje, 0, 10));
+
+    if ($hojeDt <= $vencDt) {
+        return ['dias_atraso' => 0, 'multa' => 0.0, 'juros' => 0.0, 'total' => round($valor, 2)];
+    }
+
+    $dias  = (int) $vencDt->diff($hojeDt)->days;
+    $multa = $valor * 0.05;
+    $base  = $valor + $multa;
+    $juros = $base * 0.005 * $dias;
+    $total = round($base + $juros, 2);
+
+    return [
+        'dias_atraso' => $dias,
+        'multa'       => round($multa, 2),
+        'juros'       => round($juros, 2),
+        'total'       => $total,
+    ];
+}
 
 function mpModoTeste(PDO $pdo): bool
 {
@@ -156,16 +203,46 @@ function mpRemoverCartaoCustomer(string $accessToken, string $customerId, string
 }
 
 /**
+ * Extrai a mensagem de erro mais útil de uma resposta de erro da API do MP. O detalhe real
+ * de rejeição/validação costuma vir em `cause[]` (não em `message`, que é genérica tipo
+ * "invalid parameters"), e a razão de recusa de pagamento vem em `status_detail` — junta os
+ * dois quando disponíveis, pra nunca perder informação de diagnóstico.
+ */
+function mpExtrairErroApi(array $body, ?string $statusDetail = null): string
+{
+    $partes = [];
+    if ($statusDetail) {
+        $partes[] = 'status_detail: ' . $statusDetail . (MP_STATUS_DETAIL_PT[$statusDetail] ?? '' ? ' (' . MP_STATUS_DETAIL_PT[$statusDetail] . ')' : '');
+    }
+    if (!empty($body['cause']) && is_array($body['cause'])) {
+        foreach ($body['cause'] as $c) {
+            $desc = trim($c['description'] ?? '');
+            if ($desc !== '') $partes[] = $desc . (isset($c['code']) ? ' (código ' . $c['code'] . ')' : '');
+        }
+    }
+    if (!$partes && !empty($body['message'])) $partes[] = $body['message'];
+
+    return $partes ? implode(' | ', $partes) : 'Erro desconhecido na API do Mercado Pago (resposta sem detalhe).';
+}
+
+/**
  * Gera um novo token de pagamento a partir de um cartão já salvo, sem precisar do CVV
  * nem do aluno presente — usado pela cobrança automática recorrente (cron).
+ * Retorna ['token' => string|null, 'erro' => string|null] — nunca descarta o motivo da
+ * falha (importante pra diagnosticar cartão sem suporte a cobrança recorrente sem CVV).
  */
-function mpGerarTokenCartaoSalvo(string $accessToken, string $cardId, string $customerId): ?string
+function mpGerarTokenCartaoSalvo(string $accessToken, string $cardId, string $customerId): array
 {
-    $resp = mpRequest($accessToken, 'POST', '/v1/card_tokens', [
+    $resp  = mpRequest($accessToken, 'POST', '/v1/card_tokens', [
         'card_id'     => $cardId,
         'customer_id' => $customerId,
     ]);
-    return $resp['body']['id'] ?? null;
+    $token = $resp['body']['id'] ?? null;
+
+    return [
+        'token' => $token,
+        'erro'  => $token ? null : mpExtrairErroApi($resp['body']),
+    ];
 }
 
 /**
@@ -180,36 +257,222 @@ function mpConsultarPagamento(string $accessToken, string $paymentId): ?array
 }
 
 /**
+ * Extrai taxa e valor líquido do objeto de pagamento retornado pela API do MP.
+ * Preferência: transaction_details.net_received_amount (valor que efetivamente cai
+ * na conta). Fallback: soma de fee_details[].amount. Retorna [taxa, liquido, metodo]
+ * — qualquer um pode vir null se o payload não trouxer essa informação (ex.: pagamento
+ * manual fora do MP, ou resposta antiga sem esses campos).
+ */
+function mpExtrairTaxaELiquido(array $payment, float $valorBruto): array
+{
+    $metodo = $payment['payment_type_id'] ?? null;
+
+    $liquido = $payment['transaction_details']['net_received_amount'] ?? null;
+    if ($liquido !== null) {
+        $liquido = (float) $liquido;
+        $taxa    = round($valorBruto - $liquido, 2);
+        return [$taxa, $liquido, $metodo];
+    }
+
+    if (!empty($payment['fee_details']) && is_array($payment['fee_details'])) {
+        $taxa = round(array_sum(array_column($payment['fee_details'], 'amount')), 2);
+        return [$taxa, round($valorBruto - $taxa, 2), $metodo];
+    }
+
+    return [null, null, $metodo];
+}
+
+/**
  * Marca uma mensalidade como paga e lança no financeiro. Idempotente: se já estiver
  * paga, não faz nada (protege contra notificações duplicadas do MP, que reenvia
  * webhooks até receber 200).
+ *
+ * @param array|null $payment      Objeto de pagamento completo retornado pela API do MP
+ *                                  (mpConsultarPagamento/mpCriarPagamento) — usado pra
+ *                                  registrar taxa/valor líquido/forma de pagamento. Null
+ *                                  quando não há esses dados (não deve acontecer nos fluxos
+ *                                  via MP, mas o parâmetro é opcional por segurança).
+ * @param float|null $valorCobrado Valor realmente cobrado nesse pagamento, quando diferente
+ *                                  de mensalidades.valor (ex.: fatura atrasada com multa/juros
+ *                                  somados na hora de cobrar). Default: usa mensalidades.valor.
+ *                                  Nunca sobrescreve a coluna valor — só afeta o lançamento de
+ *                                  receita e o cálculo da taxa/líquido, que devem refletir o
+ *                                  valor real da transação no MP.
  */
-function mpMarcarMensalidadePaga(PDO $pdo, int $mensalidadeId, string $mpPaymentId): bool
+function mpMarcarMensalidadePaga(PDO $pdo, int $mensalidadeId, string $mpPaymentId, ?array $payment = null, ?float $valorCobrado = null): bool
 {
     $st = $pdo->prepare("SELECT id, valor, referencia, aluno_id, status FROM mensalidades WHERE id = ?");
     $st->execute([$mensalidadeId]);
     $mens = $st->fetch();
     if (!$mens || $mens['status'] === 'pago') return false;
 
+    $valorBruto = $valorCobrado ?? (float) $mens['valor'];
+    [$taxa, $liquido, $metodo] = $payment ? mpExtrairTaxaELiquido($payment, $valorBruto) : [null, null, null];
+
     $pdo->prepare("
         UPDATE mensalidades
-        SET status = 'pago', data_pagamento = COALESCE(data_pagamento, CURDATE()), mp_payment_id = ?, atualizado_em = NOW()
+        SET status = 'pago', data_pagamento = COALESCE(data_pagamento, CURDATE()), mp_payment_id = ?,
+            mp_taxa_valor = ?, mp_valor_liquido = ?, mp_payment_method = ?, atualizado_em = NOW()
         WHERE id = ? AND status != 'pago'
-    ")->execute([$mpPaymentId, $mensalidadeId]);
+    ")->execute([$mpPaymentId, $taxa, $liquido, $metodo, $mensalidadeId]);
 
     $stAluno = $pdo->prepare("SELECT nome FROM alunos WHERE id = ?");
     $stAluno->execute([$mens['aluno_id']]);
     $alunoNome = $stAluno->fetchColumn() ?: '';
 
-    $competencia = date('Y-m');
+    $competencia = $mens['referencia'];
     $descLanc    = 'Mensalidade ' . $mens['referencia'] . ' — ' . $alunoNome . ' (via MP)';
     try {
         $pdo->prepare("
             INSERT IGNORE INTO lancamentos_financeiros
                 (competencia, data, tipo, categoria, descricao, valor, origem, referencia_tipo, referencia_id)
             VALUES (?, CURDATE(), 'receita', 'mensalidade', ?, ?, 'auto', 'mensalidade', ?)
-        ")->execute([$competencia, $descLanc, $mens['valor'], $mensalidadeId]);
+        ")->execute([$competencia, $descLanc, $valorBruto, $mensalidadeId]);
     } catch (PDOException $e) {}
 
+    // Taxa do MP lançada como despesa separada — receita continua bruta (correto pra
+    // contabilidade/imposto), mas o Saldo em Caixa já reflete a realidade líquida.
+    if ($taxa !== null && $taxa > 0) {
+        $descTaxa = 'Taxa Mercado Pago — Mensalidade ' . $mens['referencia'] . ' — ' . $alunoNome;
+        try {
+            $pdo->prepare("
+                INSERT IGNORE INTO lancamentos_financeiros
+                    (competencia, data, tipo, categoria, descricao, valor, origem, referencia_tipo, referencia_id)
+                VALUES (?, CURDATE(), 'despesa', 'taxa_mercadopago', ?, ?, 'auto', 'mensalidade_taxa_mp', ?)
+            ")->execute([$competencia, $descTaxa, $taxa, $mensalidadeId]);
+        } catch (PDOException $e) {}
+    }
+
     return true;
+}
+
+/**
+ * Cobra automaticamente, via cartão salvo, todas as mensalidades pendentes/atrasadas já
+ * vencidas de alunos com auto_pagamento=1. Nunca tenta a mesma mensalidade duas vezes no
+ * mesmo dia (cobranca_automatica_log). Usada tanto pelo cron (cron/cobranca_automatica.php,
+ * disparado pelo cPanel) quanto por um fallback em admin/includes/auth_check.php — se o
+ * cron do cPanel não estiver configurado ou falhar, qualquer admin logando no painel no dia
+ * já dispara essa mesma cobrança, evitando depender só do agendamento externo.
+ *
+ * @return array ['sucesso' => int, 'falha' => int, 'detalhes_falha' => [['aluno' => string, 'motivo' => string], ...]]
+ */
+function mpExecutarCobrancaAutomatica(PDO $pdo): array
+{
+    $hoje        = (new DateTime('now', new DateTimeZone('America/Sao_Paulo')))->format('Y-m-d');
+    $accessToken = mpAccessToken($pdo);
+
+    // O JOIN só casa com tentativas de HOJE que já tiveram sucesso — assim, se o cron rodar
+    // mais de uma vez no mesmo dia (ex.: manhã e tarde), uma tentativa que falhou de manhã
+    // (cartão sem saldo, instabilidade da API etc.) continua elegível pra tentar de novo à
+    // tarde, em vez de esperar até o dia seguinte. Uma cobrança com sucesso nunca é repetida.
+    $st = $pdo->prepare("
+        SELECT m.id AS mensalidade_id, m.referencia, m.tipo, m.descricao, m.valor, m.vencimento, m.status,
+               a.id AS aluno_id, a.nome, a.mp_customer_id, a.mp_card_id
+        FROM mensalidades m
+        JOIN alunos a ON a.id = m.aluno_id
+        LEFT JOIN cobranca_automatica_log cl
+               ON cl.mensalidade_id = m.id AND cl.data_tentativa = ? AND cl.status = 'sucesso'
+        WHERE m.status IN ('pendente', 'atrasado')
+          AND DATE(m.vencimento) <= ?
+          AND a.auto_pagamento = 1
+          AND a.mp_customer_id IS NOT NULL
+          AND a.mp_card_id IS NOT NULL
+          AND cl.id IS NULL
+    ");
+    $st->execute([$hoje, $hoje]);
+    $mensalidades = $st->fetchAll(PDO::FETCH_ASSOC);
+
+    $sucesso       = 0;
+    $falha         = 0;
+    $detalhesFalha = [];
+
+    $meses = ['01'=>'Jan','02'=>'Fev','03'=>'Mar','04'=>'Abr','05'=>'Mai','06'=>'Jun',
+              '07'=>'Jul','08'=>'Ago','09'=>'Set','10'=>'Out','11'=>'Nov','12'=>'Dez'];
+
+    foreach ($mensalidades as $m) {
+        $valor = (float) $m['valor'];
+        $total = $m['status'] === 'atrasado'
+            ? mpCalcularMultaJuros($valor, $m['vencimento'], $hoje)['total']
+            : $valor;
+
+        $isAvulso = ($m['tipo'] ?? 'mensalidade') === 'avulso';
+        if ($isAvulso) {
+            $refLabel = $m['descricao'] ?? 'Cobrança extra';
+        } else {
+            [$refAno, $refMes] = explode('-', $m['referencia']);
+            $refLabel = ($meses[$refMes] ?? $refMes) . '/' . $refAno;
+        }
+
+        $tokenResult = mpGerarTokenCartaoSalvo($accessToken, $m['mp_card_id'], $m['mp_customer_id']);
+
+        if (!$tokenResult['token']) {
+            $motivoToken = 'Token do cartão: ' . $tokenResult['erro'];
+            mpLogCobrancaAutomatica($pdo, $m['aluno_id'], $m['mensalidade_id'], $hoje, 'falha', $motivoToken);
+            $detalhesFalha[] = ['aluno' => $m['nome'], 'motivo' => $motivoToken];
+            $falha++;
+            continue;
+        }
+        $cardToken = $tokenResult['token'];
+
+        $paymentData = [
+            'transaction_amount' => $total,
+            'token'              => $cardToken,
+            'description'        => 'MPG Academy — Mensalidade ' . $refLabel,
+            'installments'       => 1,
+            'payer'              => [
+                'type' => 'customer',
+                'id'   => $m['mp_customer_id'],
+            ],
+            'metadata' => ['mensalidade_id' => $m['mensalidade_id'], 'origem' => 'cobranca_automatica'],
+        ];
+
+        $result      = mpCriarPagamento($accessToken, $paymentData);
+        $body        = $result['body'];
+        $status      = $body['status'] ?? '';
+        $mpPaymentId = $body['id'] ?? null;
+
+        if ($status === 'approved') {
+            // $total pode incluir multa/juros quando a fatura está atrasada — passado como
+            // valorCobrado pra refletir no lançamento de receita e no cálculo da taxa do MP,
+            // sem sobrescrever mensalidades.valor (que continua sendo o valor "limpo" da fatura).
+            mpMarcarMensalidadePaga($pdo, $m['mensalidade_id'], (string) $mpPaymentId, $body, $total);
+
+            mpLogCobrancaAutomatica($pdo, $m['aluno_id'], $m['mensalidade_id'], $hoje, 'sucesso', null, $mpPaymentId);
+            $sucesso++;
+        } else {
+            $motivo = 'status: ' . ($status ?: 'sem resposta') . ' | ' . mpExtrairErroApi($body, $body['status_detail'] ?? null);
+            mpLogCobrancaAutomatica($pdo, $m['aluno_id'], $m['mensalidade_id'], $hoje, 'falha', $motivo, $mpPaymentId);
+            $detalhesFalha[] = ['aluno' => $m['nome'], 'motivo' => $motivo];
+            $falha++;
+        }
+    }
+
+    return ['sucesso' => $sucesso, 'falha' => $falha, 'detalhes_falha' => $detalhesFalha];
+}
+
+function mpLogCobrancaAutomatica(PDO $pdo, int $alunoId, int $mensalidadeId, string $hoje, string $status, ?string $motivo = null, ?string $mpPaymentId = null): void
+{
+    // motivo_falha é varchar(255) — trunca pra nunca estourar a coluna (o motivo agora pode
+    // incluir cause[] da API do MP, que às vezes é longo). E envolve em try/catch: uma falha
+    // ao GRAVAR o log nunca pode interromper o loop de cobrança dos próximos alunos.
+    if ($motivo !== null && strlen($motivo) > 255) {
+        $motivo = substr($motivo, 0, 252) . '...';
+    }
+
+    // uk_mensalidade_dia (mensalidade_id, data_tentativa) permite só 1 linha por dia — em vez
+    // de ignorar uma segunda tentativa no mesmo dia (ex.: rodada da tarde após falha de manhã),
+    // atualiza a linha existente pra refletir o resultado mais recente daquele dia.
+    try {
+        $pdo->prepare("
+            INSERT INTO cobranca_automatica_log (aluno_id, mensalidade_id, data_tentativa, status, motivo_falha, mp_payment_id)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+                status        = VALUES(status),
+                motivo_falha  = VALUES(motivo_falha),
+                mp_payment_id = VALUES(mp_payment_id),
+                criado_em     = NOW()
+        ")->execute([$alunoId, $mensalidadeId, $hoje, $status, $motivo, $mpPaymentId]);
+    } catch (PDOException $e) {
+        error_log('[mpg-cobranca-log] falha ao gravar log (mensalidade ' . $mensalidadeId . '): ' . $e->getMessage());
+    }
 }
