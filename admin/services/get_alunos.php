@@ -49,7 +49,9 @@ $stmtTotal = $pdo->prepare("SELECT COUNT(DISTINCT a.id) FROM alunos a $where");
 $stmtTotal->execute($params);
 $total = (int) $stmtTotal->fetchColumn();
 
-$totalGeral = (int) $pdo->query('SELECT COUNT(*) FROM alunos')->fetchColumn();
+$totalGeral   = (int) $pdo->query('SELECT COUNT(*) FROM alunos')->fetchColumn();
+$totalAtivos  = (int) $pdo->query("SELECT COUNT(*) FROM alunos WHERE status = 'ativo'")->fetchColumn();
+$totalInativos = $totalGeral - $totalAtivos;
 
 $efetivo = "
     IF(t.valor_mensalidade IS NULL, 0,
@@ -102,6 +104,8 @@ echo json_encode([
     'success'      => true,
     'total'        => $total,
     'totalGeral'   => $totalGeral,
+    'totalAtivos'  => $totalAtivos,
+    'totalInativos' => $totalInativos,
     'pagina'       => $pagina,
     'porPagina'    => $porPagina,
     'totalPaginas' => max(1, (int) ceil($total / $porPagina)),

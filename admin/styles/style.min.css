@@ -2868,6 +2868,18 @@ h6 span {
   text-align: right;
   box-shadow: 0px 0px 16px 0px rgba(0, 0, 0, 0.11);
 }
+.interessados__totalCard--ativos {
+  border-left-color: #4caf50;
+}
+.interessados__totalCard--ativos .interessados__totalNum {
+  color: #4caf50;
+}
+.interessados__totalCard--inativos {
+  border-left-color: #ff5a5a;
+}
+.interessados__totalCard--inativos .interessados__totalNum {
+  color: #ff5a5a;
+}
 .interessados__totalNum {
   color: #ffd500;
   display: block;
@@ -2987,6 +2999,17 @@ h6 span {
 .alunos__header p {
   color: rgba(255, 255, 255, 0.68);
   font-size: 14px;
+}
+.alunos__statsRow {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+.alunos__statsRow .interessados__totalCard {
+  padding: 12px 18px;
+}
+.alunos__statsRow .interessados__totalNum {
+  font-size: 26px;
 }
 .alunos__headerActions {
   align-items: center;

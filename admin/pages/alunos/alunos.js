@@ -128,6 +128,8 @@ const carregarAlunos = (pagina, busca, turmaId) => {
             return;
         }
         $('#totalGeral').text(res.totalGeral);
+        $('#totalAtivos').text(res.totalAtivos);
+        $('#totalInativos').text(res.totalInativos);
 
         const turmaSel  = $('#filtraTurma option:selected').text();
         const filtrando = turmaId > 0;
@@ -521,6 +523,117 @@ const initDetalhe = () => {
                 window.location.href = ADMIN_BASE_URL.replace('/admin', '') + '/areadoaluno';
             } else {
                 alert(data.message || 'Erro ao entrar como aluno.');
+                btn.prop('disabled', false);
+            }
+        })
+        .catch(() => {
+            alert('Erro de comunicação.');
+            btn.prop('disabled', false);
+        });
+    });
+
+    // ── Desativar / Reativar aluno ──────────────────────────────────────────────
+
+    $('#btnDesativarAluno').on('click', function () {
+        const alunoId = $(this).data('id');
+        $('#desativarNome').text($(this).data('nome'));
+        $('#desativarModal').data('aluno-id', alunoId).addClass('confirmModal--open');
+
+        const list = $('#desativarFaturasList');
+        list.html('<div class="desativarModal__loading">Carregando faturas...</div>');
+
+        fetch(ADMIN_BASE_URL + '/services/get_mensalidades_aluno.php?aluno_id=' + alunoId, {
+            credentials: 'same-origin',
+        })
+        .then(r => r.json())
+        .then(data => {
+            const abertas = (data.mensalidades || []).filter(m => m.status === 'pendente' || m.status === 'atrasado');
+            if (abertas.length === 0) {
+                list.html('<p class="desativarModal__empty">Este aluno não tem nenhuma fatura em aberto.</p>');
+                return;
+            }
+            list.html(abertas.map(m => {
+                const desc = m.tipo === 'avulso' ? (m.descricao || 'Cobrança avulsa') : ('Mensalidade ' + m.referencia);
+                const atrasadoTag = m.status === 'atrasado' ? ' <span class="is-atrasado">(atrasada)</span>' : '';
+                return '<div class="dfRow" data-mensalidade-id="' + m.id + '">'
+                    + '<div class="dfRow__info">'
+                        + '<div class="dfRow__ref">' + desc + ' — ' + fmtVal(m.valor) + '</div>'
+                        + '<div class="dfRow__meta">Vence em ' + fmtData(m.vencimento) + atrasadoTag + '</div>'
+                    + '</div>'
+                    + '<div class="dfRow__choice">'
+                        + '<label><input type="radio" name="df_' + m.id + '" value="manter" checked><span>Manter ativa</span></label>'
+                        + '<label><input type="radio" name="df_' + m.id + '" value="cancelar"><span>Cancelar</span></label>'
+                    + '</div>'
+                + '</div>';
+            }).join(''));
+        })
+        .catch(() => {
+            list.html('<p class="desativarModal__empty">Erro ao carregar faturas.</p>');
+        });
+    });
+
+    $('#desativarCancelar').on('click', () => {
+        $('#desativarModal').removeClass('confirmModal--open');
+    });
+
+    $('#desativarModal').on('click', function (e) {
+        if ($(e.target).is('#desativarModal')) $(this).removeClass('confirmModal--open');
+    });
+
+    $('#desativarConfirmar').on('click', function () {
+        const btn = $(this);
+        const alunoId = $('#desativarModal').data('aluno-id');
+        const msg = $('#desativarMsg');
+
+        const cancelarIds = [];
+        $('#desativarFaturasList .dfRow').each(function () {
+            const escolha = $(this).find('input[type="radio"]:checked').val();
+            if (escolha === 'cancelar') cancelarIds.push($(this).data('mensalidade-id'));
+        });
+
+        btn.prop('disabled', true).text('Desativando...');
+        msg.hide();
+
+        const fd = new FormData();
+        fd.append('id', alunoId);
+        cancelarIds.forEach(id => fd.append('cancelar[]', id));
+
+        fetch(ADMIN_BASE_URL + '/services/desativar_aluno.php', {
+            method: 'POST', credentials: 'same-origin', body: fd,
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                msg.text(data.message || 'Erro ao desativar aluno.').css('color', '#cf7e7e').show();
+                btn.prop('disabled', false).text('Desativar Aluno');
+            }
+        })
+        .catch(() => {
+            msg.text('Erro de comunicação.').css('color', '#cf7e7e').show();
+            btn.prop('disabled', false).text('Desativar Aluno');
+        });
+    });
+
+    $('#btnReativarAluno').on('click', function () {
+        const btn = $(this);
+        const nome = btn.data('nome');
+        if (!confirm('Reativar ' + nome + '? O aluno volta a poder logar e receber cobranças.')) return;
+        btn.prop('disabled', true);
+
+        const fd = new FormData();
+        fd.append('id', btn.data('id'));
+
+        fetch(ADMIN_BASE_URL + '/services/reativar_aluno.php', {
+            method: 'POST', credentials: 'same-origin', body: fd,
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert(data.message || 'Erro ao reativar aluno.');
                 btn.prop('disabled', false);
             }
         })

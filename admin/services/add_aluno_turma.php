@@ -111,10 +111,20 @@ $mensalidadesParaGerar = [];
 if ($turmaData && $turmaData['valor_mensalidade'] !== null) {
     $entrada     = new DateTime($dataInicio);
     $valorBase   = (float) $turmaData['valor_mensalidade'];
-    // Fatura de entrada tem só 3 dias de prazo pra pagamento, contados de HOJE (quando a
-    // cobrança é gerada) — não da data de entrada, que pode ser uma data futura (ex.: o
-    // próximo sábado que o aluno vai jogar), o que jogaria o vencimento pra muito mais longe.
-    $vencInicial = (new DateTime())->modify('+3 days')->format('Y-m-d');
+
+    // Se a entrada cai na 1ª semana do mês (até 3 dias antes do dia 10 — dia 1 a 7), o
+    // vencimento do dia 10 normal do ciclo já dá prazo suficiente: usa ele direto, sem
+    // fatura "de afobação". Só usa o prazo curto de 3 dias (contados de HOJE, não da
+    // entrada, que pode ser uma data futura) quando a entrada é tarde demais no mês pro
+    // dia 10 ainda servir de vencimento (dia 8+, ou dia 10 do mês de entrada já passado).
+    $diaEntrada = (int) $entrada->format('j');
+    $vencNormalCiclo = new DateTime($entrada->format('Y-m') . '-10');
+    $hoje = new DateTime();
+    if ($diaEntrada <= 7 && $vencNormalCiclo >= $hoje) {
+        $vencInicial = $vencNormalCiclo->format('Y-m-d');
+    } else {
+        $vencInicial = (clone $hoje)->modify('+3 days')->format('Y-m-d');
+    }
 
     $temPromo = $turmaData['promo_valor'] !== null
              && $turmaData['promo_meses'] !== null

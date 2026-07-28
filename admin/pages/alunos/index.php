@@ -171,6 +171,28 @@ if ($id > 0) {
 }
 .faturasPanel__empty { text-align: center; color: #555; padding: 40px 0; font-size: 14px; }
 .faturasPanel__loading { text-align: center; color: #555; padding: 40px 0; }
+
+/* ── Modal de desativação do aluno ──────────────────────────────────────── */
+.desativarModal__box { width: min(560px, 92vw); }
+.desativarModal__list { display: flex; flex-direction: column; gap: 10px; margin: 16px 0; max-height: 320px; overflow-y: auto; }
+.desativarModal__loading, .desativarModal__empty { text-align: center; color: #666; font-size: 13px; padding: 16px 0; }
+.dfRow {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    background: #111; border: 1px solid #1e1e1e; border-radius: 8px; padding: 12px 14px;
+}
+.dfRow__info { min-width: 0; }
+.dfRow__ref { font-size: 13px; font-weight: 700; color: #ddd; }
+.dfRow__meta { font-size: 11px; color: #777; margin-top: 2px; }
+.dfRow__meta .is-atrasado { color: #ff5a5a; }
+.dfRow__choice { display: flex; gap: 6px; flex-shrink: 0; }
+.dfRow__choice label {
+    display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700;
+    border: 1px solid #333; border-radius: 6px; padding: 6px 10px; cursor: pointer; color: #999;
+}
+.dfRow__choice input { display: none; }
+.dfRow__choice input:checked + span { color: inherit; }
+.dfRow__choice label:has(input[value="manter"]:checked) { border-color: #3a6b3a; color: #7ecf7e; background: rgba(126,207,126,.08); }
+.dfRow__choice label:has(input[value="cancelar"]:checked) { border-color: #6b3a3a; color: #ff5a5a; background: rgba(255,90,90,.08); }
 </style>
 </head>
 <body>
@@ -208,6 +230,15 @@ if ($id > 0) {
                     <button class="btn btn--outline btn--sm" id="btnVisaoAluno"
                             data-id="<?= $aluno['id'] ?>" data-nome="<?= htmlspecialchars($aluno['nome']) ?>">
                         &#128065; Visão do Aluno
+                    </button>
+                    <button class="btn btn--outline btn--sm" id="btnDesativarAluno"
+                            data-id="<?= $aluno['id'] ?>" data-nome="<?= htmlspecialchars($aluno['nome']) ?>">
+                        &#128683; Desativar Aluno
+                    </button>
+                    <?php else: ?>
+                    <button class="btn btn--outline btn--sm" id="btnReativarAluno"
+                            data-id="<?= $aluno['id'] ?>" data-nome="<?= htmlspecialchars($aluno['nome']) ?>">
+                        &#9989; Reativar Aluno
                     </button>
                     <?php endif; ?>
                     <button class="btn btn--error"
@@ -552,6 +583,25 @@ if ($id > 0) {
             </div>
         </div>
 
+        <!-- Modal de desativação do aluno -->
+        <div class="confirmModal" id="desativarModal">
+            <div class="confirmModal__box cobrancaModal__box desativarModal__box">
+                <h3>Desativar Aluno</h3>
+                <p class="cobrancaModal__intro">
+                    <strong id="desativarNome"></strong> não vai mais poder logar, e nenhuma mensalidade nova será gerada pra ele(a)
+                    a partir de agora. Escolha abaixo o que fazer com as faturas em aberto:
+                </p>
+                <div id="desativarFaturasList" class="desativarModal__list">
+                    <div class="desativarModal__loading">Carregando faturas...</div>
+                </div>
+                <div id="desativarMsg" class="cobrancaModal__msg"></div>
+                <div class="confirmModal__actions cobrancaModal__actions">
+                    <button class="btn btn--gray" id="desativarCancelar">Cancelar</button>
+                    <button class="btn btn--error" id="desativarConfirmar">Desativar Aluno</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Modal de confirmação de exclusão -->
         <div class="confirmModal" id="confirmModal">
             <div class="confirmModal__box">
@@ -575,9 +625,19 @@ if ($id > 0) {
                     <p>Alunos cadastrados na plataforma MPG Academy.</p>
                 </div>
                 <div class="col-md-4">
-                    <div class="interessados__totalCard">
-                        <span class="interessados__totalNum" id="totalGeral">—</span>
-                        <span class="interessados__totalLabel">Total de alunos</span>
+                    <div class="alunos__statsRow">
+                        <div class="interessados__totalCard">
+                            <span class="interessados__totalNum" id="totalGeral">—</span>
+                            <span class="interessados__totalLabel">Total de alunos</span>
+                        </div>
+                        <div class="interessados__totalCard interessados__totalCard--ativos">
+                            <span class="interessados__totalNum" id="totalAtivos">—</span>
+                            <span class="interessados__totalLabel">Ativos</span>
+                        </div>
+                        <div class="interessados__totalCard interessados__totalCard--inativos">
+                            <span class="interessados__totalNum" id="totalInativos">—</span>
+                            <span class="interessados__totalLabel">Inativos</span>
+                        </div>
                     </div>
                 </div>
             </div>
