@@ -13,6 +13,8 @@ header('Content-Type: application/json');
 
 require_once dirname(__FILE__, 3) . '/config/database.php';
 require_once dirname(__FILE__, 3) . '/config/mercadopago.php';
+require_once dirname(__FILE__, 3) . '/config/batebola.php';
+require_once dirname(__FILE__, 3) . '/config/uniformes.php';
 require_once dirname(__FILE__, 3) . '/config/app.php';
 
 $assinaturaValida = null; // null = não verificada (sem segredo configurado pra esse modo)
@@ -30,10 +32,16 @@ try {
         $secret      = mpWebhookSecret($pdo);
 
         // Se houver segredo configurado pro modo atual (teste/produção), exige assinatura válida.
+        //
+        // O manifest do HMAC usa o ID do pagamento — e ele precisa ser o ID REALMENTE recebido,
+        // não só o da query string. O MP nem sempre manda `data.id` na URL: quando a notificação
+        // vem só com o id no corpo JSON, $dataIdGet fica vazio e o manifest sai como "id:;...",
+        // que nunca bate. Era o que fazia notificações legítimas serem descartadas — pagamento
+        // aprovado no MP e fatura seguia pendente no sistema.
         if ($secret !== '') {
             $xSignature  = $_SERVER['HTTP_X_SIGNATURE']   ?? '';
             $xRequestId  = $_SERVER['HTTP_X_REQUEST_ID']  ?? '';
-            $assinaturaValida = mpValidarAssinaturaWebhook($secret, $xSignature, $xRequestId, (string) $dataIdGet);
+            $assinaturaValida = mpValidarAssinaturaWebhook($secret, $xSignature, $xRequestId, (string) $paymentId);
         }
 
         if ($assinaturaValida !== false) {
@@ -41,8 +49,15 @@ try {
 
             if ($payment && ($payment['status'] ?? '') === 'approved') {
                 $mensalidadeId = (int) ($payment['metadata']['mensalidade_id'] ?? 0);
+                $inscricaoId   = (int) ($payment['metadata']['batebola_inscricao_id'] ?? 0);
+                $pedidoUniforme = (int) ($payment['metadata']['pedido_uniforme_id'] ?? 0);
+
                 if ($mensalidadeId > 0) {
                     mpMarcarMensalidadePaga($pdo, $mensalidadeId, (string) $payment['id'], $payment);
+                } elseif ($inscricaoId > 0) {
+                    batebolaConfirmarInscricao($pdo, $inscricaoId, (string) $payment['id'], $payment);
+                } elseif ($pedidoUniforme > 0) {
+                    uniformeConfirmarPedido($pdo, $pedidoUniforme, (string) $payment['id'], $payment);
                 }
             }
         } else {

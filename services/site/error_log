@@ -1,3 +1,6 @@
 [05-May-2026 19:45:25 America/Sao_Paulo] [MPG DB] env=production host=localhost db=mpgacademy_mpg_db user=mpgacademy_mpg_db error=SQLSTATE[HY000] [1045] Access denied for user 'mpgacademy_mpg_db'@'localhost' (using password: YES)
 [05-May-2026 23:51:47 America/Sao_Paulo] [mpg-email] vendor/autoload.php nao encontrado — rode composer install
 [15-May-2026 18:57:59 America/Sao_Paulo] [MPG DB] env=production host=localhost db=mpgacademy_mpg_db user=mpgacademy error=SQLSTATE[HY000] [1045] Access denied for user 'mpgacademy'@'localhost' (using password: YES)
+[06-Aug-2026 20:04:20 America/Sao_Paulo] [mp_webhook] Assinatura inválida — notificação ignorada (payment_id=172443733690)
+[07-Aug-2026 09:53:46 America/Sao_Paulo] [mp_webhook] Assinatura inválida — notificação ignorada (payment_id=171614177399)
+[07-Aug-2026 09:54:41 America/Sao_Paulo] [mp_webhook] Assinatura inválida — notificação ignorada (payment_id=171614177399)

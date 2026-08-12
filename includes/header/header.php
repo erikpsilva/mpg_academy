@@ -5,7 +5,14 @@ $homeUrl = BASE_URL;
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-$aluno = $_SESSION['aluno'] ?? null;
+$aluno   = $_SESSION['aluno'] ?? null;
+$jogador = $_SESSION['jogador'] ?? null;
+
+$batebolaUrl      = $jogador ? BASE_URL . '/batebolainicio' : BASE_URL . '/batebola';
+$batebolaAtivo    = in_array($mainRoute ?? '', ['batebola', 'cadastrobatebola', 'batebolainicio', 'batebolameusdados', 'batebolapagamento'], true);
+$homeAtivo        = ($mainRoute ?? 'inicio') === 'inicio';
+$quemSomosAtivo   = ($mainRoute ?? '') === 'quemsomos';
+$turmasAtivo      = ($mainRoute ?? '') === 'turmastreino';
 
 // Sincroniza foto e dados do aluno com o banco (pode ter sido atualizado pelo app)
 if ($aluno && !empty($aluno['id'])) {
@@ -46,9 +53,10 @@ $primeiroNome = $aluno ? explode(' ', $aluno['nome'])[0] : '';
             </a>
 
             <nav class="header__nav" aria-label="Navegacao principal">
-                <a class="header__link header__link--active" href="<?= $homeUrl ?>">Home</a>
-                <a class="header__link" href="<?= BASE_URL ?>/quemsomos">Quem Somos</a>
-                <a class="header__link" href="<?= BASE_URL ?>/turmastreino">Turma e Valores</a>
+                <a class="header__link<?= $homeAtivo ? ' header__link--active' : '' ?>" href="<?= $homeUrl ?>">Home</a>
+                <a class="header__link<?= $quemSomosAtivo ? ' header__link--active' : '' ?>" href="<?= BASE_URL ?>/quemsomos">Quem Somos</a>
+                <a class="header__link<?= $turmasAtivo ? ' header__link--active' : '' ?>" href="<?= BASE_URL ?>/turmastreino">Turma e Valores</a>
+                <a class="header__link<?= $batebolaAtivo ? ' header__link--active' : '' ?>" href="<?= $batebolaUrl ?>">Bate Bola</a>
             </nav>
 
             <?php if ($aluno) : ?>
@@ -103,9 +111,10 @@ $primeiroNome = $aluno ? explode(' ', $aluno['nome'])[0] : '';
         </div>
 
         <nav class="headerMobileMenu__nav" aria-label="Menu mobile">
-            <a href="<?= $homeUrl ?>">Home</a>
-            <a href="<?= BASE_URL ?>/quemsomos">Quem Somos</a>
-            <a href="<?= BASE_URL ?>/turmastreino">Turma e Valores</a>
+            <a class="<?= $homeAtivo ? 'is-active' : '' ?>" href="<?= $homeUrl ?>">Home</a>
+            <a class="<?= $quemSomosAtivo ? 'is-active' : '' ?>" href="<?= BASE_URL ?>/quemsomos">Quem Somos</a>
+            <a class="<?= $turmasAtivo ? 'is-active' : '' ?>" href="<?= BASE_URL ?>/turmastreino">Turma e Valores</a>
+            <a class="<?= $batebolaAtivo ? 'is-active' : '' ?>" href="<?= $batebolaUrl ?>">Bate Bola</a>
             <?php if ($aluno) : ?>
                 <span class="headerMobileMenu__section">Area do Aluno</span>
                 <a href="<?= BASE_URL ?>/areadoaluno">Dashboard</a>

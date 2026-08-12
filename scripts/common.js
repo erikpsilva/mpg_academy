@@ -109,11 +109,26 @@ $(document).ready(function () {
             return;
         }
 
+        enviarLogin(form, message, submit, { email, senha });
+    });
+
+    /**
+     * Envia o login. Um mesmo e-mail pode ter mais de um cadastro — filho menor de idade
+     * usa o e-mail do responsável, e o responsável às vezes também é aluno. Quando a senha
+     * digitada serve pra mais de um perfil, o servidor devolve `escolher_perfil` e a lista;
+     * aí perguntamos quem está entrando e reenviamos com o `aluno_id` escolhido.
+     */
+    function enviarLogin(form, message, submit, dados) {
         submit.prop('disabled', true).text('Entrando...');
 
-        $.post(form.attr('action'), { email, senha }, function onSuccess(response) {
+        $.post(form.attr('action'), dados, function onSuccess(response) {
             if (response.success) {
                 window.location.href = form.data('redirect');
+                return;
+            }
+
+            if (response.escolher_perfil && Array.isArray(response.perfis)) {
+                mostrarSeletorPerfil(form, message, submit, dados, response);
                 return;
             }
 
@@ -124,7 +139,27 @@ $(document).ready(function () {
         }).always(function () {
             submit.prop('disabled', false).html('Entrar <i class="icon-go" aria-hidden="true"></i>');
         });
-    });
+    }
+
+    function mostrarSeletorPerfil(form, message, submit, dados, response) {
+        $('.loginModal__perfis').remove();
+        message.text(response.message || 'Escolha quem esta entrando.');
+
+        const lista = $('<div class="loginModal__perfis"></div>');
+
+        response.perfis.forEach(function (p) {
+            $('<button type="button" class="loginModal__perfil"></button>')
+                .text(p.nome + (p.is_menor ? ' (aluno menor)' : ''))
+                .on('click', function () {
+                    lista.remove();
+                    message.text('');
+                    enviarLogin(form, message, submit, $.extend({}, dados, { aluno_id: p.id }));
+                })
+                .appendTo(lista);
+        });
+
+        lista.insertAfter(message);
+    }
 
     $('.studentAreaSidebar a').on('click', closeStudentMenu);
 

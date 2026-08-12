@@ -120,7 +120,11 @@ if ($turmaData && $turmaData['valor_mensalidade'] !== null) {
     $diaEntrada = (int) $entrada->format('j');
     $vencNormalCiclo = new DateTime($entrada->format('Y-m') . '-10');
     $hoje = new DateTime();
-    if ($diaEntrada <= 7 && $vencNormalCiclo >= $hoje) {
+    // Entrada na 1ª semana do mês (dia 1 a 7, com o dia 10 do próprio mês ainda no futuro) =
+    // mensalidade CHEIA do mês, sem proporcional — o aluno já está lá pra praticamente o mês
+    // inteiro, então não faz sentido fatiar por aula, nem tem "afobação" de prazo curto.
+    $entradaSemanaCheia = $diaEntrada <= 7 && $vencNormalCiclo >= $hoje;
+    if ($entradaSemanaCheia) {
         $vencInicial = $vencNormalCiclo->format('Y-m-d');
     } else {
         $vencInicial = (clone $hoje)->modify('+3 days')->format('Y-m-d');
@@ -133,38 +137,57 @@ if ($turmaData && $turmaData['valor_mensalidade'] !== null) {
     // Ciclo continua fechando dia 30 e a geração mensal recorrente continua vencendo dia 10
     // (gerar_mensalidades.php / auth_check.php) — mas todo aluno novo já paga, na hora, o
     // proporcional das aulas que vai fazer no PRÓPRIO mês de entrada (não mais combinado
-    // com o mês seguinte). Vencimento curto (3 dias) pra essa fatura de entrada.
+    // com o mês seguinte), exceto quando $entradaSemanaCheia (mensalidade cheia, ver acima).
     if ($temPromo) {
         $promoValor = (float) $turmaData['promo_valor'];
         $promoMeses = (int) $turmaData['promo_meses'];
 
-        $proportional = calcProporcional($pdo, $turmaId, $entrada, $dataInicio, $promoValor);
+        if ($entradaSemanaCheia) {
+            $valorFatura  = $promoValor;
+            $proportional = null;
+        } else {
+            $proportional = calcProporcional($pdo, $turmaId, $entrada, $dataInicio, $promoValor);
+            $valorFatura  = round($proportional, 2);
+        }
 
         $mensalidadesParaGerar[] = [
             'referencia'         => $entrada->format('Y-m'),
-            'valor'              => round($proportional, 2),
+            'valor'              => $valorFatura,
             'proporcional_valor' => $proportional,
             'vencimento'         => $vencInicial,
         ];
 
-        // O mês de entrada (cobrado acima, proporcional ao valor promo) é um bônus à parte —
-        // não conta como um dos meses da promoção. Os promo_meses de preço promocional cheio
-        // começam a valer só a partir do mês SEGUINTE, aplicados pela geração mensal recorrente.
-        $nextMonth = new DateTime($entrada->format('Y-m') . '-01');
-        $nextMonth->modify('+1 month');
-        $fimPromo = clone $nextMonth;
-        $fimPromo->modify('+' . ($promoMeses - 1) . ' months');
+        if ($entradaSemanaCheia) {
+            // Mês de entrada já foi cobrado no valor promo CHEIO (não é proporcional/bônus) —
+            // conta como o 1º dos promo_meses meses de promoção.
+            $fimPromo = new DateTime($entrada->format('Y-m') . '-01');
+            $fimPromo->modify('+' . ($promoMeses - 1) . ' months');
+        } else {
+            // Mês de entrada (cobrado acima, proporcional) é um bônus à parte — não conta como
+            // um dos meses da promoção. Os promo_meses de preço promocional cheio começam a
+            // valer só a partir do mês SEGUINTE, aplicados pela geração mensal recorrente.
+            $nextMonth = new DateTime($entrada->format('Y-m') . '-01');
+            $nextMonth->modify('+1 month');
+            $fimPromo = clone $nextMonth;
+            $fimPromo->modify('+' . ($promoMeses - 1) . ' months');
+        }
 
         $desconto       = round($valorBase - $promoValor, 2);
         $descontoInicio = $dataInicio;
         $descontoFim    = $fimPromo->format('Y-m-d');
 
     } else {
-        $proportional = calcProporcional($pdo, $turmaId, $entrada, $dataInicio, $valorBase);
+        if ($entradaSemanaCheia) {
+            $valorFatura  = $valorBase;
+            $proportional = null;
+        } else {
+            $proportional = calcProporcional($pdo, $turmaId, $entrada, $dataInicio, $valorBase);
+            $valorFatura  = round($proportional, 2);
+        }
 
         $mensalidadesParaGerar[] = [
             'referencia'         => $entrada->format('Y-m'),
-            'valor'              => round($proportional, 2),
+            'valor'              => $valorFatura,
             'proporcional_valor' => $proportional,
             'vencimento'         => $vencInicial,
         ];

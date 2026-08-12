@@ -28,7 +28,9 @@ $stmt = $pdo->prepare("
 $stmt->execute([$mesFiltro]);
 $faturas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-$MP_METODO_LABEL = ['pix' => 'Pix', 'credit_card' => 'Crédito', 'debit_card' => 'Débito', 'ticket' => 'Boleto'];
+// A coluna guarda o payment_type_id do MP (PIX chega como 'bank_transfer'), então a
+// tradução vem do helper compartilhado — o mapa antigo aqui tinha a chave 'pix', que
+// nunca casava, e a tela acabava mostrando "bank_transfer" cru.
 
 $totPago = 0; $totPendente = 0; $totAtrasado = 0; $totLiquido = 0; $totTaxaMp = 0;
 $qtdPago = 0; $qtdPendente = 0; $qtdAtrasado = 0;
@@ -164,7 +166,7 @@ function fmtBrlMens(float $v): string {
                 <?php if ($f['status'] === 'pago' && $f['mp_valor_liquido'] !== null): ?>
                     <?= fmtBrlMens((float) $f['mp_valor_liquido']) ?>
                     <small class="mensAdmin__badgeSub">
-                        taxa <?= fmtBrlMens((float) $f['mp_taxa_valor']) ?><?= $f['mp_payment_method'] ? ' &middot; ' . ($MP_METODO_LABEL[$f['mp_payment_method']] ?? $f['mp_payment_method']) : '' ?>
+                        taxa <?= fmtBrlMens((float) $f['mp_taxa_valor']) ?><?= $f['mp_payment_method'] ? ' &middot; ' . htmlspecialchars(mpFormaPagamentoLabel($f['mp_payment_method'])) : '' ?>
                     </small>
                 <?php elseif ($f['status'] === 'pago'): ?>
                     &mdash;

@@ -20,79 +20,19 @@ if (empty($_SESSION['usuario'])) {
 }
 
 require_once dirname(__FILE__, 3) . '/config/database.php';
+require_once dirname(__FILE__, 3) . '/config/mensalidades.php';
 
-// Modelo pré-pago: ciclo fecha dia 30, fatura gerada para o mês SEGUINTE com vencimento dia 10.
-// Executar no dia 30 de cada mês.
-$hoje       = new DateTime();
-$proxMes    = (clone $hoje)->modify('first day of next month');
-$referencia = $proxMes->format('Y-m');            // mês que o aluno vai usar
-$vencimento = $proxMes->format('Y-m') . '-10';    // paga antes de começar a usar
-$hojeStr    = $hoje->format('Y-m-d');
-
+// Modelo pré-pago: fatura do mês atual, vencendo dia 10. Isso é só o fallback que garante que
+// todo aluno tenha fatura pro mês em que já estamos — o disparo normal acontece assim que a
+// fatura anterior é paga (ver gerarMensalidadeRecorrente() chamado a partir de
+// mpMarcarMensalidadePaga() e update_mensalidade_status.php), pra nunca ter duas faturas em
+// aberto simultâneas sem necessidade.
 $pdo = getDbConnection();
-
-$stAtivos = $pdo->query("
-    SELECT ta.aluno_id, ta.turma_id,
-           ta.desconto, ta.desconto_tipo, ta.desconto_inicio, ta.desconto_fim, ta.desconto_vitalicio,
-           t.valor_mensalidade
-    FROM turma_alunos ta
-    JOIN turmas t ON t.id = ta.turma_id
-    WHERE ta.status = 'ativo'
-      AND t.status  = 'ativa'
-      AND t.valor_mensalidade IS NOT NULL
-");
-$ativos = $stAtivos->fetchAll();
-
-$geradas = 0;
-$puladas = 0;
-$erros   = 0;
-
-$stCheck = $pdo->prepare("
-    SELECT id FROM mensalidades WHERE aluno_id = ? AND turma_id = ? AND referencia = ?
-");
-$stInsert = $pdo->prepare("
-    INSERT INTO mensalidades (aluno_id, turma_id, referencia, valor, vencimento, status)
-    VALUES (?, ?, ?, ?, ?, 'pendente')
-");
-
-foreach ($ativos as $ta) {
-    // Pula se já existe mensalidade para esta referência
-    $stCheck->execute([$ta['aluno_id'], $ta['turma_id'], $referencia]);
-    if ($stCheck->fetchColumn()) {
-        $puladas++;
-        continue;
-    }
-
-    $valorBase = (float) $ta['valor_mensalidade'];
-
-    // Verifica se desconto pessoal está vigente
-    $descontoAtivo = $ta['desconto'] !== null && $ta['desconto'] > 0 && (
-        $ta['desconto_vitalicio'] ||
-        ($ta['desconto_inicio'] === null && $ta['desconto_fim'] === null) ||
-        ($ta['desconto_inicio'] <= $hojeStr && $ta['desconto_fim'] >= $hojeStr)
-    );
-
-    if ($descontoAtivo) {
-        $valor = $ta['desconto_tipo'] === 'percentual'
-            ? round($valorBase * (1 - $ta['desconto'] / 100), 2)
-            : max(0, round($valorBase - (float) $ta['desconto'], 2));
-    } else {
-        $valor = $valorBase;
-    }
-
-    try {
-        $stInsert->execute([$ta['aluno_id'], $ta['turma_id'], $referencia, $valor, $vencimento]);
-        $geradas++;
-    } catch (PDOException $e) {
-        $erros++;
-    }
-}
+$res = gerarMensalidadesMesAtual($pdo);
 
 echo json_encode([
     'success'    => true,
-    'referencia' => $referencia,
-    'vencimento' => (new DateTime($vencimento))->format('d/m/Y'),
-    'geradas'    => $geradas,
-    'puladas'    => $puladas,
-    'erros'      => $erros,
+    'referencia' => $res['referencia'],
+    'vencimento' => (new DateTime($res['referencia'] . '-10'))->format('d/m/Y'),
+    'geradas'    => $res['geradas'],
 ]);

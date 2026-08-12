@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/mensalidades.php';
+
 // ─── Credenciais de Produção ──────────────────────────────────────────────────
 define('MP_PUBLIC_KEY_PROD',   'APP_USR-5b1fa14f-4426-4495-8b6b-6b6eb690fa7e');
 define('MP_ACCESS_TOKEN_PROD', 'APP_USR-6171189951122609-053113-bbae49b17db317cd8892d8db3c4248f8-131746200');
@@ -29,6 +31,139 @@ const MP_STATUS_DETAIL_PT = [
     'cc_rejected_invalid_installments'       => 'parcelamento inválido',
     'cc_rejected_blacklist'                  => 'cartão/titular bloqueado',
 ];
+
+/**
+ * O que a secretaria deve orientar o aluno a fazer, por motivo de recusa. Aparece na tela
+ * admin/erros-pagamento pra quem for ajudar o aluno saber o que falar sem precisar
+ * interpretar código do Mercado Pago.
+ */
+const MP_STATUS_DETAIL_ACAO = [
+    'cc_rejected_insufficient_amount'      => 'Peça pro aluno usar outro cartão ou pagar via PIX.',
+    'cc_rejected_bad_filled_security_code' => 'Peça pro aluno conferir o CVV (3 dígitos no verso; 4 na frente no Amex).',
+    'cc_rejected_bad_filled_date'          => 'Peça pro aluno conferir o mês/ano de validade do cartão.',
+    'cc_rejected_bad_filled_card_number'   => 'Peça pro aluno conferir o número do cartão.',
+    'cc_rejected_bad_filled_other'         => 'Peça pro aluno revisar todos os dados do cartão (número, validade, CVV e CPF do titular).',
+    'cc_rejected_call_for_authorize'       => 'O aluno precisa ligar pro banco e autorizar essa compra, depois tentar de novo.',
+    'cc_rejected_card_disabled'            => 'Cartão bloqueado/desabilitado — o aluno precisa falar com o banco ou usar outro cartão.',
+    'cc_rejected_card_error'               => 'Peça pro aluno tentar de novo em alguns minutos ou usar outro cartão.',
+    'cc_rejected_duplicated_payment'       => 'Provavelmente já existe um pagamento igual. Confira no Mercado Pago antes de cobrar de novo.',
+    'cc_rejected_high_risk'                => 'Antifraude do Mercado Pago recusou. Oriente pagar via PIX — costuma passar.',
+    'cc_rejected_max_attempts'             => 'Muitas tentativas com esse cartão. Peça pra aguardar e usar outro cartão ou PIX.',
+    'cc_rejected_other_reason'             => 'Recusa genérica do banco emissor. Oriente tentar outro cartão ou PIX.',
+    'cc_rejected_invalid_installments'     => 'O cartão não aceita esse número de parcelas. Peça pra escolher menos parcelas.',
+    'cc_rejected_blacklist'                => 'Cartão/titular bloqueado pelo Mercado Pago. Só via PIX ou outro cartão.',
+];
+
+/**
+ * Registra uma falha de pagamento pra aparecer em admin/erros-pagamento e no sino.
+ *
+ * Nunca lança exceção: um problema ao gravar o log não pode quebrar (nem mascarar) o
+ * fluxo de pagamento que já estava dando errado. Também nunca guarda dado sensível de
+ * cartão — só o que o próprio Mercado Pago devolve como motivo.
+ *
+ * @param array $dados Chaves aceitas: aluno_id, aluno_nome, aluno_email, contexto,
+ *        referencia_id, referencia_label, valor, metodo, parcelas, origem, mp_payment_id,
+ *        mp_status, mp_status_detail, http_code, mensagem, detalhe_tecnico.
+ */
+function mpRegistrarErroPagamento(PDO $pdo, array $dados): void
+{
+    try {
+        // A mesma recusa pode chegar por mais de um caminho (resposta do checkout, polling do
+        // navegador, webhook) — todos reconsultam o MESMO pagamento no MP. Sem esse guarda, uma
+        // recusa só viraria várias linhas repetidas em admin/erros-pagamento e vários avisos no
+        // sino. Só vale quando há mp_payment_id: falha de rede e erro 400 da API não têm id, e
+        // aí cada tentativa é mesmo um evento distinto.
+        if (!empty($dados['mp_payment_id'])) {
+            $stDup = $pdo->prepare("SELECT id FROM pagamento_erros WHERE mp_payment_id = ? LIMIT 1");
+            $stDup->execute([$dados['mp_payment_id']]);
+            if ($stDup->fetchColumn()) return;
+        }
+
+        $st = $pdo->prepare("
+            INSERT INTO pagamento_erros
+                (aluno_id, aluno_nome, aluno_email, contexto, referencia_id, referencia_label,
+                 valor, metodo, parcelas, origem, mp_payment_id, mp_status, mp_status_detail,
+                 http_code, mensagem, detalhe_tecnico)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ");
+
+        $st->execute([
+            $dados['aluno_id']         ?? null,
+            $dados['aluno_nome']       ?? null,
+            $dados['aluno_email']      ?? null,
+            $dados['contexto']         ?? 'outro',
+            $dados['referencia_id']    ?? null,
+            $dados['referencia_label'] ?? null,
+            $dados['valor']            ?? null,
+            $dados['metodo']           ?? null,
+            $dados['parcelas']         ?? null,
+            $dados['origem']           ?? 'site',
+            $dados['mp_payment_id']    ?? null,
+            $dados['mp_status']        ?? null,
+            $dados['mp_status_detail'] ?? null,
+            $dados['http_code']        ?? null,
+            mb_substr((string) ($dados['mensagem'] ?? 'Erro no pagamento'), 0, 255),
+            $dados['detalhe_tecnico']  ?? null,
+        ]);
+    } catch (Throwable $e) {
+        error_log('[pagamento-erro-log] ' . $e->getMessage());
+    }
+}
+
+/**
+ * Como o dinheiro entrou, em português.
+ *
+ * `mensalidades.mp_payment_method` (e `pedidos_uniforme.mp_payment_method`) guardam o
+ * **payment_type_id** do Mercado Pago — não o payment_method_id. Por isso PIX chega como
+ * `bank_transfer`, e não como `pix`.
+ *
+ * @param string|null $paymentType payment_type_id do MP (bank_transfer, credit_card, ...).
+ * @param bool $recorrente         Se veio da cobrança automática no cartão salvo (cron).
+ * @param bool $manual             Lançamento manual/externo, sem passar pelo Mercado Pago.
+ */
+function mpFormaPagamentoLabel(?string $paymentType, bool $recorrente = false, bool $manual = false): string
+{
+    if ($manual) return 'Externo/manual';
+
+    if ($paymentType === null || $paymentType === '') {
+        return 'Não informado';
+    }
+
+    $labels = [
+        'bank_transfer' => 'PIX',
+        'pix'           => 'PIX',
+        'credit_card'   => 'Cartão de crédito',
+        'debit_card'    => 'Cartão de débito',
+        'prepaid_card'  => 'Cartão pré-pago',
+        'ticket'        => 'Boleto',
+        'account_money' => 'Saldo Mercado Pago',
+        'bank_transfer_pix' => 'PIX',
+    ];
+
+    $label = $labels[$paymentType] ?? $paymentType;
+
+    // Só faz sentido marcar recorrência em cartão — PIX nunca é cobrado automaticamente.
+    if ($recorrente && in_array($paymentType, ['credit_card', 'debit_card', 'prepaid_card'], true)) {
+        $label .= ' (recorrente)';
+    }
+
+    return $label;
+}
+
+/** Explicação em português do motivo da recusa, pronta pra exibir no admin. */
+function mpMotivoPt(?string $statusDetail, ?string $fallback = null): string
+{
+    if ($statusDetail && isset(MP_STATUS_DETAIL_PT[$statusDetail])) {
+        return MP_STATUS_DETAIL_PT[$statusDetail];
+    }
+    return $fallback ?: ($statusDetail ?: 'Motivo não informado pelo Mercado Pago');
+}
+
+/** O que orientar o aluno a fazer, quando conhecemos o motivo. */
+function mpAcaoSugerida(?string $statusDetail): ?string
+{
+    return $statusDetail ? (MP_STATUS_DETAIL_ACAO[$statusDetail] ?? null) : null;
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -135,8 +270,18 @@ function mpCriarPagamento(string $accessToken, array $dados): array
     ]);
     $resp     = curl_exec($ch);
     $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErro = curl_error($ch);
     curl_close($ch);
-    return ['http_code' => $httpCode, 'body' => json_decode($resp ?: '{}', true) ?? []];
+
+    $body = json_decode($resp ?: '{}', true) ?? [];
+
+    // Falha de rede/SSL não devolve corpo nenhum — sem isso o motivo real sumia e sobrava
+    // só um "Pagamento recusado" genérico, impossível de diagnosticar depois.
+    if ($curlErro !== '' && empty($body)) {
+        $body['message'] = 'Falha de conexão com o Mercado Pago: ' . $curlErro;
+    }
+
+    return ['http_code' => $httpCode, 'body' => $body];
 }
 
 /**
@@ -245,6 +390,59 @@ function mpGerarTokenCartaoSalvo(string $accessToken, string $cardId, string $cu
     ];
 }
 
+/** Cartões já salvos num customer do Mercado Pago. */
+function mpListarCartoesCustomer(string $accessToken, string $customerId): array
+{
+    $resp = mpRequest($accessToken, 'GET', '/v1/customers/' . $customerId . '/cards');
+    $body = $resp['body'] ?? [];
+
+    return is_array($body) && isset($body[0]) ? $body : [];
+}
+
+/**
+ * Descobre qual cartão do customer corresponde ao pagamento que acabou de ser feito.
+ *
+ * Roda DEPOIS da cobrança, de propósito: o token do Brick é de uso único e precisa ser
+ * gasto no pagamento (é ele que carrega o CVV). Tentar salvar o cartão antes obrigava a
+ * gerar um segundo token sem CVV, que o emissor recusa — ver o comentário longo em
+ * services/site/criar_pagamento.php.
+ *
+ * @return array{id:string, bandeira:string, final4:string}|null
+ */
+function mpResolverCartaoSalvo(string $accessToken, string $customerId, array $payment): ?array
+{
+    $final4   = $payment['card']['last_four_digits'] ?? '';
+    $bandeira = $payment['payment_method_id'] ?? '';
+
+    // 1) O MP costuma devolver, no próprio pagamento, o id do cartão já vinculado ao
+    //    customer quando o customer foi informado no payer.
+    $idNoPagamento = $payment['card']['id'] ?? null;
+    if (!empty($idNoPagamento)) {
+        return ['id' => (string) $idNoPagamento, 'bandeira' => $bandeira, 'final4' => $final4];
+    }
+
+    // 2) Fallback: procura entre os cartões do customer o que bate com o que foi cobrado.
+    //    Cobre o caso de o pagamento não trazer o id, sem depender de suposição.
+    if ($final4 === '') return null;
+
+    $mes = $payment['card']['expiration_month'] ?? null;
+    $ano = $payment['card']['expiration_year']  ?? null;
+
+    foreach (mpListarCartoesCustomer($accessToken, $customerId) as $c) {
+        if (($c['last_four_digits'] ?? '') !== $final4) continue;
+        if ($mes !== null && isset($c['expiration_month']) && (int) $c['expiration_month'] !== (int) $mes) continue;
+        if ($ano !== null && isset($c['expiration_year'])  && (int) $c['expiration_year']  !== (int) $ano) continue;
+
+        return [
+            'id'       => (string) $c['id'],
+            'bandeira' => $c['payment_method']['id'] ?? $bandeira,
+            'final4'   => $final4,
+        ];
+    }
+
+    return null;
+}
+
 /**
  * Consulta um pagamento direto na API do MP pelo ID. Usado pelo webhook e pela
  * sincronização manual — nunca confiamos no status que vem na notificação, sempre
@@ -301,7 +499,7 @@ function mpExtrairTaxaELiquido(array $payment, float $valorBruto): array
  */
 function mpMarcarMensalidadePaga(PDO $pdo, int $mensalidadeId, string $mpPaymentId, ?array $payment = null, ?float $valorCobrado = null): bool
 {
-    $st = $pdo->prepare("SELECT id, valor, referencia, aluno_id, status FROM mensalidades WHERE id = ?");
+    $st = $pdo->prepare("SELECT id, valor, referencia, aluno_id, turma_id, tipo, status FROM mensalidades WHERE id = ?");
     $st->execute([$mensalidadeId]);
     $mens = $st->fetch();
     if (!$mens || $mens['status'] === 'pago') return false;
@@ -341,6 +539,14 @@ function mpMarcarMensalidadePaga(PDO $pdo, int $mensalidadeId, string $mpPayment
                 VALUES (?, CURDATE(), 'despesa', 'taxa_mercadopago', ?, ?, 'auto', 'mensalidade_taxa_mp', ?)
             ")->execute([$competencia, $descTaxa, $taxa, $mensalidadeId]);
         } catch (PDOException $e) {}
+    }
+
+    // Paguei o mês atual → já gera a fatura do mês seguinte na hora, sem esperar o fallback
+    // diário (gerarMensalidadesMesAtual()) — assim o aluno nunca fica com duas faturas em
+    // aberto ao mesmo tempo sem necessidade, e vê a próxima fatura assim que quita a atual.
+    if (($mens['tipo'] ?? 'mensalidade') === 'mensalidade' && $mens['turma_id']) {
+        $proximoMes = (new DateTime($mens['referencia'] . '-01'))->modify('+1 month')->format('Y-m');
+        gerarMensalidadeRecorrente($pdo, (int) $mens['aluno_id'], (int) $mens['turma_id'], $proximoMes);
     }
 
     return true;
@@ -440,8 +646,28 @@ function mpExecutarCobrancaAutomatica(PDO $pdo): array
             mpLogCobrancaAutomatica($pdo, $m['aluno_id'], $m['mensalidade_id'], $hoje, 'sucesso', null, $mpPaymentId);
             $sucesso++;
         } else {
-            $motivo = 'status: ' . ($status ?: 'sem resposta') . ' | ' . mpExtrairErroApi($body, $body['status_detail'] ?? null);
+            $statusDetail = $body['status_detail'] ?? null;
+            $motivo = 'status: ' . ($status ?: 'sem resposta') . ' | ' . mpExtrairErroApi($body, $statusDetail);
             mpLogCobrancaAutomatica($pdo, $m['aluno_id'], $m['mensalidade_id'], $hoje, 'falha', $motivo, $mpPaymentId);
+
+            // Também entra em admin/erros-pagamento: a cobrança automática falha sem ninguém
+            // olhando, então é justamente onde o admin mais precisa ser avisado.
+            mpRegistrarErroPagamento($pdo, [
+                'aluno_id'         => (int) $m['aluno_id'],
+                'aluno_nome'       => $m['nome'] ?? null,
+                'contexto'         => 'mensalidade',
+                'referencia_id'    => (int) $m['mensalidade_id'],
+                'referencia_label' => 'Cobrança automática (cartão salvo)',
+                'valor'            => $total,
+                'metodo'           => 'cartao_salvo',
+                'origem'           => 'cron',
+                'mp_payment_id'    => $mpPaymentId,
+                'mp_status'        => $status ?: 'sem resposta',
+                'mp_status_detail' => $statusDetail,
+                'mensagem'         => mpMotivoPt($statusDetail, $body['message'] ?? null),
+                'detalhe_tecnico'  => $motivo,
+            ]);
+
             $detalhesFalha[] = ['aluno' => $m['nome'], 'motivo' => $motivo];
             $falha++;
         }

@@ -134,7 +134,7 @@ if ($action === 'realizar') {
 
     $turmaStmt = $pdo->prepare("
         SELECT t.nome, t.max_alunos,
-               q.nome AS quadra_nome, q.rua, q.numero, q.bairro, q.complemento, q.cidade, q.estado
+               q.nome AS quadra_nome, q.rua, q.numero, q.bairro, q.complemento, q.cidade, q.estado, q.maps_link
         FROM turmas t
         LEFT JOIN quadras q ON q.id = t.quadra_id
         WHERE t.id = ? AND t.status = 'ativa'

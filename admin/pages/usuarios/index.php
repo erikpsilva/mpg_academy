@@ -77,6 +77,7 @@ if ($_SESSION['usuario']['nivel_acesso'] !== 'admin') {
                             <option value="admin">Admin</option>
                             <option value="editor">Editor</option>
                             <option value="leitor">Leitor</option>
+                            <option value="batebola">Bate Bola</option>
                         </select>
                     </label>
                     <div class="editModal__divider">

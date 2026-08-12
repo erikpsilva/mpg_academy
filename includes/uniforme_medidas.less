@@ -1,0 +1,117 @@
+// Tabelas de medidas do uniforme (includes/uniforme_medidas.php).
+// Usadas na área do aluno, no modal do formulário de pedido e no admin — por isso o estilo
+// é neutro o bastante pra funcionar sobre fundo escuro em qualquer uma das telas.
+.uniMedidas {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+
+    // Cada gênero ocupa uma linha; camisa e bermuda dividem essa linha em 6/6.
+    &__linha {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+        min-width: 0;
+    }
+
+    &__bloco {
+        min-width: 0;
+        padding: 16px 18px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 10px;
+        background: rgba(0, 0, 0, 0.3);
+
+        h4 {
+            margin: 0 0 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: @yellow;
+            font-size: 14px;
+            font-weight: 800;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+        }
+
+        // Faixa lateral distingue masculino de feminino de relance.
+        &--masculino { border-left: 3px solid rgba(74, 155, 255, 0.7); }
+        &--feminino  { border-left: 3px solid rgba(255, 120, 190, 0.7); }
+    }
+
+    // Tabela larga não pode empurrar a página — rola dentro do próprio bloco.
+    &__scroll {
+        overflow-x: auto;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+
+    thead th {
+        padding: 8px 10px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+        color: rgba(255, 255, 255, 0.55);
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+        text-align: left;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    tbody {
+        th {
+            padding: 9px 10px;
+            color: @yellow;
+            font-weight: 800;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 9px 10px;
+            color: @white;
+            white-space: nowrap;
+        }
+
+        tr:nth-child(odd) {
+            background: rgba(255, 255, 255, 0.035);
+        }
+    }
+
+    &__aviso {
+        margin: 12px 0 0;
+        color: rgba(255, 255, 255, 0.55);
+        font-size: 12px;
+        font-style: italic;
+    }
+}
+
+// Media query literal de propósito: este arquivo é importado pelos DOIS entrypoints, e a
+// variável do breakpoint tem nome diferente em cada um (@tablet-small no site,
+// @tabletSM no admin). Usar a variável quebra o build do admin — e o gulp falha em
+// silêncio, deixando o CSS antigo no lugar sem avisar.
+@media only screen and (max-width: 767px) {
+    .uniMedidas {
+        &__linha {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        &__bloco {
+            padding: 14px 10px;
+        }
+
+        thead th,
+        tbody th,
+        tbody td {
+            padding-right: 7px;
+            padding-left: 7px;
+        }
+    }
+}
+
+// Fora do grid, o aviso precisa ocupar a linha inteira.
+.uniMedidas + .uniMedidas__aviso {
+    grid-column: 1 / -1;
+}

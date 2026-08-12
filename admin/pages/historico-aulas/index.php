@@ -15,6 +15,21 @@ $dtMes    = new DateTime($rIni);
 $prevMes  = (clone $dtMes)->modify('-1 month')->format('Y-m');
 $nextMes  = (clone $dtMes)->modify('+1 month')->format('Y-m');
 $mesLabel = $MESES[(int) $dtMes->format('n')] . ' de ' . $dtMes->format('Y');
+$professorFiltro = $_GET['professor'] ?? 'todos';
+if ($professorFiltro !== 'todos' && !ctype_digit((string)$professorFiltro)) $professorFiltro = 'todos';
+
+$professoresAtivos = $pdo->query("
+    SELECT id, nome, sobrenome
+    FROM professores
+    WHERE status = 'ativo'
+    ORDER BY nome, sobrenome
+")->fetchAll(PDO::FETCH_ASSOC);
+
+function historicoAulasUrl($mes, $professorFiltro) {
+    $params = ['mes' => $mes];
+    if ($professorFiltro !== 'todos') $params['professor'] = $professorFiltro;
+    return '?' . http_build_query($params);
+}
 
 // Turmas + horários de todos os professores ativos
 $rows = $pdo->query("
@@ -70,6 +85,7 @@ foreach ($sca->fetchAll(PDO::FETCH_ASSOC) as $r) {
 // Gera calendário
 $aulas = [];
 foreach ($turmas as $t) {
+    if ($professorFiltro !== 'todos' && (string)$t['professor_id'] !== (string)$professorFiltro) continue;
     $ini = max($t['data_inicio'], $rIni);
     foreach ($t['horarios'] as $h) {
         $cur = strtotime($ini);
@@ -127,12 +143,25 @@ $qtdP = count(array_filter($aulas,fn($a)=>$a['status']==='pendente'));
 </div>
 
 <div class="historicoAulas__mesFiltro">
-    <a href="?mes=<?= $prevMes ?>" class="historicoAulas__mesNav">&#8592;</a>
+    <a href="<?= historicoAulasUrl($prevMes, $professorFiltro) ?>" class="historicoAulas__mesNav">&#8592;</a>
     <label class="historicoAulas__mesLabel">
         <?= $mesLabel ?>
         <input type="month" id="filtroMes" value="<?= $mesFiltro ?>">
     </label>
-    <a href="?mes=<?= $nextMes ?>" class="historicoAulas__mesNav">&#8594;</a>
+    <a href="<?= historicoAulasUrl($nextMes, $professorFiltro) ?>" class="historicoAulas__mesNav">&#8594;</a>
+
+    <label class="historicoAulas__professorFiltro">
+        <span>Professor</span>
+        <select id="filtroProfessor">
+            <option value="todos" <?= $professorFiltro === 'todos' ? 'selected' : '' ?>>Todos os professores</option>
+            <?php foreach ($professoresAtivos as $prof): ?>
+                <?php $profNome = trim($prof['nome'] . ' ' . $prof['sobrenome']); ?>
+                <option value="<?= (int)$prof['id'] ?>" <?= (string)$professorFiltro === (string)$prof['id'] ? 'selected' : '' ?>>
+                    <?= htmlspecialchars($profNome) ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
+    </label>
 </div>
 
 <div class="minhasAulas__stats">
@@ -203,7 +232,17 @@ $qtdP = count(array_filter($aulas,fn($a)=>$a['status']==='pendente'));
 <script>
 var BASE_URL = "<?= BASE_URL ?>";
 document.getElementById('filtroMes').addEventListener('change', function () {
-    if (this.value) window.location.href = '?mes=' + this.value;
+    if (!this.value) return;
+    var params = new URLSearchParams(window.location.search);
+    params.set('mes', this.value);
+    window.location.href = '?' + params.toString();
+});
+document.getElementById('filtroProfessor').addEventListener('change', function () {
+    var params = new URLSearchParams(window.location.search);
+    params.set('mes', document.getElementById('filtroMes').value || '<?= $mesFiltro ?>');
+    if (this.value === 'todos') params.delete('professor');
+    else params.set('professor', this.value);
+    window.location.href = '?' + params.toString();
 });
 document.querySelectorAll('.js-toggle').forEach(function(btn) {
     btn.addEventListener('click', function() {

@@ -1,6 +1,7 @@
 <?php include ROOT . '/admin/includes/auth_check.php'; ?>
 <?php
 require_once ROOT . '/config/database.php';
+require_once ROOT . '/config/mercadopago.php'; // mpFormaPagamentoLabel() na coluna "Forma"
 $pdo = getDbConnection();
 
 // ── Parâmetros ────────────────────────────────────────────────────────────────
@@ -142,8 +143,25 @@ if ($aba === 'lancamentos') {
         $paramsL[] = '%' . $buscaFiltro . '%';
     }
 
+    // A forma de pagamento não fica duplicada no lançamento: vem por join da mensalidade
+    // que originou o dinheiro, então nunca sai de sincronia. `foi_recorrente` marca o que
+    // foi cobrado pelo cron no cartão salvo — a linha existe em cobranca_automatica_log
+    // só quando a cobrança automática teve sucesso.
+    $whereLPrefix = array_map(fn($w) => 'l.' . $w, $whereL);
+
     $stL = $pdo->prepare("
-        SELECT * FROM lancamentos_financeiros WHERE " . implode(' AND ', $whereL) . " ORDER BY data DESC, id DESC
+        SELECT l.*,
+               m.mp_payment_method AS mp_metodo,
+               (cal.id IS NOT NULL) AS foi_recorrente
+        FROM lancamentos_financeiros l
+        LEFT JOIN mensalidades m
+               ON l.referencia_tipo IN ('mensalidade', 'mensalidade_taxa_mp')
+              AND m.id = l.referencia_id
+        LEFT JOIN cobranca_automatica_log cal
+               ON cal.mensalidade_id = m.id AND cal.status = 'sucesso'
+        WHERE " . implode(' AND ', $whereLPrefix) . "
+        GROUP BY l.id
+        ORDER BY l.data DESC, l.id DESC
     ");
     $stL->execute($paramsL);
     $lancamentos = $stL->fetchAll();
@@ -285,6 +303,14 @@ if ($aba === 'divida') {
               font-size:10px; font-weight:900; padding:2px 8px; border-radius:4px; text-transform:uppercase; }
 .badge-auto { background:rgba(90,90,90,.2); border:1px solid #333; color:#666;
               font-size:10px; font-weight:700; padding:2px 7px; border-radius:4px; text-transform:uppercase; }
+/* Forma de pagamento — cor por meio, pra bater o olho e saber como o dinheiro entrou */
+.formaPg { display:inline-block; font-size:11px; font-weight:700; padding:3px 9px; border-radius:4px; white-space:nowrap; }
+.formaPg--pix        { background:rgba(0,179,126,.12); border:1px solid rgba(0,179,126,.4); color:#00d494; }
+.formaPg--cartao     { background:rgba(74,155,255,.12); border:1px solid rgba(74,155,255,.4); color:#6fb2ff; }
+.formaPg--recorrente { background:rgba(155,123,255,.14); border:1px solid rgba(155,123,255,.45); color:#b49dff; }
+.formaPg--manual     { background:rgba(255,213,0,.1); border:1px solid rgba(255,213,0,.35); color:#e5c200; }
+.formaPg--outro      { background:rgba(255,255,255,.06); border:1px solid #333; color:#999; }
+.formaPg--na         { background:transparent; border:1px solid #2a2a2a; color:#555; font-weight:400; }
 .badge-pend { background:rgba(255,140,0,.1); border:1px solid rgba(255,140,0,.3); color:#ff9a1e;
               font-size:10px; font-weight:900; padding:2px 8px; border-radius:4px; text-transform:uppercase; }
 .badge-pago { background:rgba(46,182,16,.1); border:1px solid rgba(116,255,54,.3); color:#79ff45;
@@ -708,11 +734,11 @@ if ($aba === 'divida') {
             <table class="finTable">
                 <thead><tr>
                     <th>Data</th><th>Descrição</th><th>Categoria</th>
-                    <th>Tipo</th><th>Origem</th><th>Valor</th><th></th>
+                    <th>Tipo</th><th>Forma</th><th>Origem</th><th>Valor</th><th></th>
                 </tr></thead>
                 <tbody>
                 <?php if (empty($lancamentos)): ?>
-                <tr><td colspan="7" style="text-align:center;color:#444;padding:28px;">Nenhum lançamento encontrado<?= ($categoriaFiltro !== '' || $buscaFiltro !== '') ? ' para este filtro' : ' em ' . $mesLabel ?>.</td></tr>
+                <tr><td colspan="8" style="text-align:center;color:#444;padding:28px;">Nenhum lançamento encontrado<?= ($categoriaFiltro !== '' || $buscaFiltro !== '') ? ' para este filtro' : ' em ' . $mesLabel ?>.</td></tr>
                 <?php else: ?>
                 <?php foreach ($lancamentos as $l): ?>
                 <tr>
@@ -723,6 +749,30 @@ if ($aba === 'divida') {
                     </td>
                     <td><span style="font-size:12px;color:#888;"><?= catLabel($l['categoria'], $catLabels) ?></span></td>
                     <td><?= $l['tipo'] === 'receita' ? '<span class="badge-rec">Receita</span>' : '<span class="badge-desp">Despesa</span>' ?></td>
+                    <td style="white-space:nowrap;">
+                        <?php
+                        // Lançamento manual (digitado no admin) nunca passou pelo Mercado Pago —
+                        // nesses o "como pagou" aconteceu fora do sistema.
+                        $ehManual  = $l['origem'] === 'manual';
+                        $temOrigem = $l['referencia_tipo'] !== null;
+
+                        if (!$temOrigem && !$ehManual) {
+                            echo '<span class="formaPg formaPg--na">&mdash;</span>';
+                        } else {
+                            $forma = mpFormaPagamentoLabel(
+                                $l['mp_metodo'] ?? null,
+                                !empty($l['foi_recorrente']),
+                                $ehManual
+                            );
+                            $mod = 'outro';
+                            if ($ehManual)                                      $mod = 'manual';
+                            elseif ($l['mp_metodo'] === null)                    $mod = 'na';
+                            elseif (in_array($l['mp_metodo'], ['bank_transfer', 'pix'], true)) $mod = 'pix';
+                            elseif (str_contains((string) $l['mp_metodo'], 'card')) $mod = !empty($l['foi_recorrente']) ? 'recorrente' : 'cartao';
+                            ?>
+                            <span class="formaPg formaPg--<?= $mod ?>"><?= htmlspecialchars($forma) ?></span>
+                        <?php } ?>
+                    </td>
                     <td><?= $l['origem'] === 'auto' ? '<span class="badge-auto">Auto</span>' : '<span style="font-size:11px;color:#777;">Manual</span>' ?></td>
                     <td style="font-weight:700;color:<?= $l['tipo'] === 'receita' ? '#79ff45' : '#ff7070' ?>;"><?= fmtR((float)$l['valor']) ?></td>
                     <td style="white-space:nowrap;">

@@ -85,41 +85,67 @@ foreach ($mensalidades as &$m) {
 }
 unset($m);
 
-// Próxima fatura (mês seguinte ao último registro)
+// "Próxima fatura" em destaque = a fatura recorrente ainda não paga mais antiga (a que
+// realmente precisa ser paga agora), nunca uma prévia calculada — o sistema só tem uma fatura
+// em aberto de cada vez (a próxima só é gerada quando essa é paga, ou quando o mês dela chega),
+// então o histórico abaixo fica só com o que já foi pago.
+$featured = null;
+foreach ($mensalidades as $m) {
+    $isRecorrente = ($m['tipo'] ?? 'mensalidade') === 'mensalidade';
+    $emAberto     = in_array($m['status'], ['pendente', 'atrasado'], true);
+    if ($isRecorrente && $emAberto && ($featured === null || $m['vencimento'] < $featured['vencimento'])) {
+        $featured = $m;
+    }
+}
+
 $proxVencDate = null;
 $proxRef      = '';
 $proxStatus   = 'paid';
 $proxDias     = '';
+$proxFaturaId = null;
 
-if (!empty($mensalidades)) {
+if ($featured) {
+    $proxVencDate = new DateTime($featured['vencimento']);
+    $proxRef      = $featured['referencia'];
+    $proxFaturaId = $featured['id'];
+    $valorProximaFatura = $featured['status'] === 'atrasado' ? $featured['total_devido'] : (float) $featured['valor'];
+
+    if ($featured['status'] === 'atrasado') {
+        $proxStatus = 'late';
+        $proxDias   = 'vencida há ' . $featured['dias_atraso'] . ' dia' . ($featured['dias_atraso'] === 1 ? '' : 's');
+    } else {
+        $proxStatus = 'paid';
+        $diff       = (int) $hoje->diff($proxVencDate)->days;
+        $proxDias   = 'em ' . $diff . ' dia' . ($diff === 1 ? '' : 's');
+    }
+} elseif (!empty($mensalidades)) {
+    // Ninguém em aberto — tudo pago e a próxima fatura ainda não existe (só é gerada quando o
+    // mês dela chegar). Mostra uma prévia informativa do que vai ser cobrado, sem botão de
+    // pagar (não existe fatura real ainda pra pagar).
     [$ano, $mes] = explode('-', $mensalidades[0]['referencia']);
     $proxDate     = new DateTime("$ano-$mes-01");
     $proxDate->modify('+1 month');
     $proxRef      = $proxDate->format('Y-m');
-    // Vencimento = dia 10 do próprio mês de referência da próxima fatura (não do mês seguinte a ele)
     $proxVencDate = new DateTime($proxRef . '-10');
 
-    $diff = (int) $hoje->diff($proxVencDate)->days;
-    if ($proxVencDate > $hoje) {
-        $proxStatus = 'paid';
-        $proxDias   = 'em ' . $diff . ' dia' . ($diff === 1 ? '' : 's');
-    } else {
-        $proxStatus = 'late';
-        $proxDias   = 'vencida há ' . $diff . ' dia' . ($diff === 1 ? '' : 's');
-    }
-}
+    $diff       = (int) $hoje->diff($proxVencDate)->days;
+    $proxStatus = 'paid';
+    $proxDias   = 'em ' . $diff . ' dia' . ($diff === 1 ? '' : 's');
 
-// Valor efetivo da próxima fatura, considerando desconto pessoal/promo — checa a validade do
-// desconto na data em que a fatura seria de fato gerada (1º dia do mês de referência dela),
-// não em "hoje": um desconto que começa a valer só depois de hoje mas antes da geração
-// (ex.: aluno com entrada agendada pra semana que vem) não pode ser ignorado na prévia.
-$valorProximaFatura = ($turma && $proxRef) ? valorEfetivoAluno(
-    (float) $turma['valor_mensalidade'],
-    $turma['desconto'] !== null ? (float) $turma['desconto'] : null,
-    $turma['desconto_tipo'] ?? 'fixo',
-    $turma['desconto_inicio'], $turma['desconto_fim'], $turma['desconto_vitalicio'],
-    $proxRef . '-01'
-) : null;
+    // Valor efetivo da próxima fatura, considerando desconto pessoal/promo — checa a validade
+    // do desconto na data em que a fatura seria de fato gerada (1º dia do mês de referência
+    // dela), não em "hoje": um desconto que começa a valer só depois de hoje mas antes da
+    // geração (ex.: aluno com entrada agendada pra semana que vem) não pode ser ignorado.
+    $valorProximaFatura = $turma ? valorEfetivoAluno(
+        (float) $turma['valor_mensalidade'],
+        $turma['desconto'] !== null ? (float) $turma['desconto'] : null,
+        $turma['desconto_tipo'] ?? 'fixo',
+        $turma['desconto_inicio'], $turma['desconto_fim'], $turma['desconto_vitalicio'],
+        $proxRef . '-01'
+    ) : null;
+} else {
+    $valorProximaFatura = null;
+}
 
 function refLabel(string $ref, array $meses): string {
     [$a, $m] = explode('-', $ref);
@@ -144,6 +170,21 @@ function fmtMoney(float $val): string {
     border: 1px solid rgba(96,165,250,0.6);
     color: #60a5fa;
     background: rgba(96,165,250,0.1);
+}
+/* Mantém os quatro itens da próxima fatura alinhados no desktop.
+   Replicado aqui para a página funcionar mesmo sem o bundle LESS recompilado. */
+@media only screen and (min-width: 1111px) {
+    .studentMonthlyNext__box {
+        grid-template-columns:
+            minmax(0, 1fr)
+            minmax(0, .95fr)
+            minmax(0, 1.15fr)
+            minmax(180px, .85fr);
+    }
+
+    .studentMonthlyNext__box article:last-child {
+        padding-right: 0;
+    }
 }
 </style>
 </head>
@@ -222,8 +263,13 @@ function fmtMoney(float $val): string {
                         <b class="studentMonthlyStatus studentMonthlyStatus--<?= $proxStatus === 'paid' ? 'paid' : 'late' ?>">
                             <?= $proxStatus === 'paid' ? 'Em dia' : 'Atrasado' ?>
                         </b>
-                        <small>Ser&aacute; cobrada no dia <?= $proxVencDate->format('d/m/Y') ?></small>
+                        <small><?= $proxFaturaId ? 'Vence' : 'Ser&aacute; cobrada' ?> no dia <?= $proxVencDate->format('d/m/Y') ?></small>
                     </article>
+                    <?php if ($proxFaturaId): ?>
+                    <article>
+                        <a class="studentMonthlyPay" href="<?= BASE_URL ?>/pagamento?mensalidade_id=<?= $proxFaturaId ?>">Pagar agora</a>
+                    </article>
+                    <?php endif; ?>
                 </div>
             </section>
             <?php endif; ?>
@@ -251,6 +297,7 @@ function fmtMoney(float $val): string {
                     </div>
 
                     <?php foreach ($mensalidades as $m): ?>
+                    <?php if ($proxFaturaId && $m['id'] === $proxFaturaId) continue; // já mostrada em destaque acima ?>
                     <?php
                         $isLate    = $m['status'] === 'atrasado';
                         $isPaid    = $m['status'] === 'pago';
@@ -357,7 +404,7 @@ function fmtMoney(float $val): string {
 
                     <?php endforeach; ?>
 
-                    <?php if (empty($mensalidades)): ?>
+                    <?php if (count($mensalidades) - ($proxFaturaId ? 1 : 0) <= 0): ?>
                     <div class="studentMonthlyTable__row" role="row">
                         <span style="grid-column:1/-1;color:#888;text-align:center;padding:24px 0;">Nenhuma mensalidade encontrada.</span>
                     </div>

@@ -34,10 +34,11 @@ if ($dataPag && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $dataPag)) {
 }
 
 require_once dirname(__FILE__, 3) . '/config/database.php';
+require_once dirname(__FILE__, 3) . '/config/mensalidades.php';
 $pdo = getDbConnection();
 
 $mens = $pdo->prepare("
-    SELECT m.id, m.referencia, m.valor, m.status AS status_atual,
+    SELECT m.id, m.referencia, m.valor, m.status AS status_atual, m.turma_id, m.tipo,
            a.nome AS aluno_nome, a.id AS aluno_id
     FROM mensalidades m
     JOIN alunos a ON a.id = m.aluno_id
@@ -78,6 +79,13 @@ try {
                 VALUES (?, ?, 'receita', 'mensalidade', ?, ?, 'manual', 'mensalidade', ?)
             ")->execute([$mens['referencia'], $dataSalvar, $descricao, $mens['valor'], $id]);
         } catch (PDOException $e) {}
+
+        // Baixa manual conta como pagamento — já gera a fatura do mês seguinte na hora
+        // (mesmo gatilho da baixa automática via Mercado Pago, ver mpMarcarMensalidadePaga()).
+        if (($mens['tipo'] ?? 'mensalidade') === 'mensalidade' && $mens['turma_id']) {
+            $proximoMes = (new DateTime($mens['referencia'] . '-01'))->modify('+1 month')->format('Y-m');
+            gerarMensalidadeRecorrente($pdo, (int) $mens['aluno_id'], (int) $mens['turma_id'], $proximoMes);
+        }
 
     } else {
         $pdo->prepare("

@@ -222,7 +222,21 @@ inputImg.addEventListener('change', function () {
     fetch(ADMIN_BASE_URL + '/services/upload_comunicado_img.php', {
         method: 'POST', credentials: 'same-origin', body: fd,
     })
-    .then(function (r) { return r.json(); })
+    // Parse defensivo: r.json() direto estourava quando o servidor devolvia HTML (fatal do
+    // PHP, página de erro do host), e o motivo real virava um "Erro de comunicação" inútil.
+    .then(function (r) {
+        return r.text().then(function (texto) {
+            try {
+                return JSON.parse(texto);
+            } catch (e) {
+                console.error('Resposta não-JSON do upload:', texto.slice(0, 500));
+                return {
+                    success: false,
+                    message: 'O servidor respondeu com erro ' + r.status + '. Veja o console para o detalhe.'
+                };
+            }
+        });
+    })
     .then(function (data) {
         if (data.success) {
             preview.src = data.url;
@@ -237,7 +251,7 @@ inputImg.addEventListener('change', function () {
         }
     })
     .catch(function () {
-        uploadMsg.textContent = 'Erro de comunicação.';
+        uploadMsg.textContent = 'Erro de conexão ao enviar a imagem.';
         uploadMsg.style.color = '#cf7e7e';
     });
 });

@@ -119,7 +119,7 @@
                 <div class="studentSignupGrid studentSignupGrid--two">
                     <label class="studentField">
                         <span class="studentField__icon" aria-hidden="true"><i class="icon-celphone"></i></span>
-                        <span class="studentField__label">Celular (com DDD) <b>*</b></span>
+                        <span class="studentField__label">Celular / WhatsApp (com DDD) <b>*</b></span>
                         <input type="text" name="celular" class="studentPhone" placeholder="(11) 99999-9999" required>
                     </label>
 
@@ -129,11 +129,6 @@
                         <input type="email" name="email" placeholder="seuemail@exemplo.com" required>
                     </label>
 
-                    <label class="studentField studentField--full">
-                        <span class="studentField__icon" aria-hidden="true"><i class="icon-whatsapp"></i></span>
-                        <span class="studentField__label">WhatsApp (mesmo número) <b>*</b></span>
-                        <input type="text" name="whatsapp" class="studentPhone" placeholder="(11) 99999-9999" required>
-                    </label>
                 </div>
             </section>
 

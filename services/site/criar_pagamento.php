@@ -4,6 +4,41 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 
 header('Content-Type: application/json');
 
+// O checkout do Mercado Pago faz `response.json()` nesta resposta. Se um warning/notice do
+// PHP vazar junto, o JSON quebra, o parse falha e a barra de carregamento do Brick fica
+// girando pra sempre — sem erro nenhum pro aluno. Por isso: nada de saída fora do JSON, e
+// qualquer erro fatal vira JSON válido via shutdown handler.
+@ini_set('display_errors', '0');
+
+register_shutdown_function(function () {
+    $e = error_get_last();
+    if ($e && in_array($e['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
+        if (!headers_sent()) {
+            header('Content-Type: application/json');
+            http_response_code(500);
+        }
+        error_log('[criar-pagamento-fatal] ' . $e['message'] . ' em ' . $e['file'] . ':' . $e['line']);
+        echo json_encode([
+            'success' => false,
+            'status'  => 'erro_servidor',
+            'message' => 'Erro interno ao processar o pagamento. Tente novamente ou use o PIX.',
+        ]);
+    }
+});
+
+set_exception_handler(function (Throwable $ex) {
+    if (!headers_sent()) {
+        header('Content-Type: application/json');
+        http_response_code(500);
+    }
+    error_log('[criar-pagamento-exception] ' . $ex->getMessage());
+    echo json_encode([
+        'success' => false,
+        'status'  => 'erro_servidor',
+        'message' => 'Erro interno ao processar o pagamento. Tente novamente ou use o PIX.',
+    ]);
+});
+
 require_once dirname(__FILE__, 3) . '/config/api_security.php';
 validateApiAccess($ALLOWED_ORIGINS);
 
@@ -85,28 +120,31 @@ $payer = [
 
 $accessToken = mpAccessToken($pdo);
 
-// Se o aluno marcou "salvar cartão / ativar cobrança automática", salva o cartão no
-// customer do MP e gera um novo token a partir dele (token avulso do Brick é uso único,
-// não pode ser reaproveitado pra cobranças futuras). Se algo falhar aqui, não bloqueia o
-// pagamento — segue com o token original e cobra normalmente, só não ativa a recorrência.
-$cartaoSalvo     = false;
-$cartaoInfo      = null;
-$customerIdUsado = null;
+// ── Regra de ouro deste arquivo: COBRAR NUNCA PODE FALHAR POR CAUSA DE OUTRA COISA ──
+//
+// Salvar cartão e cobrar são operações separadas, e misturar as duas já quebrou pagamento
+// em produção. Histórico do bug (erro 3031 do MP, "security_code_id can't be null"):
+//
+//   O token do Brick é de uso único e carrega o CVV digitado pelo aluno. O código antigo
+//   gastava esse token salvando o cartão no customer e, pra cobrar, gerava um token NOVO a
+//   partir do card_id — mas /v1/card_tokens sem `security_code` produz token SEM CVV, que
+//   o emissor recusa. O CVV do aluno estava correto: nós é que o descartávamos.
+//
+// Também não dá pra "aproveitar" a cobrança pra vincular o cartão mandando o customer no
+// payer: com customer no payload, o MP passa a exigir que o token pertença àquele customer
+// (responde 404 "Card Token not found" em vez de validar o token normalmente) — verificado
+// contra a API. Um token recém-criado pelo Brick não pertence ao customer, então isso
+// reintroduziria risco de recusa.
+//
+// Por isso o pagamento aqui é sempre o mais simples possível: token do Brick + dados do
+// aluno. Quem quiser cobrança automática ativa em /meuperfil, que tem um Brick dedicado
+// só pra tokenizar e salvar o cartão (services/site/salvar_cartao.php), sem cobrar nada.
+$salvarCartaoPedido = $salvarCartao; // usado só pra orientar o aluno depois do pagamento
 
-if ($salvarCartao) {
-    $customerIdUsado = $mens['mp_customer_id'] ?: mpObterOuCriarCustomer($accessToken, $payer['email']);
-
-    if (!empty($customerIdUsado)) {
-        $cartaoInfo = mpSalvarCartaoCustomer($accessToken, $customerIdUsado, $token);
-        if ($cartaoInfo) {
-            $tokenResult = mpGerarTokenCartaoSalvo($accessToken, $cartaoInfo['id'], $customerIdUsado);
-            if ($tokenResult['token']) {
-                $token       = $tokenResult['token'];
-                $cartaoSalvo = true;
-            }
-        }
-    }
-}
+// external_reference deixa a cobrança localizável no MP mesmo se a resposta se perder
+// antes de salvarmos o mp_payment_id — é o que permite ao job de verificação reconciliar
+// depois (ver services/site/verificar_pagamento.php).
+$externalRef = 'mensalidade-' . $mensalidadeId;
 
 if ($isPix) {
     $paymentData = [
@@ -115,6 +153,7 @@ if ($isPix) {
         'description'        => 'MPG Academy — Mensalidade ' . $refLabel,
         'payer'              => ['email' => $payer['email']],
         'metadata'           => ['mensalidade_id' => $mensalidadeId],
+        'external_reference' => $externalRef,
     ];
 } else {
     $paymentData = [
@@ -123,8 +162,10 @@ if ($isPix) {
         'description'        => 'MPG Academy — Mensalidade ' . $refLabel,
         'installments'       => (int) ($input['installments'] ?? 1),
         'payment_method_id'  => $input['payment_method_id'] ?? '',
-        'payer'              => $cartaoSalvo ? ['type' => 'customer', 'id' => $customerIdUsado] : $payer,
+        // Sempre os dados do próprio aluno — nada de customer aqui (ver bloco acima).
+        'payer'              => $payer,
         'metadata'           => ['mensalidade_id' => $mensalidadeId],
+        'external_reference' => $externalRef,
     ];
     if (!empty($input['issuer_id'])) {
         $paymentData['issuer_id'] = (int) $input['issuer_id'];
@@ -132,21 +173,12 @@ if ($isPix) {
 }
 
 $result = mpCriarPagamento($accessToken, $paymentData);
+$body   = $result['body'];
 
-// Persiste o cartão salvo independente do resultado dessa cobrança específica
-// (o cartão pode ter sido salvo com sucesso mesmo que essa cobrança seja recusada).
-if ($cartaoSalvo && $cartaoInfo) {
-    $bandeira = $cartaoInfo['payment_method']['id'] ?? ($cartaoInfo['payment_method_id'] ?? '');
-    $final4   = $cartaoInfo['last_four_digits'] ?? '';
-    try {
-        $pdo->prepare("
-            UPDATE alunos
-            SET mp_customer_id = ?, mp_card_id = ?, cartao_bandeira = ?, cartao_final4 = ?, auto_pagamento = 1
-            WHERE id = ?
-        ")->execute([$customerIdUsado, $cartaoInfo['id'], $bandeira, $final4, $alunoId]);
-    } catch (PDOException $e) {}
-}
-$body        = $result['body'];
+// O cartão NÃO é salvo aqui de propósito (ver bloco no topo). Se o aluno pediu, o front
+// usa este flag pra oferecer o caminho seguro: ativar a cobrança automática em /meuperfil.
+$cartaoSalvo = false;
+
 $status      = $body['status'] ?? '';
 $mpPaymentId = $body['id'] ?? null;
 
@@ -171,7 +203,8 @@ if (in_array($status, ['approved', 'pending', 'in_process'], true)) {
             'payment_id'   => $mpPaymentId,
             'referencia'   => $refLabel,
             'valor_pago'   => $total,
-            'cartao_salvo' => $cartaoSalvo,
+            'cartao_salvo'   => $cartaoSalvo,
+            'oferecer_auto' => $salvarCartaoPedido,
         ]);
 
     } elseif ($isPix) {
@@ -193,12 +226,35 @@ if (in_array($status, ['approved', 'pending', 'in_process'], true)) {
             'payment_id'   => $mpPaymentId,
             'referencia'   => $refLabel,
             'valor_pago'   => $total,
-            'cartao_salvo' => $cartaoSalvo,
+            'cartao_salvo'   => $cartaoSalvo,
+            'oferecer_auto' => $salvarCartaoPedido,
         ]);
     }
 
 } else {
-    $detail = $body['status_detail'] ?? ($body['message'] ?? 'Pagamento recusado.');
+    $statusDetail = $body['status_detail'] ?? null;
+    $detail       = $statusDetail ?? ($body['message'] ?? 'Pagamento recusado.');
+
+    // Registra a falha pro admin conseguir ajudar o aluno (admin/erros-pagamento + sino).
+    mpRegistrarErroPagamento($pdo, [
+        'aluno_id'         => $alunoId,
+        'aluno_nome'       => $mens['aluno_nome']  ?? null,
+        'aluno_email'      => $mens['aluno_email'] ?? null,
+        'contexto'         => 'mensalidade',
+        'referencia_id'    => $mensalidadeId,
+        'referencia_label' => $refLabel,
+        'valor'            => $total,
+        'metodo'           => $isPix ? 'pix' : ($input['payment_method_id'] ?? 'cartao'),
+        'parcelas'         => $isPix ? null : (int) ($input['installments'] ?? 1),
+        'origem'           => 'site',
+        'mp_payment_id'    => $mpPaymentId,
+        'mp_status'        => $status ?: 'rejected',
+        'mp_status_detail' => $statusDetail,
+        'http_code'        => $result['http_code'] ?? null,
+        'mensagem'         => mpMotivoPt($statusDetail, $body['message'] ?? null),
+        'detalhe_tecnico'  => mpExtrairErroApi($body, $statusDetail),
+    ]);
+
     echo json_encode([
         'success' => false,
         'status'  => $status ?: 'rejected',

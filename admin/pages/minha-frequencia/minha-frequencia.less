@@ -1,5 +1,26 @@
 // ── Frequência do professor (professor view + admin view) ─────────────────────
 
+.freqPrint {
+    &__actions {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: flex-end;
+    }
+
+    @media @tabletSM {
+        &__actions {
+            width: 100%;
+
+            .btn {
+                justify-content: center;
+                width: 100%;
+            }
+        }
+    }
+}
+
 .freqProf {
 
     &__stats {
@@ -134,5 +155,116 @@
         &--falta     { background: rgba(239,68,68,.12); color: #f87171; }
         &--pendente  { background: rgba(255,255,255,.06); color: rgba(255,255,255,.38); }
         &--cancelada { background: rgba(148,163,184,.12); color: #94a3b8; }
+    }
+}
+
+@media print {
+    @page {
+        margin: 12mm;
+    }
+
+    * {
+        box-shadow: none !important;
+        text-shadow: none !important;
+    }
+
+    html,
+    body {
+        background: #fff !important;
+        color: #111 !important;
+        font-size: 11pt;
+    }
+
+    .header,
+    .sidebar,
+    .sidebar__overlay,
+    .freqPrint__actions,
+    .header__hamburger,
+    script {
+        display: none !important;
+    }
+
+    .adminLayout {
+        display: block !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .adminLayout__content {
+        margin: 0 !important;
+        max-width: none !important;
+        padding: 0 !important;
+        width: 100% !important;
+    }
+
+    .areaProfessor__welcome {
+        background: #fff !important;
+        border: 0 !important;
+        border-bottom: 2px solid #111 !important;
+        border-radius: 0 !important;
+        color: #111 !important;
+        margin-bottom: 16px !important;
+        padding: 0 0 12px !important;
+    }
+
+    .areaProfessor__title,
+    .areaProfessor__title span,
+    .areaProfessor__sub {
+        color: #111 !important;
+    }
+
+    .freqProf {
+        &__stats {
+            display: grid !important;
+            gap: 8px !important;
+            grid-template-columns: repeat(4, 1fr) !important;
+            margin-bottom: 18px !important;
+        }
+
+        &__statCard {
+            background: #fff !important;
+            border: 1px solid #d6d6d6 !important;
+            color: #111 !important;
+            padding: 10px !important;
+        }
+
+        &__statNum,
+        &__statLabel,
+        &__mesHeader,
+        &__diaN,
+        &__diaNome,
+        &__turmaNome,
+        &__horario,
+        &__horario em,
+        &__tag {
+            background: transparent !important;
+            color: #111 !important;
+        }
+
+        &__lista {
+            gap: 18px !important;
+        }
+
+        &__mesHeader {
+            border-bottom: 1px solid #cfcfcf !important;
+            margin-bottom: 2px !important;
+            padding-bottom: 6px !important;
+        }
+
+        &__item {
+            border-bottom: 1px solid #e0e0e0 !important;
+            break-inside: avoid;
+            gap: 12px !important;
+            page-break-inside: avoid;
+            padding: 8px 0 !important;
+        }
+
+        &__item--pendente {
+            opacity: 1 !important;
+        }
+
+        &__tag {
+            border: 1px solid #cfcfcf !important;
+        }
     }
 }

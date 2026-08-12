@@ -16,7 +16,7 @@ function wppAulaTesteConfirmacao(array $aluno, array $turma, string $dataFmt, st
 
     $nomePrimeiro = explode(' ', trim($aluno['nome']))[0];
     $endereco     = _montaEndereco($turma);
-    $mapsLink     = $endereco ? googleMapsLink($endereco) : '';
+    $mapsLink     = $endereco ? googleMapsLink($endereco, $turma['maps_link'] ?? null) : '';
 
     // Mensagem para o aluno
     if (!empty($aluno['celular'])) {
@@ -73,7 +73,7 @@ function wppAulaTesteReagendada(array $aluno, array $turma, string $dataFmt, str
 
     $nomePrimeiro = explode(' ', trim($aluno['nome']))[0];
     $endereco     = _montaEndereco($turma);
-    $mapsLink     = $endereco ? googleMapsLink($endereco) : '';
+    $mapsLink     = $endereco ? googleMapsLink($endereco, $turma['maps_link'] ?? null) : '';
 
     // Mensagem para o aluno
     if (!empty($aluno['celular'])) {

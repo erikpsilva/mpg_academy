@@ -222,6 +222,12 @@ if ($id > 0) {
                     <button class="btn btn--primary btn--sm" id="btnNovaCobranca">
                         + Cobrança extra
                     </button>
+                    <?php // Editar cadastro é liberado pra editor também (não é ação destrutiva). ?>
+                    <?php if (in_array($_SESSION['usuario']['nivel_acesso'], ['admin', 'editor'], true)): ?>
+                    <button class="btn btn--outline btn--sm" id="btnEditarAluno">
+                        &#9998; Editar Dados
+                    </button>
+                    <?php endif; ?>
                     <?php if ($_SESSION['usuario']['nivel_acesso'] === 'admin'): ?>
                     <button class="btn btn--outline btn--sm" id="btnAlterarSenha">
                         &#128273; Alterar Senha
@@ -313,8 +319,7 @@ if ($id > 0) {
                             <div class="alunos__detalheGrupo">
                                 <h4>Contato &amp; Endere&ccedil;o</h4>
                                 <ul class="alunos__detalheList">
-                                    <li><span>Celular</span><strong><?= htmlspecialchars($aluno['celular']) ?></strong></li>
-                                    <li><span>WhatsApp</span><strong><?= htmlspecialchars($aluno['whatsapp']) ?></strong></li>
+                                    <li><span>Celular / WhatsApp</span><strong><?= htmlspecialchars($aluno['celular']) ?></strong></li>
                                     <li><span>CEP</span><strong><?= htmlspecialchars($aluno['cep']) ?></strong></li>
                                     <li><span>Endere&ccedil;o</span><strong><?= htmlspecialchars($aluno['rua'] . ', ' . $aluno['numero']) ?><?= $aluno['complemento'] ? ' - ' . htmlspecialchars($aluno['complemento']) : '' ?></strong></li>
                                     <li><span>Bairro</span><strong><?= htmlspecialchars($aluno['bairro']) ?></strong></li>
@@ -562,6 +567,140 @@ if ($id > 0) {
         </div>
 
         <!-- Modal de alterar senha do aluno -->
+        <?php // ── Editar dados cadastrais ─────────────────────────────────── ?>
+        <div class="confirmModal" id="editarAlunoModal">
+            <div class="confirmModal__box editarAlunoModal__box">
+                <h3>Editar dados do aluno</h3>
+                <p class="cobrancaModal__intro">
+                    Altera apenas o cadastro. Senha, status, turmas e matrícula têm botões próprios nesta tela.
+                </p>
+
+                <div class="editarAluno__grid">
+                    <label class="cobrancaModal__label editarAluno--full">
+                        <span>Nome <em>*</em></span>
+                        <input type="text" id="edNome" class="input cobrancaModal__input" maxlength="255"
+                               value="<?= htmlspecialchars($aluno['nome'] ?? '') ?>">
+                    </label>
+
+                    <label class="cobrancaModal__label editarAluno--wide">
+                        <span>E-mail <em>*</em></span>
+                        <input type="email" id="edEmail" class="input cobrancaModal__input" maxlength="255"
+                               value="<?= htmlspecialchars($aluno['email'] ?? '') ?>">
+                    </label>
+
+                    <label class="cobrancaModal__label">
+                        <span>CPF <em>*</em></span>
+                        <input type="text" id="edCpf" class="input cobrancaModal__input" maxlength="14"
+                               value="<?= htmlspecialchars($aluno['cpf'] ?? '') ?>">
+                    </label>
+
+                    <label class="cobrancaModal__label">
+                        <span>Nascimento <em>*</em></span>
+                        <input type="date" id="edNascimento" class="input cobrancaModal__input"
+                               value="<?= htmlspecialchars($aluno['nascimento'] ?? '') ?>">
+                    </label>
+
+                    <label class="cobrancaModal__label">
+                        <span>Sexo <em>*</em></span>
+                        <select id="edSexo" class="input cobrancaModal__input">
+                            <?php foreach (['feminino'=>'Feminino','masculino'=>'Masculino','outro'=>'Outro'] as $v=>$l): ?>
+                            <option value="<?= $v ?>" <?= ($aluno['sexo'] ?? '') === $v ? 'selected' : '' ?>><?= $l ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </label>
+
+                    <label class="cobrancaModal__label editarAluno--wide">
+                        <span>Celular / WhatsApp <em>*</em></span>
+                        <input type="text" id="edCelular" class="input cobrancaModal__input" maxlength="20"
+                               value="<?= htmlspecialchars($aluno['celular'] ?? '') ?>">
+                    </label>
+
+                    <label class="cobrancaModal__label">
+                        <span>CEP</span>
+                        <input type="text" id="edCep" class="input cobrancaModal__input" maxlength="9"
+                               value="<?= htmlspecialchars($aluno['cep'] ?? '') ?>">
+                    </label>
+
+                    <label class="cobrancaModal__label editarAluno--wide">
+                        <span>Rua</span>
+                        <input type="text" id="edRua" class="input cobrancaModal__input" maxlength="255"
+                               value="<?= htmlspecialchars($aluno['rua'] ?? '') ?>">
+                    </label>
+
+                    <label class="cobrancaModal__label">
+                        <span>Número</span>
+                        <input type="text" id="edNumero" class="input cobrancaModal__input" maxlength="20"
+                               value="<?= htmlspecialchars($aluno['numero'] ?? '') ?>">
+                    </label>
+
+                    <label class="cobrancaModal__label">
+                        <span>Complemento</span>
+                        <input type="text" id="edComplemento" class="input cobrancaModal__input" maxlength="100"
+                               value="<?= htmlspecialchars($aluno['complemento'] ?? '') ?>">
+                    </label>
+
+                    <label class="cobrancaModal__label editarAluno--medium">
+                        <span>Bairro</span>
+                        <input type="text" id="edBairro" class="input cobrancaModal__input" maxlength="100"
+                               value="<?= htmlspecialchars($aluno['bairro'] ?? '') ?>">
+                    </label>
+
+                    <label class="cobrancaModal__label editarAluno--wide">
+                        <span>Cidade</span>
+                        <input type="text" id="edCidade" class="input cobrancaModal__input" maxlength="100"
+                               value="<?= htmlspecialchars($aluno['cidade'] ?? '') ?>">
+                    </label>
+
+                    <label class="cobrancaModal__label editarAluno--state">
+                        <span>UF</span>
+                        <input type="text" id="edEstado" class="input cobrancaModal__input" maxlength="2"
+                               value="<?= htmlspecialchars($aluno['estado'] ?? '') ?>">
+                    </label>
+                </div>
+
+                <?php // Só aparece quando a data de nascimento indica menor — controlado pelo JS. ?>
+                <div id="edBlocoResponsavel" class="editarAluno__responsavel" style="display:none;">
+                    <h4>Responsável <small>(obrigatório para menor de 18 anos)</small></h4>
+                    <div class="editarAluno__grid">
+                        <label class="cobrancaModal__label editarAluno--wide">
+                            <span>Nome do responsável</span>
+                            <input type="text" id="edRespNome" class="input cobrancaModal__input" maxlength="255"
+                                   value="<?= htmlspecialchars($aluno['responsavel_nome'] ?? '') ?>">
+                        </label>
+
+                        <label class="cobrancaModal__label">
+                            <span>Parentesco</span>
+                            <select id="edRespParentesco" class="input cobrancaModal__input">
+                                <?php foreach (['pai'=>'Pai','mae'=>'Mãe','responsavel_legal'=>'Responsável legal'] as $v=>$l): ?>
+                                <option value="<?= $v ?>" <?= ($aluno['responsavel_parentesco'] ?? '') === $v ? 'selected' : '' ?>><?= $l ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </label>
+
+                        <label class="cobrancaModal__label">
+                            <span>CPF do responsável</span>
+                            <input type="text" id="edRespCpf" class="input cobrancaModal__input" maxlength="14"
+                                   value="<?= htmlspecialchars($aluno['responsavel_cpf'] ?? '') ?>">
+                        </label>
+
+                        <label class="cobrancaModal__label">
+                            <span>Celular do responsável</span>
+                            <input type="text" id="edRespCelular" class="input cobrancaModal__input" maxlength="20"
+                                   value="<?= htmlspecialchars($aluno['responsavel_celular'] ?? '') ?>">
+                        </label>
+                    </div>
+                </div>
+
+                <div id="edMsg" class="cobrancaModal__msg"></div>
+
+                <div class="confirmModal__actions cobrancaModal__actions">
+                    <button class="btn btn--gray" id="edCancelar">Cancelar</button>
+                    <button class="btn btn--primary" id="edSalvar"
+                            data-aluno-id="<?= $aluno['id'] ?? '' ?>">Salvar alterações</button>
+                </div>
+            </div>
+        </div>
+
         <div class="confirmModal" id="senhaModal">
             <div class="confirmModal__box cobrancaModal__box">
                 <h3>Alterar senha do aluno</h3>

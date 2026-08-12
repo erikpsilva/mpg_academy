@@ -130,7 +130,11 @@
 
     &__box {
         display: grid;
-        grid-template-columns: 1fr 1fr 1.2fr;
+        grid-template-columns:
+            minmax(0, 1fr)
+            minmax(0, 0.95fr)
+            minmax(0, 1.15fr)
+            minmax(180px, 0.85fr);
         align-items: center;
         gap: 0;
         padding: 20px;
@@ -148,6 +152,7 @@
 
             &:last-child {
                 border-right: 0;
+                padding-right: 0;
             }
 
             span,

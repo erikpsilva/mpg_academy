@@ -206,6 +206,7 @@ const prefillEdit = (editData) => {
     $('#complemento').val(editData.complemento || '');
     $('#cidade').val(editData.cidade || '');
     $('#estado').val(editData.estado || '');
+    $('#mapsLink').val(editData.maps_link || '');
     $('#valorMensal').val(editData.valor_mensal || '');
     $('#diaPagamento').val(editData.dia_pagamento || 10);
     $('#dataInicioContrato').val(editData.data_inicio_contrato || '');
@@ -340,6 +341,7 @@ const coletarDados = () => {
         complemento:   $('#complemento').val().trim(),
         cidade:        $('#cidade').val().trim(),
         estado:        $('#estado').val().trim(),
+        maps_link:     $('#mapsLink').val().trim(),
         valor_mensal:           parseFloat($('#valorMensal').val()) || 0,
         dia_pagamento:          parseInt($('#diaPagamento').val()) || 10,
         data_inicio_contrato:   $('#dataInicioContrato').val() || null,

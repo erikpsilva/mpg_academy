@@ -35,14 +35,58 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 
 $pdo = getDbConnection();
 
-$stmt = $pdo->prepare("SELECT id, nome, email, foto, status, senha FROM alunos WHERE email = ? LIMIT 1");
+// Um mesmo e-mail pode ter MAIS DE UM aluno: menor de idade usa o e-mail do responsável, e
+// o responsável às vezes também é aluno (pai que joga e matricula o filho). Por isso não dá
+// pra usar LIMIT 1 — é a senha que diz quem está entrando.
+$stmt = $pdo->prepare("SELECT id, nome, email, foto, status, senha, is_menor FROM alunos WHERE email = ?");
 $stmt->execute([$email]);
-$aluno = $stmt->fetch();
+$candidatos = $stmt->fetchAll();
 
-if (!$aluno || !password_verify($senha, $aluno['senha'])) {
+// Confere a senha contra cada cadastro daquele e-mail.
+$compativeis = array_values(array_filter(
+    $candidatos,
+    fn($a) => password_verify($senha, $a['senha'])
+));
+
+if (empty($compativeis)) {
     http_response_code(401);
     echo json_encode(['success' => false, 'message' => 'E-mail ou senha incorretos.']);
     exit;
+}
+
+// Pai e filho com a MESMA senha — aí só quem está na frente da tela sabe quem é.
+if (count($compativeis) > 1 && empty($_POST['aluno_id'])) {
+    http_response_code(200);
+    echo json_encode([
+        'success'         => false,
+        'escolher_perfil' => true,
+        'message'         => 'Existe mais de um cadastro com esse e-mail. Escolha quem está entrando.',
+        'perfis'          => array_map(fn($a) => [
+            'id'       => (int) $a['id'],
+            'nome'     => $a['nome'],
+            'foto'     => $a['foto'],
+            'is_menor' => (bool) $a['is_menor'],
+        ], $compativeis),
+    ]);
+    exit;
+}
+
+$aluno = $compativeis[0];
+
+// Perfil escolhido na tela — só aceita um dos que a senha já validou, pra ninguém entrar
+// em outro cadastro só mandando um id qualquer.
+if (!empty($_POST['aluno_id'])) {
+    $escolhido = (int) $_POST['aluno_id'];
+    $achou = null;
+    foreach ($compativeis as $c) {
+        if ((int) $c['id'] === $escolhido) { $achou = $c; break; }
+    }
+    if (!$achou) {
+        http_response_code(401);
+        echo json_encode(['success' => false, 'message' => 'E-mail ou senha incorretos.']);
+        exit;
+    }
+    $aluno = $achou;
 }
 
 if ($aluno['status'] !== 'ativo') {
@@ -51,7 +95,7 @@ if ($aluno['status'] !== 'ativo') {
     exit;
 }
 
-unset($aluno['senha']);
+unset($aluno['senha'], $aluno['is_menor']);
 
 $_SESSION['aluno'] = $aluno;
 

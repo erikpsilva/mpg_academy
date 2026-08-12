@@ -1,0 +1,898 @@
+.uniformOrder {
+    padding: 40px 0 70px;
+    background: #0b0d0f;
+    min-height: 70vh;
+
+    &__back {
+        display: inline-block;
+        margin-bottom: 22px;
+        color: #8b8b8b;
+        font-size: 13px;
+        text-decoration: none;
+
+        &:hover {
+            color: @yellow;
+        }
+    }
+
+    &__head {
+        margin-bottom: 26px;
+        text-align: center;
+
+        span {
+            color: @yellow;
+            font-size: 12px;
+            font-weight: 900;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            color: @white;
+            font-size: 28px;
+            margin: 8px 0;
+        }
+
+        p {
+            color: #cfcfcf;
+            font-size: 14px;
+            margin: 0;
+        }
+    }
+
+    &__empty {
+        max-width: 560px;
+        margin: 0 auto;
+        padding: 36px 30px;
+        border: 1px solid rgba(255, 255, 255, 0.13);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.035);
+        text-align: center;
+
+        h1 {
+            color: @white;
+            font-size: 24px;
+            margin: 0 0 12px;
+        }
+
+        p {
+            color: #cfcfcf;
+            font-size: 14px;
+            line-height: 1.6;
+            margin: 0 0 22px;
+        }
+    }
+
+    &__form {
+        max-width: 760px;
+        margin: 0 auto;
+    }
+
+    &__block {
+        margin-bottom: 18px;
+        padding: 26px;
+        border: 1px solid rgba(255, 255, 255, 0.13);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.035);
+
+        > h2 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: @white;
+            font-size: 18px;
+            margin: 0 0 20px;
+
+            span {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 26px;
+                height: 26px;
+                flex-shrink: 0;
+                border-radius: 50%;
+                background: @yellow;
+                color: #050505;
+                font-size: 13px;
+                font-weight: 900;
+            }
+        }
+
+        &--summary {
+            background: radial-gradient(circle at 50% 0, rgba(255, 213, 0, 0.08), transparent 40%), rgba(255, 255, 255, 0.035);
+        }
+    }
+
+    // ── Bloco 1: aluno ──────────────────────────────────────────────────────────
+    &__student {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 14px 16px;
+        border: 1px solid rgba(255, 213, 0, 0.22);
+        border-radius: 8px;
+        background: rgba(0, 0, 0, 0.28);
+
+        img,
+        .uniformOrder__avatar {
+            width: 52px;
+            height: 52px;
+            flex-shrink: 0;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .uniformOrder__avatar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.08);
+            color: #9a9a9a;
+            font-size: 20px;
+        }
+
+        strong {
+            display: block;
+            color: @white;
+            font-size: 14px;
+        }
+
+        small {
+            color: #9a9a9a;
+            font-size: 13px;
+        }
+    }
+
+    &__turmaInfo {
+        margin: 14px 0 0;
+        color: #cfcfcf;
+        font-size: 13px;
+
+        strong {
+            color: @yellow;
+        }
+    }
+
+    // ── Campos ──────────────────────────────────────────────────────────────────
+    &__field {
+        display: block;
+        margin-top: 18px;
+
+        &:first-child {
+            margin-top: 0;
+        }
+
+        > span {
+            display: block;
+            margin-bottom: 8px;
+            color: @white;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        input[type="text"],
+        select {
+            width: 100%;
+            height: 46px;
+            padding: 0 14px;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.4);
+            color: @white;
+            font-family: @font;
+            font-size: 15px;
+
+            &:focus {
+                border-color: @yellow;
+                outline: 0;
+            }
+        }
+
+        input[type="text"] {
+            text-transform: uppercase;
+        }
+
+        > small {
+            display: block;
+            margin-top: 7px;
+            color: #8b8b8b;
+            font-size: 12px;
+
+            a {
+                color: @yellow;
+            }
+        }
+    }
+
+    // ── Modelos ─────────────────────────────────────────────────────────────────
+    &__models {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+    }
+
+    // ── Número ──────────────────────────────────────────────────────────────────
+    &__numberPick {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        height: 46px;
+        padding: 0 14px;
+        border: 1px dashed rgba(255, 213, 0, 0.5);
+        border-radius: 8px;
+        background: rgba(0, 0, 0, 0.4);
+        color: @yellow;
+        cursor: pointer;
+        font-family: @font;
+        font-size: 15px;
+        font-weight: 700;
+
+        em {
+            font-style: normal;
+        }
+
+        &.is-filled {
+            border-style: solid;
+            border-color: @yellow;
+            background: rgba(255, 213, 0, 0.1);
+            color: @white;
+        }
+    }
+
+    // ── Tamanhos ────────────────────────────────────────────────────────────────
+    &__sizes {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    &__size {
+        min-width: 56px;
+        height: 44px;
+        padding: 0 12px;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 8px;
+        background: rgba(0, 0, 0, 0.4);
+        color: #cfcfcf;
+        cursor: pointer;
+        font-family: @font;
+        font-size: 14px;
+        font-weight: 700;
+        .transition(0.15s all);
+
+        &:hover {
+            border-color: rgba(255, 213, 0, 0.6);
+            color: @white;
+        }
+
+        &.is-active {
+            border-color: @yellow;
+            background: @yellow;
+            color: #050505;
+        }
+    }
+
+    &__measureLink {
+        display: inline;
+        padding: 0;
+        border: 0;
+        border-bottom: 1px solid @yellow;
+        background: transparent;
+        color: @yellow;
+        cursor: pointer;
+        font: inherit;
+        font-weight: 700;
+    }
+
+    // ── Resumo ──────────────────────────────────────────────────────────────────
+    &__summary {
+        margin: 0 0 18px;
+        padding: 16px 18px;
+        border-radius: 8px;
+        background: rgba(0, 0, 0, 0.35);
+
+        > div {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 7px 0;
+
+            dt {
+                color: #9a9a9a;
+                font-size: 13px;
+            }
+
+            dd {
+                margin: 0;
+                color: @white;
+                font-size: 14px;
+                font-weight: 700;
+                text-align: right;
+            }
+        }
+    }
+
+    &__summaryTotal {
+        margin-top: 8px;
+        padding-top: 14px !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.12);
+
+        dt {
+            color: @white !important;
+            font-size: 15px !important;
+            font-weight: 700;
+        }
+
+        dd {
+            color: @yellow !important;
+            font-size: 22px !important;
+        }
+    }
+
+    &__notice {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        margin: 0 0 18px;
+        padding: 14px 16px;
+        border: 1px solid rgba(255, 213, 0, 0.28);
+        border-radius: 8px;
+        background: rgba(255, 213, 0, 0.06);
+        color: #ededed;
+        font-size: 13px;
+        line-height: 1.55;
+
+        i {
+            flex-shrink: 0;
+            color: @yellow;
+            font-size: 16px;
+            margin-top: 2px;
+        }
+
+        strong {
+            color: @yellow;
+        }
+    }
+
+    &__error {
+        display: none;
+        margin: 0 0 14px;
+        padding: 12px 14px;
+        border: 1px solid rgba(205, 0, 0, 0.5);
+        border-radius: 8px;
+        background: rgba(205, 0, 0, 0.12);
+        color: #ff9d9d;
+        font-size: 13px;
+
+        &.is-visible {
+            display: block;
+        }
+    }
+
+    &__submit {
+        width: 100%;
+        min-height: 52px;
+        display: block;
+        border: 0;
+        border-radius: 8px;
+        background: @yellow;
+        color: #050505;
+        cursor: pointer;
+        font-family: @font;
+        font-size: 15px;
+        font-weight: 900;
+        text-align: center;
+        text-decoration: none;
+        line-height: 52px;
+
+        &:disabled {
+            opacity: 0.6;
+            cursor: default;
+        }
+    }
+}
+
+// ── Card de modelo (radio custom) ───────────────────────────────────────────────
+.uniformOrderModel {
+    position: relative;
+    display: block;
+    cursor: pointer;
+
+    input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    &__box {
+        position: relative;
+        display: block;
+        padding: 10px 10px 14px;
+        border: 2px solid rgba(255, 255, 255, 0.12);
+        border-radius: 8px;
+        background: rgba(0, 0, 0, 0.28);
+        .transition(0.15s all);
+    }
+
+    &__tag {
+        position: absolute;
+        z-index: 2;
+        top: 18px;
+        left: 18px;
+        padding: 5px 8px;
+        border: 2px solid #000;
+        border-radius: 4px;
+        background: @yellow;
+        color: #050505;
+        font-size: 9px;
+        font-weight: 900;
+        text-transform: uppercase;
+    }
+
+    img {
+        width: 100%;
+        aspect-ratio: 4 / 5;
+        display: block;
+        border-radius: 6px;
+        background: #101010;
+        object-fit: cover;
+    }
+
+    &__name {
+        display: block;
+        margin-top: 10px;
+        color: @white;
+        font-size: 13px;
+        font-weight: 700;
+        text-align: center;
+    }
+
+    &:hover &__box {
+        border-color: rgba(255, 213, 0, 0.45);
+    }
+
+    input:checked + &__box {
+        border-color: @yellow;
+        background: rgba(255, 213, 0, 0.1);
+    }
+
+    input:focus-visible + &__box {
+        outline: 2px solid @yellow;
+        outline-offset: 2px;
+    }
+}
+
+// ── Modal de números ────────────────────────────────────────────────────────────
+.uniformNumbers {
+    position: fixed;
+    z-index: 2000;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+
+    &.is-open {
+        display: flex;
+    }
+
+    &__backdrop {
+        position: absolute;
+        inset: 0;
+        border: 0;
+        background: rgba(0, 0, 0, 0.82);
+        cursor: pointer;
+    }
+
+    &__dialog {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        width: min(100%, 620px);
+        max-height: 90vh;
+        padding: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 12px;
+        background: #121417;
+    }
+
+    &__head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 14px;
+        margin-bottom: 14px;
+
+        h2 {
+            color: @white;
+            font-size: 20px;
+            margin: 0 0 4px;
+        }
+
+        p {
+            color: #9a9a9a;
+            font-size: 13px;
+            margin: 0;
+        }
+    }
+
+    &__close {
+        width: 40px;
+        height: 40px;
+        flex-shrink: 0;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 8px;
+        background: transparent;
+        color: @white;
+        cursor: pointer;
+        font-size: 24px;
+        line-height: 1;
+
+        &:hover {
+            border-color: @yellow;
+            color: @yellow;
+        }
+    }
+
+    &__legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 18px;
+        margin: 0 0 16px;
+        padding: 0 0 14px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        list-style: none;
+
+        li {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            color: #cfcfcf;
+            font-size: 12px;
+        }
+    }
+
+    &__chip {
+        width: 14px;
+        height: 14px;
+        border-radius: 3px;
+
+        &--free {
+            border: 1px solid rgba(90, 210, 130, 0.65);
+            background: rgba(90, 210, 130, 0.14);
+        }
+
+        &--mine {
+            border: 2px solid @yellow;
+            background: rgba(255, 213, 0, 0.25);
+        }
+
+        &--taken {
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: #1a1a1a;
+            opacity: 0.55;
+        }
+    }
+
+    &__grid {
+        display: grid;
+        grid-template-columns: repeat(10, minmax(0, 1fr));
+        gap: 6px;
+        overflow-y: auto;
+        padding-right: 4px;
+    }
+
+    &__loading {
+        grid-column: 1 / -1;
+        padding: 30px 0;
+        color: #8b8b8b;
+        font-size: 13px;
+        text-align: center;
+    }
+
+    &__item {
+        aspect-ratio: 1;
+        // Disponível tem um verde sutil de propósito — precisa ser reconhecível de cara,
+        // sem depender de comparar lado a lado com o indisponível (ver __chip--taken).
+        border: 1px solid rgba(90, 210, 130, 0.55);
+        border-radius: 5px;
+        background: rgba(90, 210, 130, 0.1);
+        color: @white;
+        cursor: pointer;
+        font-family: @font;
+        font-size: 13px;
+        font-weight: 700;
+        .transition(0.12s all);
+
+        &:hover:not(:disabled) {
+            border-color: @yellow;
+            background: rgba(255, 213, 0, 0.18);
+        }
+
+        &.is-mine {
+            border: 2px solid @yellow;
+            background: rgba(255, 213, 0, 0.25);
+            color: @white;
+        }
+
+        // Indisponível precisa "sumir" visualmente — opacity baixa em cima de um fundo
+        // neutro (sem o verde do disponível) é o que garante a diferença à distância,
+        // não só a cor da borda.
+        &.is-taken {
+            border-color: rgba(255, 255, 255, 0.1);
+            background: #1a1a1a;
+            color: #6a6a6a;
+            cursor: not-allowed;
+            text-decoration: line-through;
+            opacity: 0.55;
+        }
+
+        &.is-selected {
+            border-color: @yellow;
+            background: @yellow;
+            color: #050505;
+        }
+    }
+}
+
+.uniformMeasures {
+    position: fixed;
+    z-index: 2100;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+
+    &.is-open {
+        display: flex;
+    }
+
+    &__backdrop {
+        position: absolute;
+        inset: 0;
+        border: 0;
+        background: rgba(0, 0, 0, 0.86);
+        cursor: pointer;
+    }
+
+    &__dialog {
+        position: relative;
+        z-index: 1;
+        width: min(100%, 920px);
+        max-height: calc(100vh - 48px);
+        padding: 24px;
+        border: 1px solid rgba(255, 213, 0, 0.35);
+        border-radius: 12px;
+        background: #121417;
+        overflow-y: auto;
+    }
+
+    &__head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 18px;
+        margin-bottom: 20px;
+
+        span {
+            color: @yellow;
+            font-size: 11px;
+            font-weight: 900;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        h2 {
+            color: @white;
+            font-size: 24px;
+            margin: 5px 0 6px;
+        }
+
+        p {
+            color: #a9a9a9;
+            font-size: 13px;
+            margin: 0;
+        }
+    }
+
+    &__close {
+        width: 42px;
+        height: 42px;
+        flex-shrink: 0;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 8px;
+        background: transparent;
+        color: @white;
+        cursor: pointer;
+        font-size: 26px;
+        line-height: 1;
+
+        &:hover {
+            border-color: @yellow;
+            color: @yellow;
+        }
+    }
+
+    &__grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+    }
+
+    &__table {
+        min-width: 0;
+        padding: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 8px;
+        background: rgba(0, 0, 0, 0.25);
+
+        h3 {
+            color: @white;
+            font-size: 17px;
+            margin: 0 0 13px;
+            padding-left: 10px;
+            border-left: 3px solid @yellow;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            color: #ededed;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        th,
+        td {
+            padding: 9px 6px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        thead th {
+            background: @yellow;
+            color: #050505;
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        tbody th {
+            color: @yellow;
+            font-weight: 900;
+        }
+
+        tbody tr:nth-child(even) {
+            background: rgba(255, 255, 255, 0.035);
+        }
+    }
+}
+
+@media @tablet {
+    .uniformOrder {
+        &__models {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+}
+
+@media @tablet-small {
+    .uniformOrder {
+        padding: 26px 0 50px;
+
+        &__block {
+            padding: 20px 18px;
+        }
+
+        &__head h1 {
+            font-size: 23px;
+        }
+    }
+
+    // No celular o modal ocupa a tela inteira — a grade de 99 números precisa do espaço.
+    .uniformNumbers {
+        padding: 0;
+
+        &__dialog {
+            width: 100%;
+            height: 100%;
+            max-height: none;
+            border: 0;
+            border-radius: 0;
+            padding: 18px;
+        }
+
+        &__grid {
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        &__item {
+            font-size: 15px;
+        }
+    }
+
+    .uniformMeasures {
+        padding: 0;
+
+        &__dialog {
+            width: 100%;
+            height: 100%;
+            max-height: none;
+            padding: 18px 12px 28px;
+            border: 0;
+            border-radius: 0;
+        }
+
+        &__head {
+            position: sticky;
+            z-index: 2;
+            top: -18px;
+            padding: 18px 2px 14px;
+            background: #121417;
+
+            h2 {
+                font-size: 21px;
+            }
+        }
+
+        &__grid {
+            grid-template-columns: 1fr;
+        }
+
+        &__table {
+            padding: 13px 8px;
+        }
+    }
+}
+
+@media @mobile-large {
+    .uniformOrder {
+        padding-right: 8px;
+        padding-left: 8px;
+
+        &__block {
+            padding: 18px 12px;
+        }
+
+        &__models {
+            // A ordem do HTML mantém os masculinos na primeira linha e os
+            // femininos na segunda, com dois modelos por linha.
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        &__size {
+            flex: 1 0 calc(33.333% - 8px);
+        }
+    }
+
+    .uniformOrderModel {
+        min-width: 0;
+
+        &__box {
+            padding: 5px 5px 9px;
+        }
+
+        &__tag {
+            top: 5px;
+            right: 5px;
+            left: 5px;
+            width: auto;
+            padding: 5px 6px;
+            border-width: 1px;
+            text-align: center;
+            font-size: 16px;
+            line-height: 1.1;
+        }
+
+        &__name {
+            margin-top: 7px;
+            font-size: 11px;
+            line-height: 1.25;
+        }
+    }
+}

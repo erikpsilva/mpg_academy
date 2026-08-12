@@ -21,16 +21,42 @@ function normalizeHost(string $host): string {
     return explode(':', $host)[0];
 }
 
+/**
+ * Reduz uma URL a "esquema://host[:porta]" — que é exatamente o formato de um header
+ * `Origin`. Um Origin NUNCA carrega caminho, então comparar ele direto com entradas do
+ * tipo "http://localhost/mpg_academy" jamais casa: era isso que fazia todo POST do
+ * navegador tomar 403 "Acesso não autorizado" no ambiente local (em produção passava por
+ * acaso, porque lá a URL base não tem caminho). Normalizando os dois lados, o mesmo
+ * conjunto de origens permitidas continua valendo — só que agora comparado corretamente.
+ */
+function originBase(string $url): string {
+    $url = trim($url);
+    if ($url === '') return '';
+
+    $partes = parse_url($url);
+    if (empty($partes['scheme']) || empty($partes['host'])) return '';
+
+    $base = strtolower($partes['scheme']) . '://' . strtolower($partes['host']);
+    if (!empty($partes['port'])) {
+        $base .= ':' . $partes['port'];
+    }
+
+    return $base;
+}
+
 function validateApiAccess(array $allowedOrigins): void {
     $origin  = $_SERVER['HTTP_ORIGIN']  ?? '';
     $referer = $_SERVER['HTTP_REFERER'] ?? '';
 
     $originAllowed = false;
 
-    // Verifica pelo header Origin (presente em requisições cross-origin)
+    // Verifica pelo header Origin. O navegador manda esse header em TODO POST (mesmo
+    // same-origin), então a comparação precisa ser por esquema+host+porta — ver originBase().
     if (!empty($origin)) {
+        $origemPedido = originBase($origin);
+
         foreach ($allowedOrigins as $allowed) {
-            if (rtrim($origin, '/') === rtrim($allowed, '/')) {
+            if ($origemPedido !== '' && $origemPedido === originBase($allowed)) {
                 $originAllowed = true;
                 header('Access-Control-Allow-Origin: ' . $origin);
                 break;

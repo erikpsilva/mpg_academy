@@ -40,7 +40,10 @@ require_once ROOT . '/admin/pages/frequencia-professor/frequencia_helpers.php';
         <h1 class="areaProfessor__title">Frequência — <span><?= htmlspecialchars($prof['nome'] . ' ' . $prof['sobrenome']) ?></span></h1>
         <p class="areaProfessor__sub"><?= htmlspecialchars($prof['email']) ?> &mdash; <?= date('Y') ?></p>
     </div>
-    <a href="<?= ADMIN_BASE_URL ?>/professores" class="btn btn--gray">← Voltar</a>
+    <div class="freqPrint__actions">
+        <button type="button" class="btn btn--gray freqPrint__button" onclick="window.print()">Imprimir frequência</button>
+        <a href="<?= ADMIN_BASE_URL ?>/professores" class="btn btn--gray">← Voltar</a>
+    </div>
 </div>
 
 <?php renderFrequenciaView($porMes, $stats); ?>

@@ -19,7 +19,7 @@ $stmt = $pdo->prepare("
     SELECT ae.id, ae.data_agendada,
            at.nome, at.celular, at.is_menor, at.responsavel_nome, at.responsavel_celular,
            t.nome AS turma_nome,
-           q.rua, q.numero, q.bairro, q.complemento, q.cidade, q.estado,
+           q.rua, q.numero, q.bairro, q.complemento, q.cidade, q.estado, q.maps_link,
            qh.hora_inicio, qh.hora_fim
     FROM aulas_experimentais ae
     JOIN alunos_teste at  ON at.id = ae.aluno_teste_id

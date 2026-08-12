@@ -42,6 +42,54 @@
                     Contrato
                 </a>
             </li>
+        <?php elseif (($_SESSION['usuario']['nivel_acesso'] ?? '') === 'batebola'): ?>
+            <!-- Menu exclusivo do perfil Bate Bola -->
+            <li class="sidebar__section">Bate Bola</li>
+
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/batebola"
+                   class="sidebar__link <?= ($subRoute === 'batebola') ? 'sidebar__link--active' : '' ?>">
+                    Jogadores
+                </a>
+            </li>
+
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/batebolapresenca"
+                   class="sidebar__link <?= ($subRoute === 'batebolapresenca') ? 'sidebar__link--active' : '' ?>">
+                    Lista de Presença
+                </a>
+            </li>
+
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/batebolatimes"
+                   class="sidebar__link <?= ($subRoute === 'batebolatimes') ? 'sidebar__link--active' : '' ?>">
+                    Sortear Times
+                </a>
+            </li>
+
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/batebolahistorico"
+                   class="sidebar__link <?= ($subRoute === 'batebolahistorico') ? 'sidebar__link--active' : '' ?>">
+                    Histórico
+                </a>
+            </li>
+
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/batebolaconfiguracoes"
+                   class="sidebar__link <?= ($subRoute === 'batebolaconfiguracoes') ? 'sidebar__link--active' : '' ?>">
+                    Configurações
+                </a>
+            </li>
+
+            <li class="sidebar__divider" aria-hidden="true"></li>
+            <li class="sidebar__section">Conta</li>
+
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/meusdados"
+                   class="sidebar__link <?= ($subRoute === 'meusdados') ? 'sidebar__link--active' : '' ?>">
+                    Meus Dados
+                </a>
+            </li>
         <?php else: ?>
             <li class="sidebar__section">Home</li>
 
@@ -55,16 +103,17 @@
             <li class="sidebar__divider" aria-hidden="true"></li>
             <li class="sidebar__section">Financeiro</li>
 
+            <?php $abaFinanceiro = $_GET['aba'] ?? ''; ?>
             <li class="sidebar__item">
                 <a href="<?= BASE_URL ?>/admin/financeiro"
-                   class="sidebar__link <?= ($subRoute === 'financeiro') ? 'sidebar__link--active' : '' ?>">
+                   class="sidebar__link <?= ($subRoute === 'financeiro' && $abaFinanceiro === '') ? 'sidebar__link--active' : '' ?>">
                     Dashboard
                 </a>
             </li>
 
             <li class="sidebar__item">
                 <a href="<?= BASE_URL ?>/admin/financeiro?aba=dividas"
-                   class="sidebar__link">
+                   class="sidebar__link <?= ($subRoute === 'financeiro' && $abaFinanceiro === 'dividas') ? 'sidebar__link--active' : '' ?>">
                     Dívidas
                 </a>
             </li>
@@ -142,6 +191,29 @@
                 </a>
             </li>
 
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/uniformes"
+                   class="sidebar__link <?= ($subRoute === 'uniformes') ? 'sidebar__link--active' : '' ?>">
+                    Uniformes
+                </a>
+            </li>
+
+            <?php if (in_array($_SESSION['usuario']['nivel_acesso'] ?? '', ['admin', 'editor'], true)): ?>
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/pedirfuniforme"
+                   class="sidebar__link <?= ($subRoute === 'pedirfuniforme') ? 'sidebar__link--active' : '' ?>">
+                    Pedir Uniforme
+                </a>
+            </li>
+
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/pagamentos-uniformes"
+                   class="sidebar__link <?= ($subRoute === 'pagamentos-uniformes') ? 'sidebar__link--active' : '' ?>">
+                    Pagamentos Uniformes
+                </a>
+            </li>
+            <?php endif; ?>
+
             <li class="sidebar__divider" aria-hidden="true"></li>
             <li class="sidebar__section">Administrativo</li>
 
@@ -181,6 +253,44 @@
             </li>
 
             <li class="sidebar__divider" aria-hidden="true"></li>
+            <li class="sidebar__section">Bate Bola</li>
+
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/batebola"
+                   class="sidebar__link <?= ($subRoute === 'batebola') ? 'sidebar__link--active' : '' ?>">
+                    Jogadores
+                </a>
+            </li>
+
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/batebolapresenca"
+                   class="sidebar__link <?= ($subRoute === 'batebolapresenca') ? 'sidebar__link--active' : '' ?>">
+                    Lista de Presença
+                </a>
+            </li>
+
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/batebolatimes"
+                   class="sidebar__link <?= ($subRoute === 'batebolatimes') ? 'sidebar__link--active' : '' ?>">
+                    Sortear Times
+                </a>
+            </li>
+
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/batebolahistorico"
+                   class="sidebar__link <?= ($subRoute === 'batebolahistorico') ? 'sidebar__link--active' : '' ?>">
+                    Histórico
+                </a>
+            </li>
+
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/batebolaconfiguracoes"
+                   class="sidebar__link <?= ($subRoute === 'batebolaconfiguracoes') ? 'sidebar__link--active' : '' ?>">
+                    Configurações
+                </a>
+            </li>
+
+            <li class="sidebar__divider" aria-hidden="true"></li>
             <li class="sidebar__section">Plataforma</li>
 
             <?php if ($_SESSION['usuario']['nivel_acesso'] === 'admin'): ?>
@@ -203,6 +313,13 @@
                 <a href="<?= BASE_URL ?>/admin/usuarios"
                    class="sidebar__link <?= ($subRoute === 'usuarios') ? 'sidebar__link--active' : '' ?>">
                     Administrar Usuários
+                </a>
+            </li>
+
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/erros-pagamento"
+                   class="sidebar__link <?= ($subRoute === 'erros-pagamento') ? 'sidebar__link--active' : '' ?>">
+                    Erros de Pagamento
                 </a>
             </li>
 

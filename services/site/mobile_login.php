@@ -39,14 +39,52 @@ $pdo->exec("
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
 ");
 
-$stmt = $pdo->prepare("SELECT * FROM alunos WHERE email = ? AND status = 'ativo' LIMIT 1");
+// Mesmo e-mail pode ter mais de um aluno (menor usa o e-mail do responsável, que também
+// pode ser aluno) — a senha é que identifica. Ver services/site/student_login.php.
+$stmt = $pdo->prepare("SELECT * FROM alunos WHERE email = ? AND status = 'ativo'");
 $stmt->execute([$email]);
-$aluno = $stmt->fetch(PDO::FETCH_ASSOC);
+$candidatos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-if (!$aluno || !password_verify($senha, $aluno['senha'])) {
+$compativeis = array_values(array_filter(
+    $candidatos,
+    fn($a) => password_verify($senha, $a['senha'])
+));
+
+if (empty($compativeis)) {
     http_response_code(401);
     echo json_encode(['success'=>false,'message'=>'E-mail ou senha inválidos.']);
     exit;
+}
+
+if (count($compativeis) > 1 && empty($_POST['aluno_id'])) {
+    echo json_encode([
+        'success'         => false,
+        'escolher_perfil' => true,
+        'message'         => 'Existe mais de um cadastro com esse e-mail. Escolha quem está entrando.',
+        'perfis'          => array_map(fn($a) => [
+            'id'       => (int) $a['id'],
+            'nome'     => $a['nome'],
+            'foto'     => $a['foto'],
+            'is_menor' => (bool) $a['is_menor'],
+        ], $compativeis),
+    ]);
+    exit;
+}
+
+$aluno = $compativeis[0];
+
+if (!empty($_POST['aluno_id'])) {
+    $escolhido = (int) $_POST['aluno_id'];
+    $achou = null;
+    foreach ($compativeis as $c) {
+        if ((int) $c['id'] === $escolhido) { $achou = $c; break; }
+    }
+    if (!$achou) {
+        http_response_code(401);
+        echo json_encode(['success'=>false,'message'=>'E-mail ou senha inválidos.']);
+        exit;
+    }
+    $aluno = $achou;
 }
 
 // Gera token e salva

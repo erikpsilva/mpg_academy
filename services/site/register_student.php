@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 require_once dirname(__FILE__, 3) . '/config/database.php';
 
-$required = ['nome', 'email', 'cpf', 'nascimento', 'sexo', 'celular', 'whatsapp', 'cep', 'rua', 'numero', 'bairro', 'cidade', 'estado', 'senha'];
+$required = ['nome', 'email', 'cpf', 'nascimento', 'sexo', 'celular', 'cep', 'rua', 'numero', 'bairro', 'cidade', 'estado', 'senha'];
 
 foreach ($required as $field) {
     if (empty(trim($_POST[$field] ?? ''))) {
@@ -30,7 +30,10 @@ $cpf       = preg_replace('/[^\d]/', '', $_POST['cpf']);
 $nascimento = $_POST['nascimento']; // DD/MM/AAAA
 $sexo      = trim($_POST['sexo']);
 $celular   = trim($_POST['celular']);
-$whatsapp  = trim($_POST['whatsapp']);
+// O cadastro pede um número só. A coluna `whatsapp` continua existindo (é NOT NULL e há
+// dados antigos nela), então espelha o celular — todos os disparos automáticos leem
+// `alunos.celular`, então isso não muda nada no envio.
+$whatsapp  = $celular;
 $cep       = trim($_POST['cep']);
 $rua       = trim($_POST['rua']);
 $numero    = trim($_POST['numero']);
@@ -95,12 +98,26 @@ if ($isMenor) {
 
 $pdo = getDbConnection();
 
-$check = $pdo->prepare("SELECT id FROM alunos WHERE email = ? OR cpf = ? LIMIT 1");
-$check->execute([$email, $cpf]);
-if ($check->fetch()) {
+// CPF é sempre único — é o que identifica a pessoa de verdade.
+$checkCpf = $pdo->prepare("SELECT id FROM alunos WHERE cpf = ? LIMIT 1");
+$checkCpf->execute([$cpf]);
+if ($checkCpf->fetch()) {
     http_response_code(409);
-    echo json_encode(['success' => false, 'message' => 'Este e-mail ou CPF já está cadastrado.']);
+    echo json_encode(['success' => false, 'message' => 'Este CPF já está cadastrado.']);
     exit;
+}
+
+// O e-mail continua único ENTRE MAIORES, mas menor de idade pode repetir o e-mail do
+// responsável — é o caso do pai que já é aluno e vai matricular o filho. Sem isso, uma
+// família com um só e-mail não conseguiria cadastrar a criança.
+if (!$isMenor) {
+    $checkEmail = $pdo->prepare("SELECT id FROM alunos WHERE email = ? AND is_menor = 0 LIMIT 1");
+    $checkEmail->execute([$email]);
+    if ($checkEmail->fetch()) {
+        http_response_code(409);
+        echo json_encode(['success' => false, 'message' => 'Este e-mail já está cadastrado.']);
+        exit;
+    }
 }
 
 // Upload de foto (opcional)

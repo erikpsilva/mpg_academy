@@ -65,6 +65,7 @@ if ($_SESSION['usuario']['nivel_acesso'] !== 'admin') {
                                 <option value="admin">ADMIN</option>
                                 <option value="editor">EDITOR</option>
                                 <option value="leitor">LEITOR</option>
+                                <option value="batebola">BATE BOLA</option>
                             </select>
                         </div>
                     </div>

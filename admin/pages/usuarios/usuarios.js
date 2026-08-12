@@ -1,9 +1,10 @@
 
 const nivelBadge = (nivel) => {
     const map = {
-        admin  : 'usuarios__nivelBadge--admin',
-        editor : 'usuarios__nivelBadge--editor',
-        leitor : 'usuarios__nivelBadge--leitor',
+        admin    : 'usuarios__nivelBadge--admin',
+        editor   : 'usuarios__nivelBadge--editor',
+        leitor   : 'usuarios__nivelBadge--leitor',
+        batebola : 'usuarios__nivelBadge--batebola',
     };
     return '<span class="usuarios__nivelBadge ' + (map[nivel] || '') + '">' + nivel.toUpperCase() + '</span>';
 };

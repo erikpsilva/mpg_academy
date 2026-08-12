@@ -35,6 +35,8 @@ $bairro             = trim($dados['bairro']                 ?? '');
 $complemento        = trim($dados['complemento']            ?? '') ?: null;
 $cidade             = trim($dados['cidade']                 ?? '');
 $estado             = trim($dados['estado']                 ?? '');
+// Opcional: sem ele, googleMapsLink() cai na busca pelo endereço (ver services/whatsapp/zapi.php).
+$mapsLink           = trim($dados['maps_link']               ?? '') ?: null;
 $valorMensal        = (float) ($dados['valor_mensal']       ?? 0);
 $diaPagamento       = (int)   ($dados['dia_pagamento']      ?? 10);
 $dataInicioContrato = !empty($dados['data_inicio_contrato']) ? $dados['data_inicio_contrato'] : null;
@@ -62,12 +64,12 @@ try {
     $pdo->prepare("
         UPDATE quadras
         SET nome=?, telefone=?, email=?, instagram=?, cep=?, rua=?, numero=?, bairro=?,
-            complemento=?, cidade=?, estado=?, valor_mensal=?, dia_pagamento=?,
+            complemento=?, cidade=?, estado=?, maps_link=?, valor_mensal=?, dia_pagamento=?,
             data_inicio_contrato=?, updated_at=NOW()
         WHERE id=?
     ")->execute([
         $nome, $telefone, $email, $instagram, $cep, $rua, $numero, $bairro,
-        $complemento, $cidade, $estado, $valorMensal, $diaPagamento, $dataInicioContrato, $id,
+        $complemento, $cidade, $estado, $mapsLink, $valorMensal, $diaPagamento, $dataInicioContrato, $id,
     ]);
 
     // ── 2. Sync de horários (mantém existentes que coincidem, insere novos, remove só os que saíram) ──

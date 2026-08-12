@@ -96,4 +96,33 @@ $(document).ready(() => {
         filtroAtivo = $(this).data('nivel') || 'todos';
         render(filtroAtivo);
     });
+
+    const uniformModal = document.getElementById('homeUniformModal');
+    const uniformImage = document.getElementById('homeUniformModalImage');
+    const uniformTitle = document.getElementById('homeUniformModalTitle');
+
+    function closeUniformModal() {
+        uniformModal.classList.remove('is-open');
+        uniformModal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+    }
+
+    document.querySelectorAll('.js-home-uniform-preview').forEach((button) => {
+        button.addEventListener('click', () => {
+            uniformImage.src = button.dataset.image;
+            uniformImage.alt = button.dataset.title;
+            uniformTitle.textContent = button.dataset.title;
+            uniformModal.classList.add('is-open');
+            uniformModal.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+        });
+    });
+
+    document.querySelectorAll('.js-home-uniform-close').forEach((button) => {
+        button.addEventListener('click', closeUniformModal);
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && uniformModal.classList.contains('is-open')) closeUniformModal();
+    });
 });

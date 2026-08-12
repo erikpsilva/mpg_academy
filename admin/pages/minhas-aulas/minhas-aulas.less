@@ -3,6 +3,7 @@
     align-items: center;
     display: flex;
     gap: 14px;
+    flex-wrap: wrap;
     margin-bottom: 24px;
 }
 
@@ -53,6 +54,72 @@
 }
 
 // ── Minhas Aulas (área do professor) ─────────────────────────────────────────
+
+.historicoAulas__professorFiltro {
+    align-items: center;
+    display: inline-flex;
+    gap: 10px;
+    margin-left: 8px;
+
+    span {
+        color: rgba(255,255,255,0.45);
+        font-size: 12px;
+        font-weight: @bold;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+    }
+
+    select {
+        appearance: none;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid @borderColor;
+        border-radius: 8px;
+        color: @white;
+        cursor: pointer;
+        font-family: inherit;
+        font-size: 13px;
+        font-weight: @semiBold;
+        min-width: 230px;
+        outline: none;
+        padding: 9px 36px 9px 12px;
+        .transition(0.15s all);
+
+        &:focus,
+        &:hover {
+            border-color: rgba(255,213,0,0.55);
+        }
+
+        option {
+            background: #111;
+            color: @white;
+        }
+    }
+
+    &:after {
+        color: @alert;
+        content: '\25BE';
+        font-size: 11px;
+        margin-left: -32px;
+        pointer-events: none;
+    }
+}
+
+@media @tabletSM {
+    .historicoAulas__mesFiltro {
+        align-items: stretch;
+    }
+
+    .historicoAulas__professorFiltro {
+        margin-left: 0;
+        width: 100%;
+
+        select {
+            flex: 1;
+            min-width: 0;
+            width: 100%;
+        }
+    }
+}
 
 .minhasAulas {
 

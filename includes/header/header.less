@@ -430,6 +430,35 @@
         margin: 0;
     }
 
+    // Aparece quando o mesmo e-mail + senha servem pra mais de um cadastro
+    // (responsável que também é aluno e filho menor).
+    &__perfis {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin: 10px 0 4px;
+    }
+
+    &__perfil {
+        width: 100%;
+        padding: 12px 14px;
+        border: 1px solid rgba(255, 213, 0, 0.45);
+        border-radius: 8px;
+        background: rgba(255, 213, 0, 0.08);
+        color: @white;
+        cursor: pointer;
+        font-family: @font;
+        font-size: 14px;
+        font-weight: 700;
+        text-align: left;
+        .transition(0.15s all);
+
+        &:hover {
+            background: @yellow;
+            color: #050505;
+        }
+    }
+
     &__forgot {
         display: inline-block;
         color: #d8d8d8;

@@ -24,7 +24,7 @@ $diaSemanaHoje = (int)$now->format('w');
 $stmt = $pdo->prepare("
     SELECT a.id AS aluno_id, a.nome, a.celular,
            t.id AS turma_id, t.nome AS turma_nome,
-           q.rua, q.numero, q.bairro, q.complemento, q.cidade, q.estado,
+           q.rua, q.numero, q.bairro, q.complemento, q.cidade, q.estado, q.maps_link,
            qh.hora_inicio, qh.hora_fim
     FROM turma_alunos ta
     JOIN alunos a           ON a.id  = ta.aluno_id
@@ -65,7 +65,7 @@ foreach ($rows as $r) {
     $msg .= "⏰ *Horário:* {$horarioFmt}\n";
     if ($endereco) {
         $msg .= "📍 *Local:* {$endereco}\n";
-        $msg .= "🗺️ Ver no mapa: " . googleMapsLink($endereco) . "\n";
+        $msg .= "🗺️ Ver no mapa: " . googleMapsLink($endereco, $r['maps_link'] ?? null) . "\n";
     }
     $msg .= "\nTe esperamos!";
 

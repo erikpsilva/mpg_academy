@@ -16,6 +16,11 @@
 0 8 * * * php /home/SEU_USUARIO/public_html/mpg_academy/cron/wpp_lembrete_3dias.php >> /home/SEU_USUARIO/logs/wpp_3dias.log 2>&1
 ```
 
+**2 dias antes** — executa todo dia às 08:00
+```
+0 8 * * * php /home/SEU_USUARIO/public_html/mpg_academy/cron/wpp_lembrete_2dias.php >> /home/SEU_USUARIO/logs/wpp_2dias.log 2>&1
+```
+
 **Véspera (1 dia antes)** — executa todo dia às 18:00
 ```
 0 18 * * * php /home/SEU_USUARIO/public_html/mpg_academy/cron/wpp_lembrete_amanha.php >> /home/SEU_USUARIO/logs/wpp_amanha.log 2>&1

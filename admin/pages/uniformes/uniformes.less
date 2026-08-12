@@ -1,0 +1,311 @@
+.uniformes {
+
+    &__header {
+        align-items: center;
+        margin-bottom: 25px;
+        padding: 24px;
+        border: 1px solid @borderColor;
+        border-radius: 8px;
+        background: rgba(17, 19, 21, 0.92);
+
+        h2 {
+            color: @white;
+            font-size: 30px;
+            font-weight: @bold;
+            margin-bottom: 4px;
+
+            span { color: @alert; }
+        }
+
+        p {
+            color: rgba(255, 255, 255, 0.68);
+            font-size: 14px;
+        }
+    }
+
+    // ── Cards de contagem por status ────────────────────────────────────────────
+    &__stats {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 12px;
+        margin-bottom: 22px;
+    }
+
+    &__stat {
+        padding: 16px 18px;
+        border: 1px solid @borderColor;
+        border-left: 4px solid @btnGray;
+        border-radius: 8px;
+        background: linear-gradient(145deg, rgba(23, 25, 28, 0.96), rgba(9, 10, 12, 0.96));
+
+        strong {
+            display: block;
+            color: @white;
+            font-size: 28px;
+            font-weight: @bold;
+            line-height: 1;
+            margin-bottom: 5px;
+        }
+
+        span {
+            color: rgba(255, 255, 255, 0.66);
+            font-size: 11px;
+            font-weight: @semiBold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        &--pendente   { border-left-color: @orange;  strong { color: @orange; } }
+        &--enviado    { border-left-color: #4a9bff;  strong { color: #4a9bff; } }
+        &--pronto     { border-left-color: @alert;   strong { color: @alert; } }
+        &--finalizado { border-left-color: #9b7bff;  strong { color: #9b7bff; } }
+        &--entregue   { border-left-color: #4caf50;  strong { color: #4caf50; } }
+    }
+
+    // ── Filtros ─────────────────────────────────────────────────────────────────
+    &__filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 18px;
+    }
+
+    &__filter {
+        padding: 8px 14px;
+        border: 1px solid @borderColor;
+        border-radius: 6px;
+        background: transparent;
+        color: rgba(255, 255, 255, 0.7);
+        cursor: pointer;
+        font-family: @font;
+        font-size: 12px;
+        font-weight: @semiBold;
+        transition: 0.15s all;
+
+        &:hover {
+            border-color: @alert;
+            color: @white;
+        }
+
+        &.is-active {
+            border-color: @alert;
+            background: @alert;
+            color: #050505;
+        }
+    }
+
+    // ── Tabela ──────────────────────────────────────────────────────────────────
+    &__table {
+        td { vertical-align: middle; }
+
+        strong { color: @white; }
+    }
+
+    &__sub {
+        display: block;
+        margin-top: 2px;
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 11px;
+
+        &--alerta { color: @error; }
+    }
+
+    &__numero {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 34px;
+        height: 34px;
+        padding: 0 6px;
+        border: 2px solid @alert;
+        border-radius: 6px;
+        background: rgba(255, 213, 0, 0.12);
+        color: @alert;
+        font-size: 15px;
+        font-weight: @bold;
+
+        &.is-conflito {
+            border-color: @error;
+            background: rgba(255, 77, 77, 0.14);
+            color: @error;
+        }
+    }
+
+    &__tam {
+        display: inline-block;
+        padding: 4px 9px;
+        border: 1px solid @borderColor;
+        border-radius: 4px;
+        color: @white;
+        font-size: 12px;
+        font-weight: @bold;
+    }
+
+    &__row--novo {
+        background: rgba(255, 213, 0, 0.05);
+    }
+
+    &__novoTag {
+        display: inline-block;
+        margin-left: 4px;
+        padding: 2px 6px;
+        border-radius: 3px;
+        background: @alert;
+        color: #050505;
+        font-size: 9px;
+        font-weight: @bold;
+        vertical-align: middle;
+    }
+
+    // ── Badge de status ─────────────────────────────────────────────────────────
+    &__badge {
+        display: inline-block;
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: @bold;
+        text-transform: uppercase;
+        white-space: nowrap;
+
+        &--pendente   { background: rgba(255, 157, 0, 0.16);  color: @orange; }
+        &--enviado    { background: rgba(74, 155, 255, 0.16); color: #4a9bff; }
+        &--pronto     { background: rgba(255, 213, 0, 0.16);  color: @alert; }
+        &--finalizado { background: rgba(155, 123, 255, 0.16); color: #9b7bff; }
+        &--entregue   { background: rgba(76, 175, 80, 0.16);  color: #4caf50; }
+    }
+
+    // ── Modal de status ─────────────────────────────────────────────────────────
+    &__statusOptions {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin: 18px 0 4px;
+    }
+
+    &__statusOption {
+        width: 100%;
+        padding: 12px 14px;
+        border: 1px solid @borderColor;
+        border-radius: 6px;
+        background: transparent;
+        color: rgba(255, 255, 255, 0.8);
+        cursor: pointer;
+        font-family: @font;
+        font-size: 13px;
+        font-weight: @semiBold;
+        text-align: left;
+        transition: 0.15s all;
+
+        &:hover {
+            border-color: @alert;
+            color: @white;
+        }
+
+        &.is-active {
+            border-color: @alert;
+            background: rgba(255, 213, 0, 0.12);
+            color: @alert;
+        }
+    }
+}
+
+@media @notebookSM {
+    .uniformes__stats {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media @tabletSM {
+    .uniformes__stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+// ── Modal de correção do pedido ───────────────────────────────────────────────
+//
+// A base .confirmModal vem de pages/alunos/alunos.less (é compartilhada no admin).
+// Aqui só o que é específico do formulário de correção.
+
+.confirmModal__box--wide {
+    max-width: 560px !important;
+}
+
+.uniformes {
+
+    &__editForm {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 24px;
+        text-align: left;
+    }
+
+    &__editField {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+
+        &--wide { grid-column: 1 / -1; }
+
+        > span {
+            color: rgba(255, 255, 255, 0.55);
+            font-size: 12px;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        input,
+        select {
+            padding: 11px 12px;
+            border: 1px solid @borderColor;
+            border-radius: 6px;
+            background: @bgPanelLight;
+            color: @white;
+            font-family: @font;
+            font-size: 15px;
+            width: 100%;
+        }
+
+        input:focus,
+        select:focus {
+            border-color: @primary;
+            outline: none;
+        }
+
+        small {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 11px;
+            line-height: 1.45;
+            min-height: 16px;
+        }
+    }
+
+    &__editAviso {
+        margin-bottom: 20px;
+        padding: 12px 14px;
+        border: 1px solid rgba(255, 157, 0, 0.4);
+        border-radius: 6px;
+        background: rgba(255, 157, 0, 0.1);
+        color: @orange;
+        font-size: 13px;
+        line-height: 1.5;
+        text-align: left;
+
+        strong { color: @orange; }
+    }
+
+    &__editErro {
+        grid-column: 1 / -1;
+        margin: 0;
+        padding: 11px 14px;
+        border: 1px solid rgba(255, 77, 77, 0.45);
+        border-radius: 6px;
+        background: rgba(255, 77, 77, 0.1);
+        color: @error;
+        font-size: 13px;
+    }
+
+    @media @tabletSM {
+        &__editForm { grid-template-columns: 1fr; }
+    }
+}

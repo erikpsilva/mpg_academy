@@ -28,17 +28,18 @@ require_once dirname(__FILE__, 3) . '/services/whatsapp/wpp_aula_teste_lembrete.
 
 $pdo = getDbConnection();
 
-// Mesma janela que os crons cobririam hoje: agendados pra hoje (lembrete do dia),
-// amanhã (véspera) ou pra daqui a 3 dias (lembrete antecipado) — só nessas datas existe mensagem.
+// Mesma janela que os crons cobririam hoje: todo o intervalo de hoje até 3 dias à frente
+// (hoje, amanhã, em 2 dias, em 3 dias) — nenhum dia fica sem lembrete dentro desse range.
 $hoje    = (new DateTime('now', new DateTimeZone('America/Sao_Paulo')))->format('Y-m-d');
 $alvo1   = (new DateTime('now', new DateTimeZone('America/Sao_Paulo')))->modify('+1 day')->format('Y-m-d');
+$alvo2   = (new DateTime('now', new DateTimeZone('America/Sao_Paulo')))->modify('+2 days')->format('Y-m-d');
 $alvo3   = (new DateTime('now', new DateTimeZone('America/Sao_Paulo')))->modify('+3 days')->format('Y-m-d');
 
 $stmt = $pdo->prepare("
     SELECT ae.id, ae.data_agendada,
            at.nome, at.celular, at.is_menor, at.responsavel_nome, at.responsavel_celular,
            t.nome AS turma_nome,
-           q.rua, q.numero, q.bairro, q.complemento, q.cidade, q.estado,
+           q.rua, q.numero, q.bairro, q.complemento, q.cidade, q.estado, q.maps_link,
            qh.hora_inicio, qh.hora_fim
     FROM aulas_experimentais ae
     JOIN alunos_teste at  ON at.id = ae.aluno_teste_id
@@ -48,17 +49,17 @@ $stmt = $pdo->prepare("
     LEFT JOIN quadra_horarios qh ON qh.id = th.horario_id
     WHERE ae.status = 'agendada'
       AND ae.turma_id = ?
-      AND DATE(ae.data_agendada) IN (?, ?, ?)
+      AND DATE(ae.data_agendada) IN (?, ?, ?, ?)
     GROUP BY ae.id
 ");
-$stmt->execute([$turmaId, $hoje, $alvo1, $alvo3]);
+$stmt->execute([$turmaId, $hoje, $alvo1, $alvo2, $alvo3]);
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 if (!$rows) {
     echo json_encode([
         'success'  => true,
         'enviados' => 0,
-        'message'  => 'Nenhum aluno agendado pra hoje, amanhã ou em 3 dias nessa turma — não há lembrete pra disparar agora.',
+        'message'  => 'Nenhum aluno agendado nos próximos 3 dias nessa turma — não há lembrete pra disparar agora.',
     ]);
     exit;
 }
@@ -71,7 +72,9 @@ $pulados  = 0;
 
 foreach ($rows as $r) {
     $dataSomente = substr($r['data_agendada'], 0, 10);
-    $tipo        = $dataSomente === $hoje ? 'dia_aula' : ($dataSomente === $alvo1 ? 'amanha' : '3dias');
+    $tipo        = $dataSomente === $hoje ? 'dia_aula'
+                 : ($dataSomente === $alvo1 ? 'amanha'
+                 : ($dataSomente === $alvo2 ? '2dias' : '3dias'));
 
     $jaEnviado->execute([$r['id'], $tipo]);
     if ($jaEnviado->fetch()) {

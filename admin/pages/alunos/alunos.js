@@ -357,6 +357,93 @@ const initDetalhe = () => {
         });
     });
 
+    // ── Editar dados cadastrais do aluno ────────────────────────────────────
+    const editarModal = document.getElementById('editarAlunoModal');
+    const btnEditar   = document.getElementById('btnEditarAluno');
+
+    if (btnEditar && editarModal) {
+        const campos = {
+            nome: 'edNome', email: 'edEmail', cpf: 'edCpf', nascimento: 'edNascimento',
+            sexo: 'edSexo', celular: 'edCelular', cep: 'edCep',
+            rua: 'edRua', numero: 'edNumero', complemento: 'edComplemento',
+            bairro: 'edBairro', cidade: 'edCidade', estado: 'edEstado',
+            responsavel_nome: 'edRespNome', responsavel_parentesco: 'edRespParentesco',
+            responsavel_cpf: 'edRespCpf', responsavel_celular: 'edRespCelular'
+        };
+        const val = id => (document.getElementById(id) || {}).value || '';
+        const msg = document.getElementById('edMsg');
+        const blocoResp = document.getElementById('edBlocoResponsavel');
+        const inpNasc   = document.getElementById('edNascimento');
+
+        // Menor de idade é derivado da data de nascimento — os campos do responsável só
+        // aparecem quando fazem sentido, e o servidor recalcula do mesmo jeito.
+        function ehMenor() {
+            const v = inpNasc.value;
+            if (!v) return false;
+            const nasc = new Date(v + 'T00:00:00');
+            const hoje = new Date();
+            let idade = hoje.getFullYear() - nasc.getFullYear();
+            const m = hoje.getMonth() - nasc.getMonth();
+            if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) idade--;
+            return idade < 18;
+        }
+
+        function alternarResponsavel() {
+            blocoResp.style.display = ehMenor() ? '' : 'none';
+        }
+
+        inpNasc.addEventListener('change', alternarResponsavel);
+
+        btnEditar.addEventListener('click', () => {
+            msg.style.display = 'none';
+            alternarResponsavel();
+            editarModal.classList.add('confirmModal--open');
+        });
+
+        document.getElementById('edCancelar').addEventListener('click', () => {
+            editarModal.classList.remove('confirmModal--open');
+        });
+
+        editarModal.addEventListener('click', e => {
+            if (e.target === editarModal) editarModal.classList.remove('confirmModal--open');
+        });
+
+        document.getElementById('edSalvar').addEventListener('click', function () {
+            const btn = this;
+            btn.disabled = true;
+            btn.textContent = 'Salvando...';
+            msg.style.display = 'none';
+
+            const fd = new FormData();
+            fd.append('aluno_id', btn.getAttribute('data-aluno-id'));
+            Object.keys(campos).forEach(k => fd.append(k, val(campos[k])));
+
+            fetch(ADMIN_BASE_URL + '/services/update_aluno.php', {
+                method: 'POST', credentials: 'same-origin', body: fd,
+            })
+            .then(r => r.json())
+            .then(data => {
+                msg.textContent   = data.message || (data.success ? 'Salvo.' : 'Erro ao salvar.');
+                msg.style.color   = data.success ? '#7ecf7e' : '#cf7e7e';
+                msg.style.display = '';
+                if (data.success) {
+                    // Recarrega pra tela refletir os dados novos em todos os blocos.
+                    setTimeout(() => window.location.reload(), 900);
+                    return;
+                }
+                btn.disabled = false;
+                btn.textContent = 'Salvar alterações';
+            })
+            .catch(() => {
+                msg.textContent   = 'Erro de comunicação.';
+                msg.style.color   = '#cf7e7e';
+                msg.style.display = '';
+                btn.disabled = false;
+                btn.textContent = 'Salvar alterações';
+            });
+        });
+    }
+
     // ── Alterar senha do aluno ──────────────────────────────────────────────
     const senhaModal = document.getElementById('senhaModal');
     const btnSenha   = document.getElementById('btnAlterarSenha');

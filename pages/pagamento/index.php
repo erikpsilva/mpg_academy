@@ -108,6 +108,13 @@ $modoTeste = mpModoTeste($pdo);
 }
 .payCard__saveCard input { width: 16px; height: 16px; margin-top: 1px; accent-color: #e5c200; cursor: pointer; flex-shrink: 0; }
 .payCard__autoNotice { color: #7ecf7e; font-size: 12px; margin-top: 8px; }
+.payCard__autoNotice a { color: #e5c200; text-decoration: underline; }
+.payCard__autoOn { background: rgba(126,207,126,.08); border: 1px solid rgba(126,207,126,.3);
+                    border-radius: 8px; color: #7ecf7e; font-size: 12px; line-height: 1.5;
+                    padding: 10px 12px; margin-bottom: 16px; }
+.payCard__error { background: rgba(205,0,0,.12); border: 1px solid rgba(205,0,0,.5); border-radius: 8px;
+                   color: #ff9d9d; font-size: 13px; line-height: 1.5; padding: 12px 14px; margin-bottom: 16px; }
+.pixAguardando { color: #cccc00; font-size: 13px; margin-top: 14px; }
 /* Sucesso / Pendente */
 #paymentSuccess { text-align: center; padding: 32px 0; }
 #paymentSuccess h2 { font-size: 22px; margin-bottom: 8px; color: #7ecf7e; }
@@ -195,6 +202,8 @@ $modoTeste = mpModoTeste($pdo);
                 </div>
             </div>
 
+            <div id="payError" class="payCard__error" role="alert" style="display:none;"></div>
+
             <!-- Seletor de método -->
             <div class="payMethodSelect">
                 <button class="payMethodBtn is-active" id="btnMethodCard" onclick="selectMethod('card')">
@@ -207,17 +216,24 @@ $modoTeste = mpModoTeste($pdo);
 
             <!-- Área cartão -->
             <div id="areaCard">
+                <?php
+                // O checkbox NUNCA vem pré-marcado, nem pra quem já tem cobrança automática.
+                // Antes ele vinha marcado nesse caso, e isso obrigava todo pagamento desses
+                // alunos a passar pelo caminho de "salvar cartão" — que era justamente o que
+                // quebrava a cobrança (ver criar_pagamento.php). Regravar um cartão que já
+                // está salvo não traz benefício nenhum e só adiciona risco à cobrança.
+                ?>
+                <?php if (!$autoPagamentoOn): ?>
                 <label class="payCard__saveCard">
-                    <input type="checkbox" id="chkSalvarCartao" <?= $autoPagamentoOn ? 'checked' : '' ?>>
-                    <span>
-                        <?php if ($autoPagamentoOn): ?>
-                            Atualizar cartão salvo e manter cobrança automática mensal ativada
-                            <?php if ($cartaoFinal4): ?>(cartão atual: final <?= htmlspecialchars($cartaoFinal4) ?>)<?php endif; ?>
-                        <?php else: ?>
-                            Salvar este cartão e ativar cobrança automática mensal
-                        <?php endif; ?>
-                    </span>
+                    <input type="checkbox" id="chkSalvarCartao">
+                    <span>Quero deixar a mensalidade no automático todo mês (mostramos como ativar depois do pagamento)</span>
                 </label>
+                <?php else: ?>
+                <p class="payCard__autoOn">
+                    &#10003; Cobrança automática ativa<?php if ($cartaoFinal4): ?> no cartão final <?= htmlspecialchars($cartaoFinal4) ?><?php endif; ?>.
+                    Este pagamento é avulso e não altera isso.
+                </p>
+                <?php endif; ?>
                 <div id="cardPaymentBrick_container"></div>
             </div>
 
@@ -246,7 +262,9 @@ $modoTeste = mpModoTeste($pdo);
 
         <!-- ── Em análise (cartão) ───────────────────────────────────────── -->
         <div id="paymentPending" style="display:none;text-align:center;padding:24px 0;">
-            <p style="color:#cccc00;">&#9203; Pagamento em análise. Você receberá uma confirmação em breve.</p>
+            <p id="pendingAviso" style="color:#cccc00;">
+                &#9203; Pagamento em análise pelo Mercado Pago… esta tela atualiza sozinha.
+            </p>
             <a href="<?= BASE_URL ?>/mensalidades" class="btn btn--primary" style="margin-top:12px;">
                 Ver mensalidades
             </a>
@@ -263,6 +281,9 @@ $modoTeste = mpModoTeste($pdo);
             <img id="pixQrImg" src="" alt="QR Code PIX" class="pixQr">
             <textarea id="pixCopiaCola" class="pixCopiaField" readonly rows="4"></textarea>
             <button class="pixCopyBtn" onclick="copiarPix()">Copiar código PIX</button>
+            <p class="pixAguardando" id="pixAguardando" style="display:none;">
+                &#9203; Aguardando a confirmação do pagamento… esta tela atualiza sozinha.
+            </p>
             <a href="<?= BASE_URL ?>/mensalidades"
                style="display:block;color:#888;font-size:13px;text-decoration:none;margin-top:4px;">
                 Ir para Mensalidades
@@ -282,12 +303,170 @@ var MENSALIDADE_ID = <?= $mensalidadeId ?>;
 var TOTAL_AMOUNT   = <?= $total ?>;
 var ALUNO_EMAIL    = "<?= htmlspecialchars($aluno['email'] ?? '') ?>";
 
+var PAGAMENTO_TIMEOUT_MS = 45000;
+
 // ── Seletor de método ────────────────────────────────────────────────────────
 function selectMethod(method) {
     document.getElementById('btnMethodCard').classList.toggle('is-active', method === 'card');
     document.getElementById('btnMethodPix').classList.toggle('is-active', method === 'pix');
     document.getElementById('areaCard').style.display  = method === 'card' ? '' : 'none';
     document.getElementById('areaPix').style.display   = method === 'pix'  ? '' : 'none';
+}
+
+/**
+ * Mostra um painel e esconde todos os outros. Precisa esconder TODOS (não só o
+ * formulário): quando o polling do PIX confirma o pagamento, a tela do QR Code ainda
+ * está aberta e ficaria empilhada junto com a de sucesso.
+ */
+function mostrarTela(id) {
+    ['paymentForm', 'paymentSuccess', 'paymentPending', 'paymentPix'].forEach(function (painel) {
+        var el = document.getElementById(painel);
+        if (el) el.style.display = (painel === id) ? '' : 'none';
+    });
+}
+
+/** Mensagem de erro visível — antes o aluno só via a barra girando. */
+function mostrarErroPagamento(texto) {
+    var box = document.getElementById('payError');
+    if (!box) return;
+    box.textContent = texto;
+    box.style.display = '';
+    box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function limparErroPagamento() {
+    var box = document.getElementById('payError');
+    if (box) box.style.display = 'none';
+}
+
+/**
+ * POST do pagamento com timeout e parse defensivo.
+ *
+ * Dois motivos de travamento que isso resolve:
+ *  - requisição que nunca responde (a promise ficava pendente pra sempre);
+ *  - resposta que não é JSON (um warning do PHP junto do corpo fazia r.json() estourar).
+ */
+function postPagamento(url, payload) {
+    limparErroPagamento();
+
+    var controller = ('AbortController' in window) ? new AbortController() : null;
+    var estourou   = false;
+    var timer = setTimeout(function () {
+        estourou = true;
+        if (controller) controller.abort();
+    }, PAGAMENTO_TIMEOUT_MS);
+
+    var opts = {
+        method:      'POST',
+        headers:     { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body:        JSON.stringify(payload)
+    };
+    if (controller) opts.signal = controller.signal;
+
+    return fetch(url, opts)
+        .then(function (r) { return r.text(); })
+        .then(function (texto) {
+            clearTimeout(timer);
+            try {
+                return JSON.parse(texto);
+            } catch (e) {
+                console.error('Resposta não-JSON do servidor:', texto.slice(0, 500));
+                throw new Error('resposta_invalida');
+            }
+        })
+        .catch(function (err) {
+            clearTimeout(timer);
+            if (estourou) { var e = new Error('timeout'); e.timeout = true; throw e; }
+            throw err;
+        });
+}
+
+/**
+ * Job de verificação: pergunta ao servidor (que reconsulta o Mercado Pago) se a cobrança
+ * foi de fato aprovada. Roda depois de toda tentativa de pagamento — assim uma resposta
+ * perdida ou um webhook que não chegou não deixam o aluno no escuro.
+ */
+function verificarPagamento(opcoes) {
+    opcoes = opcoes || {};
+
+    var body = new URLSearchParams({ contexto: 'mensalidade', referencia_id: MENSALIDADE_ID });
+
+    return fetch(BASE_URL + '/services/site/verificar_pagamento.php', {
+        method:      'POST',
+        headers:     { 'Content-Type': 'application/x-www-form-urlencoded' },
+        credentials: 'same-origin',
+        body:        body.toString()
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+        if (data.success && data.pago) {
+            mostrarTela('paymentSuccess');
+            if (opcoes.aoConfirmar) opcoes.aoConfirmar(data);
+            return true;
+        }
+        // Recusa definitiva vale mesmo no modo silencioso: o polling roda em silêncio
+        // justamente esperando o desfecho, e o desfecho pode ser "recusado".
+        if (data.recusado && opcoes.aoRecusar) opcoes.aoRecusar(data);
+        if (!opcoes.silencioso && opcoes.aoNegar) opcoes.aoNegar(data);
+        return false;
+    })
+    .catch(function () {
+        if (!opcoes.silencioso && opcoes.aoNegar) opcoes.aoNegar(null);
+        return false;
+    });
+}
+
+/**
+ * Acompanha um pagamento de cartão que voltou "em análise" até o Mercado Pago decidir.
+ *
+ * O antifraude do MP responde `in_process` na hora e só conclui segundos depois. Enquanto
+ * isso não existia, a tela mostrava "em análise" e parava ali: quando a recusa vinha, o
+ * aluno continuava olhando uma mensagem dizendo que receberia uma confirmação em breve.
+ */
+function acompanharAnalise() {
+    var aviso  = document.getElementById('pendingAviso');
+    var tentativas = 0;
+    var MAX = 20; // ~2 min a cada 6s — o antifraude decide em segundos
+
+    var timer = setInterval(function () {
+        tentativas++;
+
+        if (tentativas > MAX) {
+            clearInterval(timer);
+            if (aviso) {
+                aviso.innerHTML = '&#9203; O Mercado Pago ainda está analisando. Assim que houver '
+                                + 'resposta sua mensalidade é atualizada sozinha — não é preciso pagar de novo.';
+            }
+            return;
+        }
+
+        verificarPagamento({
+            silencioso: true,
+            aoRecusar: function (data) {
+                clearInterval(timer);
+                mostrarRecusa(data);
+            }
+        }).then(function (pago) {
+            if (pago) clearInterval(timer);
+        });
+    }, 6000);
+}
+
+/** Troca a tela de "em análise" pela recusa real, com o motivo e o que fazer. */
+function mostrarRecusa(data) {
+    var motivo = (data && data.motivo) ? data.motivo : 'o pagamento não foi autorizado';
+    var acao   = (data && data.acao)   ? data.acao   : 'Tente outro cartão ou pague via PIX.';
+
+    var box = document.getElementById('paymentPending');
+    if (!box) return;
+
+    box.innerHTML =
+        '<div style="font-size:40px;margin-bottom:12px;">&#10060;</div>'
+      + '<h2 style="font-size:20px;margin-bottom:8px;color:#e57373;">Pagamento não aprovado</h2>'
+      + '<p style="color:#ccc;margin-bottom:8px;">Motivo: ' + motivo + '.</p>'
+      + '<p style="color:#aaa;font-size:13px;margin-bottom:20px;">' + acao + '</p>'
+      + '<button type="button" class="btn btn--primary" onclick="location.reload();">Tentar de novo</button>';
 }
 
 // ── Brick cartão ─────────────────────────────────────────────────────────────
@@ -307,38 +486,74 @@ function selectMethod(method) {
             onReady: function () {},
             onSubmit: function (formData) {
                 return new Promise(function (resolve, reject) {
-                    var salvarCartao = document.getElementById('chkSalvarCartao').checked;
-                    fetch(BASE_URL + '/services/site/criar_pagamento.php', {
-                        method:      'POST',
-                        headers:     { 'Content-Type': 'application/json' },
-                        credentials: 'same-origin',
-                        body:        JSON.stringify(Object.assign({}, formData, { mensalidade_id: MENSALIDADE_ID, salvar_cartao: salvarCartao })),
-                    })
-                    .then(function (r) { return r.json(); })
+                    // O checkbox só existe pra quem ainda não tem cobrança automática.
+                    var chk = document.getElementById('chkSalvarCartao');
+                    var salvarCartao = !!(chk && chk.checked);
+
+                    // Sem timeout, uma requisição que nunca responde deixa a promise pendente
+                    // e a barra do Brick girando indefinidamente — era o que o aluno via.
+                    postPagamento(
+                        BASE_URL + '/services/site/criar_pagamento.php',
+                        Object.assign({}, formData, { mensalidade_id: MENSALIDADE_ID, salvar_cartao: salvarCartao })
+                    )
                     .then(function (data) {
                         if (data.success && data.status === 'approved') {
-                            if (data.cartao_salvo) {
+                            // Salvar cartão é feito em /meuperfil, num fluxo separado que não
+                            // interfere na cobrança — misturar os dois já quebrou pagamento.
+                            if (data.oferecer_auto) {
                                 var p = document.createElement('p');
-                                p.className   = 'payCard__autoNotice';
-                                p.textContent = '✓ Cobrança automática ativada para as próximas mensalidades.';
+                                p.className = 'payCard__autoNotice';
+                                p.innerHTML = 'Para deixar a mensalidade no automático todo mês, '
+                                            + '<a href="' + BASE_URL + '/meuperfil#pagamento-automatico">ative em Meu Perfil</a>.';
                                 document.getElementById('paymentSuccess').appendChild(p);
                             }
-                            document.getElementById('paymentForm').style.display    = 'none';
-                            document.getElementById('paymentSuccess').style.display = '';
+                            mostrarTela('paymentSuccess');
                             resolve();
-                        } else if (data.success) {
-                            document.getElementById('paymentForm').style.display    = 'none';
-                            document.getElementById('paymentPending').style.display = '';
-                            resolve();
-                        } else {
-                            reject();
+                            return;
                         }
+
+                        if (data.success) {
+                            // pending/in_process: o MP ainda não decidiu. Uma consulta só não
+                            // basta — o antifraude costuma recusar alguns segundos DEPOIS da
+                            // resposta do checkout, e sem acompanhar até o fim a tela ficava
+                            // parada em "em análise" pra sempre, esperando uma confirmação
+                            // que nunca chegaria. Agora acompanha até aprovar ou recusar.
+                            mostrarTela('paymentPending');
+                            acompanharAnalise();
+                            resolve();
+                            return;
+                        }
+
+                        // Recusa conhecida: mostra o motivo e devolve o formulário pro aluno.
+                        mostrarErroPagamento(data.message || 'Pagamento não autorizado. Confira os dados ou tente outro cartão.');
+                        reject(new Error(data.message || 'pagamento_recusado'));
                     })
-                    .catch(reject);
+                    .catch(function (err) {
+                        // Rede caiu, timeout estourou ou a resposta não era JSON. O dinheiro
+                        // pode ter saído mesmo assim, então pergunta ao servidor antes de
+                        // dizer qualquer coisa ao aluno.
+                        verificarPagamento({
+                            aoConfirmar: function () { resolve(); },
+                            aoNegar: function () {
+                                mostrarErroPagamento(
+                                    err && err.timeout
+                                        ? 'A operação demorou demais e foi interrompida. Confira suas mensalidades antes de tentar de novo — se a cobrança tiver passado, ela já vai aparecer como paga.'
+                                        : 'Não conseguimos confirmar o pagamento agora. Confira suas mensalidades antes de tentar de novo.'
+                                );
+                                reject(err || new Error('falha_pagamento'));
+                            }
+                        });
+                    });
                 });
             },
             onError: function (error) {
                 console.error('MP Brick error:', error);
+                // O Brick também erra por validação de campo — sem mostrar nada, o aluno
+                // fica sem saber o que aconteceu.
+                var msg = (error && error.message) ? error.message : '';
+                mostrarErroPagamento(msg
+                    ? 'Não foi possível enviar o pagamento: ' + msg
+                    : 'Confira os dados do cartão e tente novamente.');
             },
         },
     });
@@ -350,37 +565,66 @@ document.getElementById('btnGerarPix').addEventListener('click', function () {
     btn.disabled    = true;
     btn.textContent = 'Gerando...';
 
-    fetch(BASE_URL + '/services/site/criar_pagamento.php', {
-        method:      'POST',
-        headers:     { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body:        JSON.stringify({
-            mensalidade_id:    MENSALIDADE_ID,
-            payment_method_id: 'pix',
-            payer:             { email: ALUNO_EMAIL },
-        }),
+    postPagamento(BASE_URL + '/services/site/criar_pagamento.php', {
+        mensalidade_id:    MENSALIDADE_ID,
+        payment_method_id: 'pix',
+        payer:             { email: ALUNO_EMAIL }
     })
-    .then(function (r) { return r.json(); })
     .then(function (data) {
         if (data.success && data.status === 'pix_pending') {
             if (data.qr_code_base64) {
                 document.getElementById('pixQrImg').src = 'data:image/png;base64,' + data.qr_code_base64;
             }
-            document.getElementById('pixCopiaCola').value        = data.qr_code || '';
-            document.getElementById('paymentForm').style.display = 'none';
-            document.getElementById('paymentPix').style.display  = '';
-        } else {
-            btn.disabled    = false;
-            btn.textContent = 'Tentar novamente';
-            alert(data.message || 'Erro ao gerar PIX. Tente novamente.');
+            document.getElementById('pixCopiaCola').value = data.qr_code || '';
+            mostrarTela('paymentPix');
+            iniciarPollingPix();
+            return;
         }
-    })
-    .catch(function () {
+
+        if (data.success && data.status === 'approved') {
+            mostrarTela('paymentSuccess');
+            return;
+        }
+
         btn.disabled    = false;
         btn.textContent = 'Tentar novamente';
-        alert('Erro de conexão. Tente novamente.');
+        mostrarErroPagamento(data.message || 'Não foi possível gerar o PIX. Tente novamente.');
+    })
+    .catch(function (err) {
+        btn.disabled    = false;
+        btn.textContent = 'Tentar novamente';
+        mostrarErroPagamento(err && err.timeout
+            ? 'A geração do PIX demorou demais. Tente novamente.'
+            : 'Erro de conexão ao gerar o PIX. Tente novamente.');
     });
 });
+
+/**
+ * Enquanto o QR está na tela, pergunta ao servidor de tempos em tempos se o PIX caiu —
+ * assim a confirmação aparece sozinha pro aluno, sem depender do webhook e sem precisar
+ * recarregar a página. Para sozinho depois de ~10 minutos pra não ficar batendo à toa.
+ */
+function iniciarPollingPix() {
+    var aviso = document.getElementById('pixAguardando');
+    if (aviso) aviso.style.display = '';
+
+    var tentativas = 0;
+    var MAX = 100; // ~10 min a cada 6s
+
+    var timer = setInterval(function () {
+        tentativas++;
+
+        if (tentativas > MAX) {
+            clearInterval(timer);
+            if (aviso) aviso.textContent = 'Ainda não identificamos o pagamento. Assim que cair, sua mensalidade é atualizada automaticamente.';
+            return;
+        }
+
+        verificarPagamento({ silencioso: true }).then(function (pago) {
+            if (pago) clearInterval(timer);
+        });
+    }, 6000);
+}
 
 function copiarPix() {
     var texto = document.getElementById('pixCopiaCola').value;

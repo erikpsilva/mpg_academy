@@ -8,18 +8,18 @@
  * @param array  $r    Linha do SELECT: nome, celular, is_menor, responsavel_nome,
  *                      responsavel_celular, data_agendada, hora_inicio, hora_fim,
  *                      rua, numero, complemento, bairro, cidade, estado
- * @param string $tipo '3dias', 'amanha' ou 'dia_aula'
+ * @param string $tipo '3dias', '2dias', 'amanha' ou 'dia_aula'
  */
 function wppAulaTesteLembrete(array $r, string $tipo): void {
     require_once __DIR__ . '/zapi.php';
 
     $endereco     = _montaEnderecoLembrete($r);
-    $mapsLink     = $endereco ? googleMapsLink($endereco) : '';
+    $mapsLink     = $endereco ? googleMapsLink($endereco, $r['maps_link'] ?? null) : '';
     $nomePrimeiro = explode(' ', trim($r['nome']))[0];
     $nomeAluno    = trim($r['nome']);
     $nomeResp     = explode(' ', trim($r['responsavel_nome'] ?? 'Responsável'))[0];
 
-    if ($tipo === '3dias' || $tipo === 'amanha') {
+    if ($tipo === '3dias' || $tipo === '2dias' || $tipo === 'amanha') {
         $meses      = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
         $diasSemana = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
         $dt         = new DateTime($r['data_agendada']);
@@ -28,7 +28,7 @@ function wppAulaTesteLembrete(array $r, string $tipo): void {
         $horarioFmt = $r['hora_inicio']
             ? 'das ' . substr($r['hora_inicio'], 0, 5) . 'h às ' . substr($r['hora_fim'], 0, 5) . 'h'
             : 'a confirmar';
-        $quando = $tipo === 'amanha' ? 'amanhã' : 'em 3 dias';
+        $quando = $tipo === 'amanha' ? 'amanhã' : ($tipo === '2dias' ? 'em 2 dias' : 'em 3 dias');
 
         $msg  = "Olá, *{$nomePrimeiro}*! 🎾\n\n";
         $msg .= "Lembrando que sua aula experimental na *MPG Academy* é {$quando}!\n\n";

@@ -71,6 +71,20 @@ function formatPhoneZapi(string $phone): string {
  * detectar/geocodificar o endereço em texto puro sozinho (o que pode
  * levar pro lugar errado quando o parser dele erra a leitura).
  */
-function googleMapsLink(string $endereco): string {
+/**
+ * Link do mapa que vai nas mensagens de aula e treino.
+ *
+ * A busca por endereço (o fallback abaixo) já mandou aluno pro lugar errado: o Google
+ * interpreta o texto do jeito dele e às vezes cai numa outra rua de mesmo nome. Por isso
+ * cada quadra pode ter o link certo salvo em `quadras.maps_link` — quando existe, é ele que
+ * vale, sem adivinhação. A busca por endereço fica só pra quadra que ainda não tem link.
+ *
+ * @param string      $endereco Endereço montado, usado só quando não há link salvo.
+ * @param string|null $linkFixo Conteúdo de quadras.maps_link, quando houver.
+ */
+function googleMapsLink(string $endereco, ?string $linkFixo = null): string {
+    $linkFixo = trim((string) $linkFixo);
+    if ($linkFixo !== '') return $linkFixo;
+
     return 'https://www.google.com/maps/search/?api=1&query=' . urlencode($endereco);
 }

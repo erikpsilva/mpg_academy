@@ -56,13 +56,21 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 
 $pdo = getDbConnection();
 
-// Verificar se o email já está em uso por outro aluno
-$check = $pdo->prepare("SELECT id FROM alunos WHERE email = ? AND id != ? LIMIT 1");
-$check->execute([$email, $id]);
-if ($check->fetch()) {
-    http_response_code(409);
-    echo json_encode(['success' => false, 'message' => 'Este e-mail já está sendo usado por outra conta.']);
-    exit;
+// E-mail só precisa ser único entre MAIORES de idade: menor usa o e-mail do responsável,
+// que pode ser aluno também (ver register_student.php). Quem está editando decide a regra
+// pelo próprio cadastro — se este aluno é menor, ele pode repetir à vontade.
+$stEste = $pdo->prepare("SELECT is_menor FROM alunos WHERE id = ?");
+$stEste->execute([$id]);
+$esteEhMenor = (bool) $stEste->fetchColumn();
+
+if (!$esteEhMenor) {
+    $check = $pdo->prepare("SELECT id FROM alunos WHERE email = ? AND is_menor = 0 AND id != ? LIMIT 1");
+    $check->execute([$email, $id]);
+    if ($check->fetch()) {
+        http_response_code(409);
+        echo json_encode(['success' => false, 'message' => 'Este e-mail já está sendo usado por outra conta.']);
+        exit;
+    }
 }
 
 // Validação de senha (opcional — só valida se preenchida)

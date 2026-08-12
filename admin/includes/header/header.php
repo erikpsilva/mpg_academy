@@ -49,8 +49,15 @@
 .header__notifDot {
     width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px;
 }
-.header__notifDot--ok     { background: #ff8c00; }
-.header__notifDot--alerta { background: #ff4444; }
+.header__notifDot--ok       { background: #ff8c00; }
+.header__notifDot--alerta   { background: #ff4444; }
+.header__notifDot--uniforme { background: #e5c200; }
+.header__notifSection { border-bottom: 1px solid #222; }
+.header__notifSection .header__notifList { max-height: 240px; }
+.header__notifItem--link { text-decoration: none; }
+.header__notifItem--link:hover .header__notifNome { color: #e5c200; }
+.header__notifDias--uniforme { color: #888; font-weight: 600; }
+a.header__notifEnviar { text-decoration: none; display: inline-block; }
 .header__notifInfo { min-width: 0; flex: 1; }
 .header__notifNome { display: block; font-size: 13px; font-weight: 700; color: #eee; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .header__notifMeta { display: block; font-size: 11px; color: #888; margin-top: 2px; }
@@ -88,6 +95,22 @@
                         <span class="header__notifBadge" id="notifBadge" style="display:none;">0</span>
                     </button>
                     <div class="header__notifDropdown" id="notifDropdown">
+                        <div class="header__notifSection" id="notifErrosSection" style="display:none;">
+                            <div class="header__notifHead">
+                                <strong>⚠️ Erros de pagamento</strong>
+                                <a class="header__notifEnviar" href="<?= BASE_URL ?>/admin/erros-pagamento">Ver todos</a>
+                            </div>
+                            <div class="header__notifList" id="notifErrosList"></div>
+                        </div>
+
+                        <div class="header__notifSection" id="notifUniformesSection" style="display:none;">
+                            <div class="header__notifHead">
+                                <strong>Novos pedidos de uniforme</strong>
+                                <a class="header__notifEnviar" href="<?= BASE_URL ?>/admin/uniformes">Ver todos</a>
+                            </div>
+                            <div class="header__notifList" id="notifUniformesList"></div>
+                        </div>
+
                         <div class="header__notifHead">
                             <strong>Alunos com atraso</strong>
                             <button class="header__notifEnviar" id="notifEnviarBtn">Enviar notificações</button>
@@ -139,8 +162,11 @@
         .then(function (data) {
             if (!data.success) return;
 
-            // Badge: mostra somente alunos com 25+ dias não notificados
-            var alertas = data.total_alerta;
+            renderUniformes(data.uniformes || []);
+            renderErros(data.erros_pagamento || []);
+
+            // Badge: atrasos 25+ dias não notificados + pedidos de uniforme + erros de pagamento
+            var alertas = data.total_alerta + (data.total_uniformes || 0) + (data.total_erros || 0);
             if (alertas > 0) {
                 badge.textContent   = alertas > 9 ? '9+' : alertas;
                 badge.style.display = '';
@@ -176,6 +202,76 @@
         .catch(function () {
             list.innerHTML = '<div class="header__notifEmpty">Erro ao carregar.</div>';
         });
+    }
+
+    // Falhas de pagamento que o admin ainda não viu — vão no topo do dropdown porque
+    // é o item mais acionável: tem um aluno travado esperando ajuda do outro lado.
+    function renderErros(lista) {
+        var secao = document.getElementById('notifErrosSection');
+        var box   = document.getElementById('notifErrosList');
+        if (!secao || !box) return;
+
+        if (!lista.length) {
+            secao.style.display = 'none';
+            box.innerHTML = '';
+            return;
+        }
+
+        var ctxLabel = { mensalidade: 'Mensalidade', uniforme: 'Uniforme', batebola: 'Bate Bola', outro: 'Cobrança' };
+
+        var html = '';
+        lista.forEach(function (e) {
+            var valor = (e.valor !== null && e.valor !== undefined)
+                ? ' · R$ ' + Number(e.valor).toFixed(2).replace('.', ',') : '';
+
+            html += '<a class="header__notifItem header__notifItem--link" href="'
+                  + ADMIN_BASE_URL + '/erros-pagamento">'
+                  + '<span class="header__notifDot header__notifDot--alerta"></span>'
+                  + '<div class="header__notifInfo">'
+                  + '<span class="header__notifNome">' + e.aluno_nome + '</span>'
+                  + '<span class="header__notifMeta">' + (ctxLabel[e.contexto] || e.contexto) + valor + '</span>'
+                  + '<span class="header__notifMeta">' + e.motivo + '</span>'
+                  + '</div>'
+                  + '<span class="header__notifDias header__notifDias--alerta">' + e.criado_em + '</span>'
+                  + '</a>';
+        });
+
+        box.innerHTML = html;
+        secao.style.display = '';
+    }
+
+    // Pedidos de uniforme pagos que ainda não foram vistos
+    function renderUniformes(lista) {
+        var secao = document.getElementById('notifUniformesSection');
+        var box   = document.getElementById('notifUniformesList');
+        if (!secao || !box) return;
+
+        if (!lista.length) {
+            secao.style.display = 'none';
+            box.innerHTML = '';
+            return;
+        }
+
+        var html = '';
+        lista.forEach(function (u) {
+            html += '<a class="header__notifItem header__notifItem--link" href="'
+                  + ADMIN_BASE_URL + '/uniformes">'
+                  + '<span class="header__notifDot header__notifDot--uniforme"></span>'
+                  + '<div class="header__notifInfo">'
+                  + '<span class="header__notifNome">' + u.aluno_nome + '</span>'
+                  + '<span class="header__notifMeta">'
+                  +   u.genero_label + ' · ' + u.modelo_label
+                  +   ' · camisa ' + u.tamanho_camisa + ' / shorts ' + u.tamanho_shorts
+                  +   ' — ' + u.nome_camisa + ' #' + u.numero
+                  + '</span>'
+                  + '<span class="header__notifMeta">' + u.turma_nome + '</span>'
+                  + '</div>'
+                  + '<span class="header__notifDias header__notifDias--uniforme">' + u.pago_em + '</span>'
+                  + '</a>';
+        });
+
+        box.innerHTML = html;
+        secao.style.display = '';
     }
 
     carregarNotificacoes();

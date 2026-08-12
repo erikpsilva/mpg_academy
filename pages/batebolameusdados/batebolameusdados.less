@@ -1,0 +1,60 @@
+.bateBolaDados {
+    background: #07090a;
+    color: @white;
+    min-height: 100vh;
+    padding: 140px 0 80px;
+
+    .container {
+        max-width: 640px;
+    }
+
+    &__back {
+        color: rgba(255, 255, 255, 0.56);
+        display: inline-block;
+        font-size: 13px;
+        margin-bottom: 22px;
+        text-decoration: none;
+
+        &:hover {
+            color: @yellow;
+        }
+    }
+}
+
+.bateBolaDadosCard {
+    background:
+        radial-gradient(circle at 0 100%, rgba(255, 213, 0, 0.1), transparent 25%),
+        #111314;
+    border: 1px solid rgba(255, 213, 0, 0.45);
+    border-radius: 14px;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.4);
+    padding: 34px;
+
+    h1 {
+        color: @white;
+        font-size: 27px;
+        font-weight: 900;
+        margin: 0 0 6px;
+
+        span {
+            color: @yellow;
+        }
+    }
+
+    p {
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 14px;
+        margin: 0 0 26px;
+    }
+
+    .bateBolaSignup__photo {
+        grid-column: 1 / -1;
+        margin: 0 auto 6px;
+    }
+}
+
+@media @mobile-sm {
+    .bateBolaDadosCard {
+        padding: 24px 18px;
+    }
+}

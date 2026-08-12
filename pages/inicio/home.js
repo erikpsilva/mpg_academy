@@ -115,4 +115,33 @@ const homeForm = {
 
 $(document).ready(() => {
     homeForm.init();
+
+    const modal = document.getElementById('homeUniformModal');
+    const modalImage = document.getElementById('homeUniformModalImage');
+    const modalTitle = document.getElementById('homeUniformModalTitle');
+
+    function closeUniformModal() {
+        modal.classList.remove('is-open');
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+    }
+
+    document.querySelectorAll('.js-home-uniform-preview').forEach((button) => {
+        button.addEventListener('click', () => {
+            modalImage.src = button.dataset.image;
+            modalImage.alt = button.dataset.title;
+            modalTitle.textContent = button.dataset.title;
+            modal.classList.add('is-open');
+            modal.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+        });
+    });
+
+    document.querySelectorAll('.js-home-uniform-close').forEach((button) => {
+        button.addEventListener('click', closeUniformModal);
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && modal.classList.contains('is-open')) closeUniformModal();
+    });
 });

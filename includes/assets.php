@@ -11,6 +11,9 @@ $seoTitles = [
     'turmastreino' => 'Turmas e Valores — MPG Academy | Vôlei Zona Norte SP',
     'cadastro'     => 'Matricule-se — MPG Academy | Aulas de Vôlei em São Paulo',
     'patrocinio'   => 'Seja Patrocinador — MPG Academy | Vôlei Zona Norte SP',
+    'batebola'     => 'Bate Bola aos Domingos — MPG Academy | Vôlei Zona Norte SP',
+    'cadastrobatebola' => 'Cadastro Bate Bola — MPG Academy',
+    'batebolainicio' => 'Início Bate Bola — MPG Academy',
     'comunicados'  => 'Comunicados — MPG Academy',
     'contato'      => 'Contato — MPG Academy | Escola de Vôlei SP',
 ];
@@ -21,6 +24,9 @@ $seoDescriptions = [
     'turmastreino' => 'Turmas e valores da MPG Academy: vôlei para iniciantes e avançados na Zona Norte de SP. Horários organizados, professores qualificados e estrutura completa.',
     'cadastro'     => 'Faça sua matrícula na MPG Academy e comece a jogar vôlei na Zona Norte de São Paulo. Treinos planejados e acompanhamento profissional para todos os níveis.',
     'patrocinio'   => 'Conecte sua marca à MPG Academy e alcance uma comunidade ativa de vôlei adulto na Zona Norte de São Paulo. Conheça nossos planos de patrocínio.',
+    'batebola'     => 'Bate Bola da MPG Academy aos domingos, das 10h às 13h, na Quadra Orion. Vôlei amigável, organizado e aberto a grupos de 12 a 24 participantes.',
+    'cadastrobatebola' => 'Crie seu cadastro para participar do Bate Bola da MPG Academy aos domingos na Quadra Orion.',
+    'batebolainicio' => 'Área inicial do participante do Bate Bola MPG Academy.',
     'comunicados'  => 'Fique por dentro das novidades, avisos e comunicados da MPG Academy, escola de vôlei da Zona Norte de SP.',
     'contato'      => 'Entre em contato com a MPG Academy, escola de vôlei da Zona Norte de São Paulo. Tire suas dúvidas e saiba mais sobre as aulas.',
 ];
@@ -34,7 +40,7 @@ $ogImage        = BASE_URL . '/images/logoComFundo.jpg';
 $seoKeywords = 'MPG Academy, volei, vôlei, jogar vôlei, escola de vôlei, vôlei zona norte, treino de vôlei, aula de vôlei, volei adulto, volei iniciante, volei intermediário, voleibol, São Paulo, Zona Norte São Paulo';
 
 // Páginas de login/privadas não devem ser indexadas
-$noIndexRoutes = ['areadoaluno', 'treinos', 'meuperfil', 'mensalidades', 'pagamento', 'termo', 'assinaturas'];
+$noIndexRoutes = ['areadoaluno', 'treinos', 'meuperfil', 'mensalidades', 'pagamento', 'termo', 'assinaturas', 'batebolainicio'];
 $robotsContent = in_array($currentRoute, $noIndexRoutes) ? 'noindex, nofollow' : 'index, follow';
 ?>
 

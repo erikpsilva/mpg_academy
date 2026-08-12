@@ -50,7 +50,7 @@ if (strlen($cpf) !== 11) {
     exit;
 }
 
-if (!in_array($nivel, ['admin', 'editor', 'leitor'])) {
+if (!in_array($nivel, ['admin', 'editor', 'leitor', 'batebola'])) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Nível de acesso inválido.']);
     exit;

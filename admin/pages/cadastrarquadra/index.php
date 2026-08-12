@@ -157,6 +157,17 @@ $modoEdicao = $editData !== null;
                             <span class="errorText">UF inválida</span>
                         </div>
                     </div>
+                    <div class="col-md-12">
+                        <div class="formGroup__item">
+                            <label for="mapsLink">Link do mapa</label>
+                            <input class="input" type="url" id="mapsLink" maxlength="500"
+                                   placeholder="Cole aqui o link do Google Maps desta quadra">
+                            <small style="color:rgba(255,255,255,.45);font-size:12px;display:block;margin-top:6px;">
+                                É o link que vai no WhatsApp de aula e treino. Sem ele, o sistema gera uma busca
+                                pelo endereço — que às vezes cai no lugar errado.
+                            </small>
+                        </div>
+                    </div>
                 </div>
             </div>
 

@@ -60,9 +60,75 @@ foreach ($rows as $r) {
     ];
 }
 
+// ── Pedidos de uniforme pagos que o admin ainda não viu ──────────────────────────
+require_once dirname(__FILE__, 3) . '/config/uniformes.php';
+
+$uniformes = [];
+try {
+    $stUni = $pdo->query("
+        SELECT p.id, p.genero, p.modelo, p.nome_camisa, p.numero, p.tamanho_camisa, p.tamanho_shorts, p.pago_em,
+               a.nome AS aluno_nome, COALESCE(t.nome, '—') AS turma_nome
+        FROM pedidos_uniforme p
+        JOIN alunos a ON a.id = p.aluno_id
+        LEFT JOIN turmas t ON t.id = p.turma_id
+        WHERE p.status_pagamento = 'pago' AND p.visto_admin = 0
+        ORDER BY p.pago_em DESC
+        LIMIT 20
+    ");
+
+    foreach ($stUni->fetchAll() as $u) {
+        $uniformes[] = [
+            'id'           => (int) $u['id'],
+            'aluno_nome'   => $u['aluno_nome'],
+            'turma_nome'   => $u['turma_nome'],
+            'genero_label' => $u['genero'] === 'feminino' ? 'Feminino' : 'Masculino',
+            'modelo_label' => UNIFORME_MODELO_LABEL[$u['modelo']] ?? $u['modelo'],
+            'nome_camisa'  => $u['nome_camisa'],
+            'numero'       => (int) $u['numero'],
+            'tamanho_camisa' => $u['tamanho_camisa'],
+            'tamanho_shorts' => $u['tamanho_shorts'],
+            'pago_em'      => $u['pago_em'] ? (new DateTime($u['pago_em']))->format('d/m H:i') : '',
+        ];
+    }
+} catch (PDOException $e) {
+    // Tabela ainda não migrada — o sino segue funcionando só com as mensalidades.
+}
+
+// ── Erros de pagamento ainda não vistos ──────────────────────────────────────────
+require_once dirname(__FILE__, 3) . '/config/mercadopago.php';
+
+$errosPagamento = [];
+try {
+    $stErr = $pdo->query("
+        SELECT id, aluno_nome, contexto, valor, metodo, mensagem, mp_status_detail, criado_em
+        FROM pagamento_erros
+        WHERE visto_admin = 0 AND resolvido = 0
+        ORDER BY criado_em DESC
+        LIMIT 20
+    ");
+
+    foreach ($stErr->fetchAll() as $e) {
+        $errosPagamento[] = [
+            'id'         => (int) $e['id'],
+            'aluno_nome' => $e['aluno_nome'] ?: '(não identificado)',
+            'contexto'   => $e['contexto'],
+            'valor'      => $e['valor'] !== null ? (float) $e['valor'] : null,
+            'metodo'     => $e['metodo'],
+            'motivo'     => $e['mensagem'],
+            'criado_em'  => (new DateTime($e['criado_em']))->format('d/m H:i'),
+        ];
+    }
+} catch (PDOException $e) {
+    // Tabela ainda não migrada — o sino segue funcionando sem essa seção.
+}
+
 echo json_encode([
     'success'         => true,
     'total'           => count($alunos),
     'total_alerta'    => count(array_filter($alunos, fn($a) => $a['alerta'] && !$a['notificado'])),
     'alunos'          => $alunos,
+    'uniformes'       => $uniformes,
+    'total_uniformes' => count($uniformes),
+    'erros_pagamento' => $errosPagamento,
+    'total_erros'     => count($errosPagamento),
 ]);

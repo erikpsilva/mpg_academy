@@ -70,7 +70,7 @@ if ($email) {
 // Verifica se a turma existe e está ativa
 $turmaStmt = $pdo->prepare("
     SELECT t.max_alunos, t.nome,
-           q.nome AS quadra_nome, q.rua, q.numero, q.bairro, q.complemento, q.cidade, q.estado
+           q.nome AS quadra_nome, q.rua, q.numero, q.bairro, q.complemento, q.cidade, q.estado, q.maps_link
     FROM turmas t
     LEFT JOIN quadras q ON q.id = t.quadra_id
     WHERE t.id = ? AND t.status = 'ativa'

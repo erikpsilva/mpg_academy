@@ -1,0 +1,302 @@
+.uniformPay {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 70vh;
+    padding: 48px 16px 70px;
+    background: #0b0d0f;
+
+    &__card {
+        width: 100%;
+        max-width: 520px;
+        padding: 32px;
+        border: 1px solid rgba(255, 255, 255, 0.13);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.035);
+    }
+
+    &__back {
+        display: inline-block;
+        margin-bottom: 22px;
+        color: #8b8b8b;
+        font-size: 13px;
+        text-decoration: none;
+
+        &:hover {
+            color: @yellow;
+        }
+    }
+
+    &__testBadge {
+        display: inline-block;
+        margin-bottom: 16px;
+        padding: 4px 10px;
+        border: 1px solid #666600;
+        border-radius: 6px;
+        background: #2a2a00;
+        color: #cccc00;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    &__title {
+        color: @white;
+        font-size: 23px;
+        margin: 0 0 4px;
+    }
+
+    &__sub {
+        color: #9a9a9a;
+        font-size: 14px;
+        margin: 0 0 22px;
+    }
+
+    &__summary {
+        margin-bottom: 18px;
+        padding: 16px 20px;
+        border-radius: 10px;
+        background: rgba(0, 0, 0, 0.35);
+    }
+
+    &__row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 5px 0;
+        color: #9a9a9a;
+        font-size: 13px;
+
+        span:last-child {
+            color: @white;
+            font-weight: 700;
+            text-align: right;
+        }
+
+        &--total {
+            margin-top: 8px;
+            padding-top: 13px;
+            border-top: 1px solid rgba(255, 255, 255, 0.12);
+            color: @white;
+            font-size: 16px;
+            font-weight: 700;
+
+            span:last-child {
+                color: @yellow;
+                font-size: 21px;
+            }
+        }
+    }
+
+    &__timer {
+        margin: 0 0 18px;
+        padding: 11px 14px;
+        border: 1px solid rgba(255, 213, 0, 0.28);
+        border-radius: 8px;
+        background: rgba(255, 213, 0, 0.06);
+        color: #ededed;
+        font-size: 13px;
+        text-align: center;
+
+        strong {
+            color: @yellow;
+        }
+
+        a {
+            color: @yellow;
+            text-decoration: underline;
+        }
+
+        &.is-expired {
+            border-color: rgba(205, 0, 0, 0.5);
+            background: rgba(205, 0, 0, 0.12);
+            color: #ff9d9d;
+
+            strong {
+                color: #ff9d9d;
+            }
+        }
+    }
+
+    &__methods {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 20px;
+    }
+
+    &__method {
+        flex: 1;
+        padding: 12px 8px;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 8px;
+        background: rgba(0, 0, 0, 0.4);
+        color: #9a9a9a;
+        cursor: pointer;
+        font-family: @font;
+        font-size: 12px;
+        font-weight: 600;
+        text-align: center;
+        .transition(0.15s all);
+
+        i {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 20px;
+            font-style: normal;
+        }
+
+        &:hover {
+            border-color: rgba(255, 255, 255, 0.35);
+            color: @white;
+        }
+
+        &.is-active {
+            border-color: @yellow;
+            background: rgba(255, 213, 0, 0.1);
+            color: @yellow;
+        }
+    }
+
+    &__error {
+        margin-bottom: 16px;
+        padding: 12px 14px;
+        border: 1px solid rgba(205, 0, 0, 0.5);
+        border-radius: 8px;
+        background: rgba(205, 0, 0, 0.12);
+        color: #ff9d9d;
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    &__aguardando {
+        margin: 12px 0 0;
+        color: #cccc00;
+        font-size: 13px;
+    }
+
+    &__installmentsHint {
+        margin: 0 0 14px;
+        padding: 10px 12px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.03);
+        color: #9a9a9a;
+        font-size: 12px;
+        line-height: 1.5;
+    }
+
+    &__pixHint {
+        margin: 0 0 16px;
+        color: #cfcfcf;
+        font-size: 13px;
+        line-height: 1.55;
+        text-align: center;
+
+        strong {
+            color: @white;
+        }
+    }
+
+    &__btn {
+        width: 100%;
+        min-height: 50px;
+        display: block;
+        border: 0;
+        border-radius: 8px;
+        background: @yellow;
+        color: #050505;
+        cursor: pointer;
+        font-family: @font;
+        font-size: 15px;
+        font-weight: 900;
+        line-height: 50px;
+        text-align: center;
+        text-decoration: none;
+
+        &:disabled {
+            opacity: 0.6;
+            cursor: default;
+        }
+
+        &--pix {
+            margin: 12px 0;
+            background: #00b37e;
+            color: @white;
+        }
+    }
+
+    &__link {
+        display: block;
+        margin-top: 10px;
+        color: #8b8b8b;
+        font-size: 13px;
+        text-align: center;
+        text-decoration: none;
+
+        &:hover {
+            color: @yellow;
+        }
+    }
+
+    // ── Telas de estado (aprovado / pendente / pix / expirado) ──────────────────
+    &__state {
+        padding: 16px 0;
+        text-align: center;
+
+        h1 {
+            color: @white;
+            font-size: 22px;
+            margin: 0 0 10px;
+        }
+
+        p {
+            margin: 0 0 22px;
+            color: #cfcfcf;
+            font-size: 14px;
+            line-height: 1.6;
+
+            strong {
+                color: @yellow;
+            }
+        }
+    }
+
+    &__stateIcon {
+        margin-bottom: 14px;
+        font-size: 46px;
+        line-height: 1;
+    }
+
+    &__qr {
+        width: 200px;
+        height: 200px;
+        display: block;
+        margin: 0 auto 16px;
+        padding: 8px;
+        border-radius: 8px;
+        background: @white;
+    }
+
+    &__pixCode {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 8px;
+        background: rgba(0, 0, 0, 0.4);
+        color: #cfcfcf;
+        font-family: monospace;
+        font-size: 11px;
+        resize: none;
+        box-sizing: border-box;
+    }
+}
+
+@media @tablet-small {
+    .uniformPay {
+        padding: 26px 12px 50px;
+
+        &__card {
+            padding: 22px 18px;
+        }
+    }
+}

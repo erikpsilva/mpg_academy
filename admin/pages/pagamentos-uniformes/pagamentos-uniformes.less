@@ -1,0 +1,188 @@
+.pagUniformes {
+
+    &__header {
+        align-items: center;
+        margin-bottom: 25px;
+        padding: 24px;
+        border: 1px solid @borderColor;
+        border-radius: 8px;
+        background: rgba(17, 19, 21, 0.92);
+
+        h2 {
+            color: @white;
+            font-size: 30px;
+            font-weight: @bold;
+            margin-bottom: 4px;
+
+            span { color: @primary; }
+        }
+
+        p {
+            color: rgba(255, 255, 255, 0.68);
+            font-size: 14px;
+        }
+    }
+
+    &__mesLabel {
+        display: block;
+        margin-bottom: 6px;
+        color: rgba(255, 255, 255, 0.55);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
+    &__mes {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid @borderColor;
+        border-radius: 6px;
+        background: @bgPanelLight;
+        color: @white;
+        font-family: @font;
+        font-size: 14px;
+        cursor: pointer;
+    }
+
+    // ── Totais ──────────────────────────────────────────────────────────────
+    &__totais {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 14px;
+        margin-bottom: 22px;
+    }
+
+    &__card {
+        padding: 18px;
+        border: 1px solid @borderColor;
+        border-radius: 8px;
+        background: @bgPanel;
+        text-align: center;
+
+        &--bruto   .pagUniformes__cardNum { color: #7ecf7e; }
+        &--taxa    .pagUniformes__cardNum { color: @error; }
+        &--liquido .pagUniformes__cardNum { color: @primary; }
+    }
+
+    &__cardNum {
+        display: block;
+        color: @white;
+        font-size: 24px;
+        font-weight: @bold;
+        line-height: 1.2;
+    }
+
+    &__cardLabel {
+        display: block;
+        margin-top: 4px;
+        color: rgba(255, 255, 255, 0.55);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    // ── Lista ───────────────────────────────────────────────────────────────
+    &__lista {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    &__item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        padding: 16px 18px;
+        border: 1px solid @borderColor;
+        border-radius: 8px;
+        background: @bgPanel;
+    }
+
+    &__itemMain {
+        min-width: 0;
+
+        h3 {
+            margin-bottom: 4px;
+            color: @white;
+            font-size: 16px;
+            font-weight: @semiBold;
+        }
+    }
+
+    &__meta {
+        color: rgba(255, 255, 255, 0.68);
+        font-size: 13px;
+        line-height: 1.5;
+
+        &--dim { color: rgba(255, 255, 255, 0.42); font-size: 12px; }
+    }
+
+    &__tag {
+        display: inline-block;
+        margin-left: 6px;
+        padding: 2px 8px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: @semiBold;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        vertical-align: middle;
+
+        &--manual {
+            background: rgba(255, 157, 0, 0.16);
+            color: @orange;
+        }
+    }
+
+    &__itemValores {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 2px;
+        flex-shrink: 0;
+    }
+
+    &__valor {
+        color: #7ecf7e;
+        font-size: 18px;
+        font-weight: @bold;
+    }
+
+    &__taxa    { color: rgba(255, 77, 77, 0.85); font-size: 12px; }
+    &__liquido { color: rgba(255, 255, 255, 0.6); font-size: 12px; }
+
+    &__status {
+        margin-top: 4px;
+        padding: 2px 10px;
+        border: 1px solid @borderColor;
+        border-radius: 20px;
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    &__vazio {
+        padding: 34px;
+        border: 1px dashed @borderColor;
+        border-radius: 8px;
+        color: rgba(255, 255, 255, 0.5);
+        text-align: center;
+    }
+
+    @media @notebookSM {
+        &__totais { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media @tabletSM {
+        &__totais { grid-template-columns: 1fr; }
+
+        &__item {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        &__itemValores { align-items: flex-start; }
+    }
+}

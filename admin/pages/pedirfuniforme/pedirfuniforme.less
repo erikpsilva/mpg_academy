@@ -1,0 +1,648 @@
+.pedirUniforme {
+
+    &__header {
+        margin-bottom: 25px;
+        padding: 24px;
+        border: 1px solid @borderColor;
+        border-radius: 8px;
+        background: rgba(17, 19, 21, 0.92);
+
+        h2 {
+            color: @white;
+            font-size: 30px;
+            font-weight: @bold;
+            margin-bottom: 6px;
+
+            span { color: @alert; }
+        }
+
+        p {
+            color: rgba(255, 255, 255, 0.68);
+            font-size: 14px;
+            max-width: 720px;
+
+            strong { color: @alert; }
+        }
+    }
+
+    &__form {
+        max-width: 720px;
+    }
+
+    &__block {
+        margin-bottom: 16px;
+        padding: 22px 24px;
+        border: 1px solid @borderColor;
+        border-radius: 8px;
+        background: rgba(17, 19, 21, 0.92);
+
+        h3 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: @white;
+            font-size: 16px;
+            font-weight: @bold;
+            margin: 0 0 18px;
+
+            span {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 24px;
+                height: 24px;
+                flex-shrink: 0;
+                border-radius: 50%;
+                background: @alert;
+                color: #050505;
+                font-size: 12px;
+                font-weight: @bold;
+            }
+        }
+
+        &--summary {
+            border-color: rgba(255, 213, 0, 0.3);
+        }
+    }
+
+    // ── Busca de aluno ──────────────────────────────────────────────────────────
+    &__search {
+        position: relative;
+
+        input {
+            width: 100%;
+            height: 44px;
+            padding: 0 14px;
+            border: 1px solid @borderColor;
+            border-radius: 6px;
+            background: #0c0d0f;
+            color: @white;
+            font-family: @font;
+            font-size: 14px;
+
+            &:focus {
+                border-color: @alert;
+                outline: 0;
+            }
+        }
+    }
+
+    &__searchResults {
+        display: none;
+        position: absolute;
+        z-index: 20;
+        top: calc(100% + 6px);
+        left: 0;
+        right: 0;
+        max-height: 260px;
+        overflow-y: auto;
+        border: 1px solid @borderColor;
+        border-radius: 8px;
+        background: #141618;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+
+        &.is-open {
+            display: block;
+        }
+    }
+
+    &__searchItem {
+        display: block;
+        width: 100%;
+        padding: 10px 14px;
+        border: 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        background: transparent;
+        color: @colorFont;
+        cursor: pointer;
+        text-align: left;
+
+        &:last-child { border-bottom: 0; }
+        &:hover { background: rgba(255, 213, 0, 0.08); }
+
+        strong {
+            display: block;
+            color: @white;
+            font-size: 13px;
+        }
+
+        small {
+            display: block;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 11px;
+            margin-top: 2px;
+        }
+    }
+
+    &__searchEmpty {
+        padding: 14px;
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 12px;
+        text-align: center;
+    }
+
+    &__alunoSelecionado {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px 14px;
+        border: 1px solid rgba(255, 213, 0, 0.3);
+        border-radius: 8px;
+        background: rgba(255, 213, 0, 0.06);
+
+        strong {
+            display: block;
+            color: @white;
+            font-size: 14px;
+        }
+
+        small {
+            display: block;
+            color: rgba(255, 255, 255, 0.55);
+            font-size: 12px;
+            margin-top: 2px;
+        }
+    }
+
+    // ── Campos ──────────────────────────────────────────────────────────────────
+    &__field {
+        display: block;
+        margin-top: 18px;
+
+        &:first-child { margin-top: 0; }
+
+        > span {
+            display: block;
+            margin-bottom: 8px;
+            color: @white;
+            font-size: 13px;
+            font-weight: @bold;
+        }
+
+        input.input {
+            width: 100%;
+            height: 44px;
+            padding: 0 14px;
+            border: 1px solid @borderColor;
+            border-radius: 6px;
+            background: #0c0d0f;
+            color: @white;
+            font-family: @font;
+            font-size: 14px;
+            text-transform: uppercase;
+
+            &:focus {
+                border-color: @alert;
+                outline: 0;
+            }
+        }
+
+        select {
+            width: 100%;
+            height: 44px;
+            padding: 0 14px;
+            border: 1px solid @borderColor;
+            border-radius: 6px;
+            background: #0c0d0f;
+            color: @white;
+            font-family: @font;
+            font-size: 14px;
+        }
+
+        > small {
+            display: block;
+            margin-top: 7px;
+            color: rgba(255, 255, 255, 0.45);
+            font-size: 12px;
+        }
+    }
+
+    // ── Modelos ─────────────────────────────────────────────────────────────────
+    &__models {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    // ── Número ──────────────────────────────────────────────────────────────────
+    &__numberPick {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        height: 44px;
+        padding: 0 14px;
+        border: 1px dashed rgba(255, 213, 0, 0.5);
+        border-radius: 6px;
+        background: #0c0d0f;
+        color: @alert;
+        cursor: pointer;
+        font-family: @font;
+        font-size: 14px;
+        font-weight: @bold;
+
+        em { font-style: normal; }
+
+        &.is-filled {
+            border-style: solid;
+            border-color: @alert;
+            background: rgba(255, 213, 0, 0.08);
+            color: @white;
+        }
+    }
+
+    // ── Tamanhos ────────────────────────────────────────────────────────────────
+    &__sizes {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    &__size {
+        min-width: 52px;
+        height: 40px;
+        padding: 0 10px;
+        border: 1px solid @borderColor;
+        border-radius: 6px;
+        background: #0c0d0f;
+        color: @colorFont;
+        cursor: pointer;
+        font-family: @font;
+        font-size: 13px;
+        font-weight: @bold;
+        transition: 0.15s all;
+
+        &:hover { border-color: rgba(255, 213, 0, 0.6); color: @white; }
+
+        &.is-active {
+            border-color: @alert;
+            background: @alert;
+            color: #050505;
+        }
+    }
+
+    &__measureLink {
+        display: inline;
+        padding: 0;
+        border: 0;
+        border-bottom: 1px solid @alert;
+        background: transparent;
+        color: @alert;
+        cursor: pointer;
+        font: inherit;
+        font-weight: @bold;
+    }
+
+    // ── Aviso e envio ───────────────────────────────────────────────────────────
+    &__notice {
+        margin-bottom: 16px;
+        padding: 12px 14px;
+        border: 1px solid rgba(255, 213, 0, 0.3);
+        border-radius: 8px;
+        background: rgba(255, 213, 0, 0.06);
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 13px;
+        line-height: 1.5;
+
+        strong { color: @alert; }
+    }
+
+    &__error {
+        display: none;
+        margin: 0 0 14px;
+        padding: 12px 14px;
+        border: 1px solid rgba(255, 77, 77, 0.5);
+        border-radius: 8px;
+        background: rgba(255, 77, 77, 0.12);
+        color: #ff9d9d;
+        font-size: 13px;
+
+        &.is-visible { display: block; }
+    }
+}
+
+// ── Card de modelo (radio custom, tema admin) ───────────────────────────────────
+.pedirUniformeModel {
+    position: relative;
+    display: block;
+    cursor: pointer;
+
+    input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    &__box {
+        position: relative;
+        display: block;
+        padding: 8px 8px 12px;
+        border: 2px solid @borderColor;
+        border-radius: 6px;
+        background: #0c0d0f;
+        transition: 0.15s all;
+    }
+
+    &__tag {
+        position: absolute;
+        z-index: 2;
+        top: 14px;
+        left: 14px;
+        padding: 4px 7px;
+        border: 2px solid #000;
+        border-radius: 4px;
+        background: @alert;
+        color: #050505;
+        font-size: 9px;
+        font-weight: @bold;
+        text-transform: uppercase;
+    }
+
+    img {
+        width: 100%;
+        aspect-ratio: 4 / 5;
+        display: block;
+        border-radius: 4px;
+        background: #101010;
+        object-fit: cover;
+    }
+
+    &__name {
+        display: block;
+        margin-top: 8px;
+        color: @white;
+        font-size: 12px;
+        font-weight: @bold;
+        text-align: center;
+    }
+
+    &:hover &__box { border-color: rgba(255, 213, 0, 0.45); }
+
+    input:checked + &__box {
+        border-color: @alert;
+        background: rgba(255, 213, 0, 0.08);
+    }
+}
+
+@media @tabletSM {
+    .pedirUniforme__models {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+// ── Modal de números (mesmo padrão visual do formulário do aluno, com variáveis do admin) ──
+.uniformNumbers {
+    position: fixed;
+    z-index: 2000;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+
+    &.is-open { display: flex; }
+
+    &__backdrop {
+        position: absolute;
+        inset: 0;
+        border: 0;
+        background: rgba(0, 0, 0, 0.82);
+        cursor: pointer;
+    }
+
+    &__dialog {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        width: min(100%, 620px);
+        max-height: 90vh;
+        padding: 24px;
+        border: 1px solid @borderColor;
+        border-radius: 12px;
+        background: #111315;
+    }
+
+    &__head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 14px;
+        margin-bottom: 14px;
+
+        h2 { color: @white; font-size: 19px; margin: 0 0 4px; }
+        p  { color: rgba(255, 255, 255, 0.55); font-size: 13px; margin: 0; }
+    }
+
+    &__close {
+        width: 38px;
+        height: 38px;
+        flex-shrink: 0;
+        border: 1px solid @borderColor;
+        border-radius: 8px;
+        background: transparent;
+        color: @white;
+        cursor: pointer;
+        font-size: 22px;
+        line-height: 1;
+
+        &:hover { border-color: @alert; color: @alert; }
+    }
+
+    &__legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 18px;
+        margin: 0 0 16px;
+        padding: 0 0 14px;
+        border-bottom: 1px solid @borderColor;
+        list-style: none;
+
+        li {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
+        }
+    }
+
+    &__chip {
+        width: 14px;
+        height: 14px;
+        border-radius: 3px;
+
+        &--free  { border: 1px solid rgba(90, 210, 130, 0.65); background: rgba(90, 210, 130, 0.14); }
+        &--mine  { border: 2px solid @alert; background: rgba(255, 213, 0, 0.25); }
+        &--taken { border: 1px solid rgba(255, 255, 255, 0.12); background: #1a1a1a; opacity: 0.55; }
+    }
+
+    &__grid {
+        display: grid;
+        grid-template-columns: repeat(10, minmax(0, 1fr));
+        gap: 6px;
+        overflow-y: auto;
+        padding-right: 4px;
+    }
+
+    &__loading {
+        grid-column: 1 / -1;
+        padding: 30px 0;
+        color: rgba(255, 255, 255, 0.45);
+        font-size: 13px;
+        text-align: center;
+    }
+
+    &__item {
+        aspect-ratio: 1;
+        border: 1px solid rgba(90, 210, 130, 0.55);
+        border-radius: 5px;
+        background: rgba(90, 210, 130, 0.1);
+        color: @white;
+        cursor: pointer;
+        font-family: @font;
+        font-size: 13px;
+        font-weight: @bold;
+        transition: 0.12s all;
+
+        &:hover:not(:disabled) {
+            border-color: @alert;
+            background: rgba(255, 213, 0, 0.18);
+        }
+
+        &.is-mine {
+            border: 2px solid @alert;
+            background: rgba(255, 213, 0, 0.25);
+        }
+
+        &.is-taken {
+            border-color: rgba(255, 255, 255, 0.1);
+            background: #1a1a1a;
+            color: #6a6a6a;
+            cursor: not-allowed;
+            text-decoration: line-through;
+            opacity: 0.55;
+        }
+
+        &.is-selected {
+            border-color: @alert;
+            background: @alert;
+            color: #050505;
+        }
+    }
+}
+
+.adminUniformMeasures {
+    position: fixed;
+    z-index: 2100;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+
+    &.is-open { display: flex; }
+
+    &__backdrop {
+        position: absolute;
+        inset: 0;
+        border: 0;
+        background: rgba(0, 0, 0, 0.86);
+        cursor: pointer;
+    }
+
+    &__dialog {
+        position: relative;
+        z-index: 1;
+        width: min(100%, 900px);
+        max-height: calc(100vh - 48px);
+        padding: 24px;
+        border: 1px solid rgba(255, 213, 0, 0.35);
+        border-radius: 12px;
+        background: #111315;
+        overflow-y: auto;
+    }
+
+    &__head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 18px;
+        margin-bottom: 20px;
+
+        span { color: @alert; font-size: 11px; font-weight: @bold; letter-spacing: 1px; text-transform: uppercase; }
+        h2 { color: @white; font-size: 23px; margin: 5px 0 6px; }
+        p { color: rgba(255, 255, 255, 0.55); font-size: 13px; margin: 0; }
+    }
+
+    &__close {
+        width: 40px;
+        height: 40px;
+        flex-shrink: 0;
+        border: 1px solid @borderColor;
+        border-radius: 8px;
+        background: transparent;
+        color: @white;
+        cursor: pointer;
+        font-size: 24px;
+        line-height: 1;
+
+        &:hover { border-color: @alert; color: @alert; }
+    }
+
+    &__grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+    }
+
+    &__table {
+        min-width: 0;
+        padding: 16px;
+        border: 1px solid @borderColor;
+        border-radius: 8px;
+        background: rgba(0, 0, 0, 0.25);
+
+        h3 { color: @white; font-size: 17px; margin: 0 0 13px; padding-left: 10px; border-left: 3px solid @alert; }
+        table { width: 100%; border-collapse: collapse; color: @white; font-size: 13px; text-align: center; }
+        th, td { padding: 9px 6px; border: 1px solid @borderColor; }
+        thead th { background: @alert; color: #050505; font-size: 10px; font-weight: @bold; text-transform: uppercase; }
+        tbody th { color: @alert; font-weight: @bold; }
+        tbody tr:nth-child(even) { background: rgba(255, 255, 255, 0.035); }
+    }
+}
+
+@media @tabletSM {
+    .uniformNumbers {
+        padding: 0;
+
+        &__dialog {
+            width: 100%;
+            height: 100%;
+            max-height: none;
+            border: 0;
+            border-radius: 0;
+        }
+
+        &__grid {
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 8px;
+        }
+    }
+
+    .adminUniformMeasures {
+        padding: 0;
+
+        &__dialog {
+            width: 100%;
+            height: 100%;
+            max-height: none;
+            padding: 18px 12px 28px;
+            border: 0;
+            border-radius: 0;
+        }
+
+        &__grid { grid-template-columns: 1fr; }
+        &__table { padding: 13px 8px; }
+    }
+}

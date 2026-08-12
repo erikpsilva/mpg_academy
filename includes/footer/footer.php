@@ -13,6 +13,7 @@
                 <strong>Navegação</strong>
                 <a href="<?= BASE_URL ?>">Home</a>
                 <a href="<?= BASE_URL ?>/quemsomos">Quem Somos</a>
+                <a href="<?= BASE_URL ?>/batebola">Bate Bola</a>
                 <a href="#treinos">Treinos</a>
                 <a href="#planos">Planos</a>
             </nav>

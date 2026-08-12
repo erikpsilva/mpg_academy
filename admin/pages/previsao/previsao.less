@@ -1,0 +1,289 @@
+.previsao {
+    padding: 24px;
+
+    &__header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 28px;
+        flex-wrap: wrap;
+    }
+
+    &__title {
+        font-size: 22px;
+        font-weight: 700;
+        color: @secundary;
+        margin: 0 0 4px;
+    }
+
+    &__subtitle {
+        font-size: 13px;
+        color: rgba(255,255,255,0.45);
+        margin: 0;
+    }
+
+    &__filtros {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 10px;
+    }
+
+    &__filtroRapido {
+        display: flex;
+        gap: 6px;
+    }
+
+    &__btnPeriodo {
+        background: @bgPanel;
+        border: 1px solid @borderColor;
+        border-radius: 6px;
+        color: rgba(255,255,255,0.55);
+        font-family: @font;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 5px 12px;
+        cursor: pointer;
+        transition: all .15s;
+
+        &:hover { border-color: @primary; color: @primary; }
+
+        &--active {
+            background: @primary;
+            border-color: @primary;
+            color: #000;
+        }
+    }
+
+    &__mesWrap {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    &__mesLabel {
+        font-size: 11px;
+        color: rgba(255,255,255,0.45);
+        text-transform: uppercase;
+        letter-spacing: .05em;
+    }
+
+    &__mesInput {
+        background: @bgPanel;
+        border: 1px solid @borderColor;
+        border-radius: 8px;
+        color: @secundary;
+        font-family: @font;
+        font-size: 14px;
+        padding: 8px 14px;
+        cursor: pointer;
+        min-width: 240px;
+        &:focus { outline: none; border-color: @primary; }
+    }
+
+    // ── Cards de resumo ──────────────────────────────────────────────────────
+    &__cards {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin-bottom: 28px;
+
+        @media (max-width: 768px) { grid-template-columns: 1fr; }
+    }
+
+    &__card {
+        background: @bgPanel;
+        border: 1px solid @borderColor;
+        border-radius: 12px;
+        padding: 20px 22px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        border-top: 3px solid transparent;
+
+        &--entrada  { border-top-color: #22c55e; }
+        &--saida    { border-top-color: #ef4444; }
+        &--saldo    { border-top-color: @borderColor; }
+        &--positivo { border-top-color: #22c55e; background: rgba(34,197,94,.06); }
+        &--negativo { border-top-color: #ef4444; background: rgba(239,68,68,.06); }
+    }
+
+    &__cardLabel {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        color: rgba(255,255,255,0.45);
+    }
+
+    &__cardValor {
+        font-size: 26px;
+        font-weight: 700;
+        color: @secundary;
+        line-height: 1.1;
+    }
+
+    &__cardSub {
+        font-size: 12px;
+        color: rgba(255,255,255,0.4);
+    }
+
+    // ── Detalhes ─────────────────────────────────────────────────────────────
+    &__details {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+
+        @media (max-width: 900px) { grid-template-columns: 1fr; }
+    }
+
+    &__panel {
+        background: @bgPanel;
+        border: 1px solid @borderColor;
+        border-radius: 12px;
+        padding: 22px;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+    }
+
+    &__panelTitle {
+        font-size: 14px;
+        font-weight: 700;
+        margin: 0 0 18px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid @borderColor;
+
+        &--entrada { color: #22c55e; }
+        &--saida   { color: #ef4444; }
+    }
+
+    &__section {
+        margin-bottom: 16px;
+    }
+
+    &__sectionTitle {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .07em;
+        color: rgba(255,255,255,0.35);
+        margin-bottom: 8px;
+    }
+
+    &__row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 0;
+        border-bottom: 1px solid rgba(255,255,255,0.04);
+        font-size: 13px;
+
+        &:last-child { border-bottom: none; }
+    }
+
+    &__rowLabel {
+        color: rgba(255,255,255,0.65);
+        display: flex;
+        align-items: center;
+        gap: 7px;
+    }
+
+    &__rowVal {
+        color: @secundary;
+        font-weight: 600;
+        font-size: 13px;
+    }
+
+    &__dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        flex-shrink: 0;
+
+        &--ok   { background: #22c55e; }
+        &--pend { background: @primary; }
+        &--atr  { background: #ef4444; }
+    }
+
+    &__total {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: auto;
+        padding-top: 14px;
+        border-top: 1px solid @borderColor;
+        font-weight: 700;
+        font-size: 14px;
+        color: #22c55e;
+
+        &--saida { color: #ef4444; }
+    }
+
+    // ── Parcelas detalhe ─────────────────────────────────────────────────────
+    &__parcelasDetalhe {
+        margin-top: 4px;
+    }
+
+    &__parcelaItem {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 12px;
+        padding: 5px 8px;
+        border-radius: 6px;
+        background: rgba(255,255,255,0.03);
+        margin-bottom: 4px;
+        color: rgba(255,255,255,0.6);
+
+        small {
+            font-size: 10px;
+            color: rgba(255,255,255,0.3);
+            margin-left: 4px;
+        }
+
+        span:last-child {
+            font-weight: 600;
+            color: @secundary;
+        }
+
+        &--paga {
+            opacity: .5;
+            text-decoration: line-through;
+        }
+    }
+}
+
+// ── Air Datepicker — tema escuro MPG ─────────────────────────────────────────
+.air-datepicker {
+    --adp-font-family: @font;
+    --adp-font-size: 13px;
+    --adp-background-color: #111315;
+    --adp-border-color: #2a2d31;
+    --adp-border-color-inner: #1e2124;
+    --adp-color: rgba(255,255,255,0.85);
+    --adp-color-secondary: rgba(255,255,255,0.45);
+    --adp-accent-color: @primary;
+    --adp-nav-arrow-color: rgba(255,255,255,0.5);
+    --adp-nav-color-secondary: rgba(255,255,255,0.4);
+    --adp-cell-background-color-hover: rgba(255,255,255,0.07);
+    --adp-cell-background-color-selected: @primary;
+    --adp-cell-background-color-selected-hover: #e6c000;
+    --adp-cell-background-color-in-range: rgba(255,213,0,0.18);
+    --adp-cell-background-color-in-range-hover: rgba(255,213,0,0.26);
+    --adp-cell-color-selected: #000;
+    --adp-cell-color-in-range: rgba(255,255,255,0.9);
+    --adp-cell-color-today: @primary;
+    --adp-months-cells-height: 54px;
+    border-radius: 12px;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.5);
+}
+
+.air-datepicker-nav--title,
+.air-datepicker-nav--action {
+    color: rgba(255,255,255,0.85) !important;
+    &:hover { color: @primary !important; background: rgba(255,213,0,0.08) !important; }
+}
+
+.air-datepicker--pointer:after { background: #111315; border-color: #2a2d31; }

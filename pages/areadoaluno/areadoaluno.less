@@ -585,6 +585,28 @@
     border-radius: 7px;
     overflow: hidden;
 
+    // A cor muda com a situação real da fatura — atraso não pode sair igual a "tudo em dia".
+    &--ok .studentPayment__status {
+        i { border-color: #4caf50; color: #4caf50; }
+        h3 { color: #4caf50; }
+    }
+
+    &--pendente .studentPayment__status {
+        i { border-color: @yellow; color: @yellow; }
+        h3 { color: @yellow; }
+    }
+
+    &--atrasado {
+        border-color: rgba(255, 107, 107, 0.4);
+
+        .studentPayment__status {
+            background: rgba(255, 107, 107, 0.07);
+
+            i { border-color: #ff6b6b; color: #ff6b6b; }
+            h3 { color: #ff6b6b; }
+        }
+    }
+
     &__status {
         display: flex;
         align-items: center;
@@ -768,6 +790,586 @@
     }
 }
 
+.studentUniforms {
+    margin-top: 20px;
+    padding: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.13);
+    border-radius: 10px;
+    background: radial-gradient(circle at 50% 0, rgba(255, 213, 0, 0.08), transparent 35%), rgba(255, 255, 255, 0.035);
+
+    &__head {
+        margin-bottom: 24px;
+        text-align: center;
+
+        span {
+            color: @yellow;
+            font-size: 12px;
+            font-weight: 900;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        h2 {
+            color: @white;
+            font-size: 26px;
+            margin: 8px 0;
+        }
+
+        p {
+            color: #cfcfcf;
+            font-size: 14px;
+            margin: 0;
+        }
+    }
+
+    &__grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 16px;
+    }
+
+    &__previewHint {
+        color: #cfcfcf;
+        font-size: 14px;
+        margin: 0 0 14px;
+        text-align: center;
+    }
+
+    &__info {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 230px;
+        gap: 18px;
+        align-items: stretch;
+        margin-bottom: 24px;
+    }
+
+    &__customization,
+    &__price {
+        border: 1px solid rgba(255, 213, 0, 0.22);
+        border-radius: 8px;
+        background: rgba(0, 0, 0, 0.28);
+    }
+
+    &__customization {
+        padding: 20px 22px;
+
+        > strong {
+            display: block;
+            color: @yellow;
+            font-size: 18px;
+            margin-bottom: 7px;
+        }
+
+        p {
+            color: #ededed;
+            font-size: 14px;
+            line-height: 1.5;
+            margin: 0 0 12px;
+
+            b {
+                color: @yellow;
+            }
+        }
+
+        ul {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px 22px;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        li {
+            position: relative;
+            padding-left: 17px;
+            color: #cfcfcf;
+            font-size: 12px;
+            line-height: 1.45;
+
+            &::before {
+                content: '';
+                position: absolute;
+                top: 6px;
+                left: 0;
+                width: 6px;
+                height: 6px;
+                border-radius: 50%;
+                background: @yellow;
+            }
+        }
+    }
+
+    &__price {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        padding: 20px;
+        text-align: center;
+
+        span {
+            color: #cfcfcf;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        strong {
+            color: @yellow;
+            font-size: 32px;
+            line-height: 1;
+            margin: 10px 0;
+        }
+
+        small {
+            color: @white;
+            font-size: 13px;
+            font-weight: 700;
+        }
+    }
+
+    &__order {
+        width: min(100%, 360px);
+        min-height: 50px;
+        display: block;
+        margin: 26px auto 0;
+        border: 0;
+        border-radius: 6px;
+        background: @yellow;
+        color: #050505;
+        cursor: pointer;
+        font-family: @font;
+        font-size: 14px;
+        font-weight: 900;
+        line-height: 50px;
+        text-align: center;
+        text-decoration: none;
+        text-transform: uppercase;
+
+        &:link,
+        &:visited,
+        &:hover {
+            color: #050505 !important;
+        }
+
+        &:hover {
+            filter: brightness(1.08);
+        }
+    }
+}
+
+.studentUniformCard {
+    position: relative;
+    min-width: 0;
+    padding: 12px 12px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.28);
+
+    &__category {
+        position: absolute;
+        z-index: 2;
+        top: 20px;
+        left: 20px;
+        padding: 6px 9px;
+        border: 2px solid #000;
+        border-radius: 4px;
+        background: @yellow;
+        color: #050505;
+        font-size: 10px;
+        font-weight: 900;
+        text-transform: uppercase;
+    }
+
+    &__image {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 4 / 5;
+        padding: 0;
+        border: 0;
+        border-radius: 6px;
+        background: #101010;
+        cursor: zoom-in;
+        overflow: hidden;
+
+        img {
+            width: 100%;
+            height: 100%;
+            display: block;
+            object-fit: cover;
+            .transition(0.25s all);
+        }
+
+        span {
+            position: absolute;
+            right: 10px;
+            bottom: 10px;
+            padding: 6px 9px;
+            border-radius: 4px;
+            background: rgba(0, 0, 0, 0.75);
+            color: @white;
+            font-size: 10px;
+            font-weight: 800;
+        }
+
+        &:hover img {
+            transform: scale(1.04);
+        }
+    }
+
+    h3 {
+        color: @white;
+        font-size: 15px;
+        margin: 14px 4px 0;
+        text-align: center;
+    }
+}
+
+.studentUniformSizes {
+    margin-top: 28px;
+    padding-top: 26px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+
+    &__head {
+        margin-bottom: 18px;
+        text-align: center;
+
+        span {
+            color: @yellow;
+            font-size: 11px;
+            font-weight: 900;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+        }
+
+        h3 {
+            color: @white;
+            font-size: 22px;
+            margin: 6px 0;
+        }
+
+        p {
+            color: #cfcfcf;
+            font-size: 13px;
+            margin: 0;
+        }
+    }
+
+    &__grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+    }
+}
+
+.studentUniformSizeTable {
+    min-width: 0;
+    padding: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.28);
+
+    h4 {
+        color: @white;
+        font-size: 17px;
+        margin: 0 0 14px;
+        padding-left: 11px;
+        border-left: 3px solid @yellow;
+    }
+
+    &__scroll {
+        overflow-x: auto;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        color: #e8e8e8;
+        font-size: 13px;
+        text-align: center;
+    }
+
+    th,
+    td {
+        padding: 10px 8px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    thead th {
+        background: @yellow;
+        color: #050505;
+        font-size: 11px;
+        font-weight: 900;
+        text-transform: uppercase;
+    }
+
+    tbody th {
+        color: @yellow;
+        font-weight: 900;
+    }
+
+    tbody tr:nth-child(even) {
+        background: rgba(255, 255, 255, 0.035);
+    }
+
+    &--male {
+        order: -1;
+    }
+}
+
+// ── Acompanhamento dos pedidos de uniforme do aluno ─────────────────────────────
+.studentMyUniforms {
+    margin-top: 20px;
+    padding: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.13);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.035);
+
+    &__head {
+        margin-bottom: 22px;
+        text-align: center;
+
+        span {
+            color: @yellow;
+            font-size: 12px;
+            font-weight: 900;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        h2 {
+            color: @white;
+            font-size: 24px;
+            margin: 8px 0;
+        }
+
+        p {
+            color: #cfcfcf;
+            font-size: 14px;
+            margin: 0;
+        }
+    }
+}
+
+.studentUniformOrder {
+    margin-bottom: 14px;
+    padding: 20px;
+    border: 1px solid rgba(255, 213, 0, 0.22);
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.28);
+
+    &:last-child {
+        margin-bottom: 0;
+    }
+
+    &__top {
+        display: flex;
+        align-items: flex-start;
+        gap: 18px;
+    }
+
+    img {
+        width: 84px;
+        height: 105px;
+        flex-shrink: 0;
+        border-radius: 6px;
+        background: #101010;
+        object-fit: cover;
+    }
+
+    &__info {
+        flex: 1;
+        min-width: 0;
+
+        h3 {
+            color: @white;
+            font-size: 16px;
+            margin: 0 0 12px;
+        }
+
+        dl {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+            gap: 10px 16px;
+            margin: 0;
+        }
+
+        dt {
+            color: #8b8b8b;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        dd {
+            margin: 3px 0 0;
+            color: @white;
+            font-size: 14px;
+            font-weight: 700;
+        }
+    }
+
+    &__badge {
+        flex-shrink: 0;
+        padding: 7px 13px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 900;
+        text-transform: uppercase;
+        white-space: nowrap;
+
+        &--pendente   { background: rgba(255, 157, 0, 0.16);   color: #ff9d00; }
+        &--enviado    { background: rgba(74, 155, 255, 0.16);  color: #4a9bff; }
+        &--pronto     { background: rgba(255, 213, 0, 0.16);   color: @yellow; }
+        &--finalizado { background: rgba(155, 123, 255, 0.16); color: #9b7bff; }
+        &--entregue   { background: rgba(76, 175, 80, 0.16);   color: #4caf50; }
+    }
+
+    // Linha do tempo da produção
+    &__steps {
+        display: flex;
+        margin: 22px 0 0;
+        padding: 0;
+        list-style: none;
+        counter-reset: step;
+
+        li {
+            position: relative;
+            flex: 1;
+            padding-top: 22px;
+            text-align: center;
+
+            // Trilho entre as bolinhas
+            &::before {
+                content: '';
+                position: absolute;
+                top: 6px;
+                left: -50%;
+                width: 100%;
+                height: 2px;
+                background: rgba(255, 255, 255, 0.14);
+            }
+
+            &:first-child::before {
+                display: none;
+            }
+
+            > span {
+                position: absolute;
+                top: 0;
+                left: 50%;
+                width: 14px;
+                height: 14px;
+                border: 2px solid rgba(255, 255, 255, 0.22);
+                border-radius: 50%;
+                background: #101010;
+                transform: translateX(-50%);
+            }
+
+            small {
+                display: block;
+                padding: 0 4px;
+                color: #7a7a7a;
+                font-size: 11px;
+                line-height: 1.35;
+            }
+
+            &.is-done {
+                &::before { background: @yellow; }
+
+                > span {
+                    border-color: @yellow;
+                    background: @yellow;
+                }
+
+                small { color: #cfcfcf; }
+            }
+
+            &.is-current {
+                &::before { background: @yellow; }
+
+                > span {
+                    border-color: @yellow;
+                    background: @yellow;
+                    box-shadow: 0 0 0 4px rgba(255, 213, 0, 0.22);
+                }
+
+                small {
+                    color: @yellow;
+                    font-weight: 800;
+                }
+            }
+        }
+    }
+}
+
+.studentUniformModal {
+    position: fixed;
+    z-index: 9999;
+    inset: 0;
+    display: none;
+    place-items: center;
+    padding: 24px;
+
+    &.is-open {
+        display: grid;
+    }
+
+    &__backdrop {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        border: 0;
+        background: rgba(0, 0, 0, 0.88);
+        cursor: zoom-out;
+    }
+
+    &__content {
+        position: relative;
+        z-index: 1;
+        width: min(100%, 780px);
+        max-height: calc(100vh - 48px);
+        padding: 20px;
+        border: 1px solid rgba(255, 213, 0, 0.45);
+        border-radius: 10px;
+        background: #0b0c0d;
+        overflow: auto;
+
+        h2 {
+            color: @white;
+            font-size: 20px;
+            margin: 0 50px 16px 0;
+        }
+
+        img {
+            width: 100%;
+            max-height: calc(100vh - 140px);
+            display: block;
+            border-radius: 6px;
+            object-fit: contain;
+        }
+    }
+
+    &__close {
+        position: absolute;
+        z-index: 2;
+        top: 10px;
+        right: 12px;
+        width: 38px;
+        height: 38px;
+        border: 0;
+        background: transparent;
+        color: @yellow;
+        cursor: pointer;
+        font-size: 34px;
+        line-height: 1;
+    }
+}
+
 .studentAreaFooter {
     width: min(100%, 1460px);
     max-width: 100%;
@@ -906,6 +1508,14 @@
         grid-template-columns: 1fr;
     }
 
+    .studentUniforms__grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .studentUniforms__info {
+        grid-template-columns: 1fr;
+    }
+
     .studentCalendarCta {
         grid-template-columns: auto 1fr;
 
@@ -935,10 +1545,64 @@
     .studentPayment,
     .studentProfile,
     .studentCalendarCta,
+    .studentMyUniforms,
     .studentAreaFooter {
         max-width: 100%;
         min-width: 0;
         overflow-x: hidden;
+    }
+
+    .studentMyUniforms {
+        padding: 22px 16px;
+    }
+
+    .studentUniformOrder {
+        &__top {
+            flex-wrap: wrap;
+            gap: 14px;
+        }
+
+        img {
+            width: 66px;
+            height: 82px;
+        }
+
+        &__badge {
+            order: -1;
+        }
+
+        // No celular a linha do tempo vira vertical — 5 etapas não cabem lado a lado.
+        &__steps {
+            flex-direction: column;
+            gap: 14px;
+            margin-top: 18px;
+            padding-left: 8px;
+
+            li {
+                padding-top: 0;
+                padding-left: 26px;
+                text-align: left;
+
+                &::before {
+                    top: auto;
+                    bottom: 100%;
+                    left: 6px;
+                    width: 2px;
+                    height: 14px;
+                }
+
+                > span {
+                    top: 50%;
+                    left: 0;
+                    transform: translate(0, -50%);
+                }
+
+                small {
+                    padding: 0;
+                    font-size: 12px;
+                }
+            }
+        }
     }
 
     .studentAreaContent {
@@ -1166,6 +1830,108 @@
         a,
         span {
             overflow-wrap: anywhere;
+        }
+    }
+
+    .studentUniforms {
+        padding: 22px 14px;
+
+        &__head h2 {
+            font-size: 21px;
+        }
+
+        &__grid {
+            grid-template-columns: 1fr;
+        }
+
+        &__customization {
+            padding: 18px 16px;
+
+            ul {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        &__price {
+            padding: 22px 16px;
+        }
+    }
+
+    .studentUniformModal {
+        padding: 0;
+        background: #050505;
+
+        &__content {
+            width: 100vw;
+            height: 100dvh;
+            max-height: none;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            border: 0;
+            border-radius: 0;
+            background: #050505;
+            overflow: hidden;
+
+            h2 {
+                flex: 0 0 auto;
+                min-height: 68px;
+                display: flex;
+                align-items: center;
+                margin: 0;
+                padding: 14px 64px 14px 18px;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+                font-size: 18px;
+                line-height: 1.25;
+            }
+
+            img {
+                flex: 1 1 auto;
+                width: 100%;
+                height: calc(100dvh - 68px);
+                max-height: none;
+                padding: 10px;
+                border-radius: 0;
+                background: #050505;
+                object-fit: contain;
+            }
+        }
+
+        &__close {
+            position: fixed;
+            top: 13px;
+            right: 14px;
+            width: 42px;
+            height: 42px;
+            border: 1px solid rgba(255, 213, 0, 0.45);
+            border-radius: 50%;
+            background: #111;
+            font-size: 30px;
+        }
+    }
+
+    .studentUniformSizes {
+        &__head {
+            h3 {
+                font-size: 20px;
+            }
+
+            p {
+                line-height: 1.45;
+            }
+        }
+
+        &__grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .studentUniformSizeTable {
+        padding: 14px 10px;
+
+        th,
+        td {
+            padding: 9px 5px;
         }
     }
 }
