@@ -3,12 +3,12 @@
 require_once __DIR__ . '/mensalidades.php';
 
 // ─── Credenciais de Produção ──────────────────────────────────────────────────
-define('MP_PUBLIC_KEY_PROD',   'APP_USR-5b1fa14f-4426-4495-8b6b-6b6eb690fa7e');
-define('MP_ACCESS_TOKEN_PROD', 'APP_USR-6171189951122609-053113-bbae49b17db317cd8892d8db3c4248f8-131746200');
+define('MP_PUBLIC_KEY_PROD',   'APP_USR-497a2b32-3066-4547-aa73-d0df2ae8cbbc');
+define('MP_ACCESS_TOKEN_PROD', 'APP_USR-4134788022840522-081916-6ce126f8c99d36be892e4409af96fffb-3629082884');
 
 // ─── Credenciais de Teste ─────────────────────────────────────────────────────
-define('MP_PUBLIC_KEY_TEST',   'APP_USR-74177cfa-58ad-461d-a342-dcd0b122887a');
-define('MP_ACCESS_TOKEN_TEST', 'APP_USR-3700588200978728-053113-3b92864eb4a9feb78a47e32a145414e0-3260785637');
+define('MP_PUBLIC_KEY_TEST',   'TEST-13eed63f-902c-4298-bc56-8d3e296a51d7');
+define('MP_ACCESS_TOKEN_TEST', 'TEST-4134788022840522-081916-dd4de08a42a18d566e72580f1602783d-3629082884');
 
 // ─── Assinatura secreta dos Webhooks (valida que a notificação veio do MP) ────
 define('MP_WEBHOOK_SECRET_PROD', '8ece70705c82ef0423d89b0099e6df8bef86804614d1608e22e892078538b658');
