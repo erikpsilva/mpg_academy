@@ -11,17 +11,15 @@ define('MP_PUBLIC_KEY_TEST',   'TEST-13eed63f-902c-4298-bc56-8d3e296a51d7');
 define('MP_ACCESS_TOKEN_TEST', 'TEST-4134788022840522-081916-dd4de08a42a18d566e72580f1602783d-3629082884');
 
 // ─── Assinatura secreta dos Webhooks (valida que a notificação veio do MP) ────
-// PENDENTE: colar a "Assinatura secreta" do webhook da aplicação 4134788022840522.
+// Assinatura secreta do webhook da aplicação 4134788022840522 (conta CNPJ).
 //
-// O valor que estava aqui era o da conta ANTIGA (131746200). Como os pagamentos passaram
-// a nascer na conta CNPJ, o MP assinava com outro segredo e mp_webhook.php rejeitava TODA
-// notificação com 401 "Assinatura inválida". Resultado: PIX aprovado no Mercado Pago e
-// inscrição parada em 'pendente' — foi o que aconteceu com batebola-45 e batebola-32.
+// O valor anterior era o da conta ANTIGA (131746200). Como os pagamentos passaram a nascer
+// na conta CNPJ, o MP assinava com outro segredo e mp_webhook.php rejeitava TODA notificação
+// com 401 "Assinatura inválida" — foi o que deixou batebola-45 e batebola-32 aprovados no
+// Mercado Pago e parados em 'pendente' no sistema.
 //
-// Vazio desliga só a checagem de assinatura. A confirmação continua segura porque
-// mp_webhook.php consulta o pagamento na API do MP antes de dar qualquer baixa: uma
-// notificação forjada não cria pagamento nenhum, no máximo provoca uma consulta.
-define('MP_WEBHOOK_SECRET_PROD', '');
+// Trocar aqui exige trocar junto no painel (Notificações → Webhooks → Redefinir), e vice-versa.
+define('MP_WEBHOOK_SECRET_PROD', '309d851d1ecfa52bb912f823f07ea0440624642381dd19625e39be712165422a');
 define('MP_WEBHOOK_SECRET_TEST', '');
 
 /**
