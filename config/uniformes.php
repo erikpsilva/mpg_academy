@@ -234,6 +234,23 @@ const UNIFORME_STATUS_LABEL = [
     'entregue'   => 'Entregue',
 ];
 
+/**
+ * Cor da peça, derivada do modelo — o líbero usa camisa contrastante, como manda a regra
+ * do vôlei. Não existe coluna `cor` no banco de propósito: a cor é consequência do modelo,
+ * então gravá-la separado abriria espaço pros dois divergirem.
+ *
+ * Vale igual pra uniforme de aluno e pra camisa da equipe técnica — os dois gravam modelo.
+ */
+const UNIFORME_COR_POR_MODELO = [
+    'padrao' => 'Preto',
+    'libero' => 'Amarelo',
+];
+
+function uniformeCor(?string $modelo): string
+{
+    return UNIFORME_COR_POR_MODELO[$modelo] ?? '—';
+}
+
 const UNIFORME_MODELO_LABEL = [
     'padrao' => 'Modelo padrão',
     'libero' => 'Modelo líbero',

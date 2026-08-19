@@ -75,6 +75,7 @@ $podeEditar = in_array($_SESSION['usuario']['nivel_acesso'] ?? '', ['admin', 'ed
                                     <th class="uniformes__printExclude">Uniforme</th>
                                     <th>Nome</th>
                                     <th>Nº</th>
+                                    <th>Cor</th>
                                     <th>Tamanho</th>
                                     <th>Valor</th>
                                     <th class="uniformes__printExclude">Pago em</th>

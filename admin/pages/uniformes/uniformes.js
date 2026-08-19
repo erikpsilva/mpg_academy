@@ -185,6 +185,8 @@
                         : '<span class="uniformes__numero' + (p.conflito_numero ? ' is-conflito' : '') + '">' + p.numero + '</span>'
                           + (p.conflito_numero ? '<small class="uniformes__sub uniformes__sub--alerta">número duplicado</small>' : ''))
                   + '</td>'
+                  + '<td><span class="uniformes__cor uniformes__cor--' + (p.cor_label || '').toLowerCase() + '">'
+                  +   escapar(p.cor_label || '—') + '</span></td>'
                   + '<td>'
                   +   '<span class="uniformes__screenValue">'
                   +     '<span class="uniformes__tam">' + escapar(p.tamanho_camisa) + '</span>'

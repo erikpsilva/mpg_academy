@@ -786,3 +786,102 @@
         border-color: @alert;
     }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Folha de chamada da aula experimental (uma turma por vez)
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Fica escondida na tela e só aparece na impressão, do bloco marcado com .is-printing.
+// O isolamento usa visibility em vez de display: com display: none o navegador não
+// reserva a página e o conteúdo posicionado some junto.
+
+.adminTestePrint {
+    display: none;
+}
+
+@media print {
+    @page {
+        size: A4 portrait;
+        margin: 14mm;
+    }
+
+    body.is-printingTurma {
+        background: #fff;
+
+        * {
+            visibility: hidden;
+            box-shadow: none !important;
+        }
+
+        .adminTesteBloco.is-printing .adminTestePrint,
+        .adminTesteBloco.is-printing .adminTestePrint * {
+            visibility: visible;
+        }
+
+        .adminTesteBloco.is-printing .adminTestePrint {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            color: #000;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+    }
+
+    .adminTestePrint__head {
+        margin-bottom: 14px;
+        border-bottom: 2px solid #000;
+        padding-bottom: 8px;
+
+        h1 {
+            font-size: 17px;
+            font-weight: 800;
+            margin: 0 0 3px;
+            color: #000;
+        }
+
+        p {
+            font-size: 11px;
+            margin: 0;
+            color: #333;
+        }
+    }
+
+    .adminTestePrint__tabela {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 11px;
+
+        th,
+        td {
+            border: 1px solid #000;
+            padding: 6px 8px;
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        th {
+            background: #eee !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+        }
+
+        // Nome ocupa o espaço que sobra; presença é a caixinha de marcar na mão.
+        td:first-child { width: 26px; text-align: center; }
+        td:last-child  { width: 62px; }
+
+        small {
+            display: block;
+            font-size: 9px;
+            color: #444;
+            font-weight: 400;
+        }
+
+        // Linhas altas o bastante pra caber a caneta.
+        tbody tr { height: 26px; }
+    }
+}

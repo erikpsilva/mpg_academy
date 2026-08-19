@@ -122,6 +122,54 @@ const buildTermoAcoes = (f) => {
     return btns.join('');
 };
 
+const escTxt = (v) => $('<span>').text(v == null ? '' : v).html();
+
+/**
+ * Folha de chamada da turma, escondida na tela e revelada só no @media print.
+ *
+ * É montada à parte em vez de reaproveitar os cards: o card tem botão de editar,
+ * reagendar, badges de termo e ações de responsável — nada disso serve na quadra, e
+ * esconder tudo item a item no CSS seria frágil. Aqui a folha tem exatamente o que o
+ * professor precisa, mais uma coluna vazia pra marcar presença na mão.
+ */
+const renderFolhaImpressao = (turma) => {
+    if (!turma.agendados.length) return '';
+
+    const hoje = new Date().toLocaleDateString('pt-BR');
+
+    const linhas = turma.agendados.map((f, i) =>
+        '<tr>' +
+            '<td>' + (i + 1) + '</td>' +
+            '<td><strong>' + escTxt(f.nome) + '</strong>' +
+                (f.menor
+                    ? '<small>menor · resp.: ' + escTxt(f.responsavel_nome || '—') +
+                      (f.responsavel_celular ? ' · ' + escTxt(f.responsavel_celular) : '') + '</small>'
+                    : '') +
+            '</td>' +
+            '<td>' + escTxt(f.celular || '—') + '</td>' +
+            '<td>' + fmtData(f.data_agendada) + '</td>' +
+            '<td>' + (f.termo_status === 'concluido' ? 'Assinado' : 'Pendente') + '</td>' +
+            '<td class="adminTestePrint__check"></td>' +
+        '</tr>').join('');
+
+    return '<div class="adminTestePrint">' +
+        '<div class="adminTestePrint__head">' +
+            '<h1>MPG Academy — Aula experimental</h1>' +
+            '<p><strong>' + escTxt(turma.turma_nome) + '</strong>' +
+                ' · ' + escTxt(turma.quadra_nome) +
+                ' · ' + (NIVEL_LABEL[turma.nivel] || turma.nivel) +
+                ' · ' + turma.agendados.length + ' agendado' + (turma.agendados.length === 1 ? '' : 's') +
+                ' · emitido em ' + hoje + '</p>' +
+        '</div>' +
+        '<table class="adminTestePrint__tabela">' +
+            '<thead><tr>' +
+                '<th>#</th><th>Nome</th><th>Celular</th><th>Data</th><th>Termo</th><th>Presença</th>' +
+            '</tr></thead>' +
+            '<tbody>' + linhas + '</tbody>' +
+        '</table>' +
+    '</div>';
+};
+
 const renderBloco = (turma) => {
     const temLimite = turma.max_alunos !== null;
     const vagas     = turma.vagas_teste;
@@ -152,6 +200,10 @@ const renderBloco = (turma) => {
           '</div>'
         : '';
 
+    const btnImprimir = totalAgendados > 0
+        ? '<button class="btn--testeAcao btn--imprimirTurma" data-turma-id="' + turma.turma_id + '">🖨 Imprimir lista</button>'
+        : '';
+
     const btnLembrete = totalAgendados > 0
         ? '<button class="btn--testeAcao btn--dispararLembrete" data-turma-id="' + turma.turma_id +
             '" data-turma-nome="' + $('<span>').text(turma.turma_nome).html() + '">📲 Disparar lembrete</button>'
@@ -169,9 +221,11 @@ const renderBloco = (turma) => {
                 '<span class="adminTesteBloco__count">' +
                     turma.alunos_ativos + (turma.max_alunos ? '/' + turma.max_alunos : '') + ' alunos' +
                 '</span>' +
+                btnImprimir +
                 btnLembrete +
             '</div>' +
         '</div>' +
+        renderFolhaImpressao(turma) +
         (secaoAgendados || secaoFila
             ? secaoAgendados + secaoFila
             : '<p class="adminTeste__empty" style="padding:20px 20px 16px">Nenhum registro ativo.</p>') +
@@ -620,6 +674,22 @@ $(document).ready(() => {
             $(this).data('label', $(this).text());
             atualizar(id, 'promover', $(this));
         }
+    });
+
+    // Isola a turma escolhida antes de imprimir: o @media print só mostra o bloco
+    // marcado, senão sairiam todas as turmas na mesma folha.
+    $(document).on('click', '.btn--imprimirTurma', function () {
+        const id = $(this).data('turma-id');
+        $('.adminTesteBloco').removeClass('is-printing');
+        $('.adminTesteBloco[data-turma-id="' + id + '"]').addClass('is-printing');
+        document.body.classList.add('is-printingTurma');
+        window.print();
+    });
+
+    // afterprint dispara tanto ao imprimir quanto ao cancelar o diálogo.
+    window.addEventListener('afterprint', function () {
+        document.body.classList.remove('is-printingTurma');
+        $('.adminTesteBloco').removeClass('is-printing');
     });
 
     $(document).on('click', '.btn--dispararLembrete', function () {

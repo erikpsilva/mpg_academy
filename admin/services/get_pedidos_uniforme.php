@@ -77,6 +77,7 @@ foreach ($st->fetchAll() as $r) {
         'genero_label'    => $r['genero'] === 'feminino' ? 'Feminino' : 'Masculino',
         'modelo'          => $r['modelo'],
         'modelo_label'    => UNIFORME_MODELO_LABEL[$r['modelo']] ?? $r['modelo'],
+        'cor_label'       => uniformeCor($r['modelo']),
         'nome_camisa'     => $r['nome_camisa'],
         // Equipe técnica é só camisa: número e calção não existem, e vêm nulos pra tela
         // saber que não deve mostrar campo vazio no lugar.
