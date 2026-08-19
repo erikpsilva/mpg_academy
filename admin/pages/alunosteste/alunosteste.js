@@ -26,9 +26,11 @@ const fmtData = (str) => {
     return d + '/' + m + '/' + y;
 };
 
+// criado_em é timestamp e vem do MySQL com espaço ("2026-08-12 21:33:35"),
+// não com o "T" do ISO — corta nos dois.
 const fmtDataCriado = (str) => {
     if (!str) return '—';
-    const [y, m, d] = str.split('T')[0].split('-');
+    const [y, m, d] = str.split(/[T ]/)[0].split('-');
     return d + '/' + m + '/' + y;
 };
 
@@ -52,9 +54,14 @@ const termoBadge = (f) => {
 // ── Render principal ──────────────────────────────────────────────────────────
 
 const renderItem = (f, tipo) => {
-    const dtLabel = tipo === 'agendado'
-        ? (f.data_agendada ? 'Aula: ' + fmtData(f.data_agendada) : 'Sem data definida')
-        : 'Na fila desde ' + fmtDataCriado(f.criado_em);
+    const dataIso = tipo === 'agendado'
+        ? (f.data_agendada || '')
+        : ((f.criado_em || '').split(/[T ]/)[0] || '');
+    const dataRotulo = tipo === 'agendado' ? 'Data da aula' : 'Na fila desde';
+    const dataValor = tipo === 'agendado'
+        ? (f.data_agendada ? fmtData(f.data_agendada) : 'Sem data definida')
+        : fmtDataCriado(f.criado_em);
+    const dataClass = f.data_agendada || tipo !== 'agendado' ? '' : ' is-empty';
 
     const acoes = tipo === 'agendado'
         ? '<button class="btn--testeAcao btn--realizar" data-id="' + f.id + '">Realizada</button>' +
@@ -82,10 +89,14 @@ const renderItem = (f, tipo) => {
             (f.responsavel_nome ? '<span class="adminTesteItem__resp">Resp.: ' + $('<span>').text(f.responsavel_nome).html() + '</span>' : '') +
         '</div>' +
         '<div class="adminTesteItem__right">' +
-            '<span class="adminTesteItem__data">' + dtLabel + '</span>' +
+            '<div class="adminTesteItem__data' + dataClass + '">' +
+                '<span>' + dataRotulo + '</span>' +
+                '<time' + (dataIso ? ' datetime="' + dataIso + '"' : '') + '>' + dataValor + '</time>' +
+            '</div>' +
             termoBadge(f) +
             '<div class="adminTesteItem__acoes">' +
                 '<button class="btn--testeAcao btn--editarTeste" data-item=\'' + JSON.stringify(f).replace(/'/g, '&#39;') + '\'>✏ Editar</button>' +
+                '<button class="btn--testeAcao btn--reagendarAula" data-item=\'' + JSON.stringify(f).replace(/'/g, '&#39;') + '\'>↻ Reagendar</button>' +
                 acoes +
             '</div>' +
             (termoAcoes ? '<div class="adminTesteItem__termoAcoes">' + termoAcoes + '</div>' : '') +
@@ -204,59 +215,14 @@ const renderResumo = (turmas) => {
     '</div>';
 };
 
-const renderPage = (turmas, realizados) => {
+const renderPage = (turmas) => {
     const body = $('#adminTesteBody');
     const resumo = turmas.length ? renderResumo(turmas) : '';
     const ativos = turmas.length
         ? turmas.map(renderBloco).join('')
         : '<p class="adminTeste__empty">Nenhuma aula experimental agendada no momento.</p>';
 
-    body.html(resumo + ativos + renderRealizados(realizados));
-};
-
-const renderRealizados = (lista) => {
-    if (!lista.length) return '';
-
-    const rows = lista.map(r => {
-        let acaoCol;
-        if (r.ja_aluno) {
-            acaoCol = '<span class="badge badge--aluno">✓ Já é aluno</span>';
-        } else if (r.email) {
-            acaoCol = '<button class="btn--testeAcao btn--enviarEmailCadastro" ' +
-                'data-nome="' + $('<span>').text(r.nome).html() + '" ' +
-                'data-email="' + $('<span>').text(r.email).html() + '" ' +
-                'data-id="' + r.id + '">' +
-                'Enviar email de cadastro' +
-            '</button>';
-        } else {
-            acaoCol = '<em style="color:#aaa">Sem e-mail</em>';
-        }
-
-        return '<tr' + (r.ja_aluno ? ' class="row--ja-aluno"' : '') + '>' +
-            '<td>' + $('<span>').text(r.nome).html() + '</td>' +
-            '<td>' + (r.email   ? $('<span>').text(r.email).html()   : '<em>—</em>') + '</td>' +
-            '<td>' + (r.celular ? $('<span>').text(r.celular).html() : '<em>—</em>') + '</td>' +
-            '<td>' + $('<span>').text(r.turma_nome + ' · ' + r.quadra_nome).html() + '</td>' +
-            '<td>' + fmtDataCriado(r.criado_em) + '</td>' +
-            '<td>' + acaoCol + '</td>' +
-        '</tr>';
-    }).join('');
-
-    return '<div class="adminTesteRealizados" id="adminTesteRealizados">' +
-        '<div class="adminTesteRealizados__head">' +
-            '<span>Já realizaram aula experimental</span>' +
-            '<span class="adminTesteRealizados__count">' + lista.length + ' pessoa' + (lista.length === 1 ? '' : 's') + '</span>' +
-            '<button class="adminTesteRealizados__toggle" id="btnToggleRealizados">Ocultar</button>' +
-        '</div>' +
-        '<div class="adminTesteRealizados__body" id="realizadosBody">' +
-            '<table class="adminTesteRealizados__table">' +
-                '<thead><tr>' +
-                    '<th>Nome</th><th>E-mail</th><th>Celular</th><th>Turma</th><th>Data</th><th>Ação</th>' +
-                '</tr></thead>' +
-                '<tbody>' + rows + '</tbody>' +
-            '</table>' +
-        '</div>' +
-    '</div>';
+    body.html(resumo + ativos);
 };
 
 const carregarDados = () => {
@@ -266,7 +232,7 @@ const carregarDados = () => {
             $('#adminTesteBody').html('<p class="adminTeste__empty">Erro ao carregar dados.</p>');
             return;
         }
-        renderPage(res.turmas, res.realizados || []);
+        renderPage(res.turmas);
     }, 'json').fail(() => {
         $('#adminTesteBody').html('<p class="adminTeste__empty">Erro ao comunicar com o servidor.</p>');
     });
@@ -334,7 +300,10 @@ const submitForm = (e) => {
     const respCpf     = isMenor ? $('#testeRespCpf').val().trim() : '';
     const respCelular = isMenor ? $('#testeRespCelular').val().trim() : '';
 
+    // Celular é o que identifica a pessoa no agendamento (junto do nome) — o e-mail
+    // virou opcional porque quase nunca está em mãos na hora de agendar pelo WhatsApp.
     if (!nome || !turmaId) { alert('Preencha o nome e selecione a turma.'); return; }
+    if (!celular)          { alert('Informe o celular.'); return; }
 
     const btn = $('#adminTesteSubmitBtn').prop('disabled', true).text('...');
 
@@ -418,6 +387,61 @@ const submitEditForm = (e) => {
         else { btn.prop('disabled', false).text('Salvar alterações'); alert(res.message || 'Erro ao salvar.'); }
     }, 'json').fail(() => {
         btn.prop('disabled', false).text('Salvar alterações');
+        alert('Erro ao comunicar com o servidor.');
+    });
+};
+
+// ── Modal: REAGENDAR ──────────────────────────────────────────────────────────
+
+const openReagendarModal = (f) => {
+    $('#reagendarId').val(f.id);
+    $('#reagendarAluno').text(f.nome || '');
+    $('#reagendarData').val(f.data_agendada || '');
+    $('#adminTesteReagendarSubmitBtn').prop('disabled', false).text('Reagendar e avisar no WhatsApp');
+
+    $('#reagendarTurma').html('<option value="">Carregando turmas...</option>');
+    $.get(ADMIN_BASE_URL + '/services/get_turmas_para_teste.php', (res) => {
+        if (!res.success) { $('#reagendarTurma').html('<option value="">Erro ao carregar turmas</option>'); return; }
+        const opts = res.turmas.map(t => {
+            const vagaInfo = t.max_alunos === null
+                ? 'sem limite'
+                : t.vagas_teste + ' vaga' + (t.vagas_teste === 1 ? '' : 's') + ' de teste';
+            return '<option value="' + t.id + '">' +
+                $('<span>').text(t.nome + ' — ' + t.quadra_nome + ' (' + vagaInfo + ')').html() +
+            '</option>';
+        });
+        $('#reagendarTurma').html('<option value="">Selecione a turma...</option>' + opts.join(''));
+        if (f.turma_id) $('#reagendarTurma').val(f.turma_id);
+    }, 'json');
+
+    $('#adminTesteReagendarModal').addClass('is-open');
+    $('body').addClass('modal-open');
+};
+
+const closeReagendarModal = () => {
+    $('#adminTesteReagendarModal').removeClass('is-open');
+    $('body').removeClass('modal-open');
+};
+
+const submitReagendar = () => {
+    const id      = $('#reagendarId').val();
+    const turmaId = $('#reagendarTurma').val();
+    const data    = $('#reagendarData').val();
+    if (!turmaId) { alert('Selecione a turma.'); return; }
+    if (!data)    { alert('Selecione a nova data da aula.'); return; }
+
+    const btn = $('#adminTesteReagendarSubmitBtn').prop('disabled', true).text('Reagendando...');
+
+    $.post(ADMIN_BASE_URL + '/services/update_aula_experimental.php', {
+        id,
+        action:        'reagendar',
+        turma_id:      turmaId,
+        data_agendada: data,
+    }, (res) => {
+        if (res.success) { closeReagendarModal(); carregarDados(); }
+        else { btn.prop('disabled', false).text('Reagendar e avisar no WhatsApp'); alert(res.message || 'Erro ao reagendar.'); }
+    }, 'json').fail(() => {
+        btn.prop('disabled', false).text('Reagendar e avisar no WhatsApp');
         alert('Erro ao comunicar com o servidor.');
     });
 };
@@ -509,7 +533,7 @@ $(document).ready(() => {
 
     $(document).on('click', '#btnNovoTeste', openModal);
     $(document).on('click', '#adminTesteModalClose, #adminTesteModalOverlay, #adminTesteCancelBtn', closeModal);
-    $(document).on('keydown', (e) => { if (e.key === 'Escape') { closeModal(); closeEditModal(); closeAssinarModal(); } });
+    $(document).on('keydown', (e) => { if (e.key === 'Escape') { closeModal(); closeEditModal(); closeAssinarModal(); closeReagendarModal(); } });
 
     $(document).on('input', '#testeCelular, #editCelular, #testeRespCelular, #editRespCelular', function () {
         const cur = this.selectionStart, prev = this.value.length;
@@ -546,6 +570,12 @@ $(document).ready(() => {
     });
     $(document).on('click', '#adminTesteEditClose, #adminTesteEditOverlay, #adminTesteEditCancelBtn', closeEditModal);
     $(document).on('submit', '#adminTesteEditForm', submitEditForm);
+
+    $(document).on('click', '.btn--reagendarAula', function () {
+        openReagendarModal(JSON.parse($(this).attr('data-item')));
+    });
+    $(document).on('click', '#adminTesteReagendarClose, #adminTesteReagendarOverlay, #adminTesteReagendarCancelBtn', closeReagendarModal);
+    $(document).on('click', '#adminTesteReagendarSubmitBtn', submitReagendar);
 
     $(document).on('click', '.btn--assinarEscola', function () {
         openAssinarModal($(this).data('id'));
@@ -584,13 +614,6 @@ $(document).ready(() => {
         }
     });
 
-    $(document).on('click', '#btnToggleRealizados', function () {
-        const body = $('#realizadosBody');
-        const hidden = body.is(':hidden');
-        body.toggle();
-        $(this).text(hidden ? 'Ocultar' : 'Ver');
-    });
-
     $(document).on('click', '.btn--promoverTeste', function () {
         const id = parseInt($(this).data('id'));
         if (confirm('Deseja promover este aluno da fila para aula agendada?')) {
@@ -617,18 +640,4 @@ $(document).ready(() => {
         });
     });
 
-    $(document).on('click', '.btn--enviarEmailCadastro', function () {
-        const btn   = $(this);
-        const nome  = btn.data('nome');
-        const email = btn.data('email');
-        if (!confirm('Enviar email de cadastro para ' + nome + ' (' + email + ')?')) return;
-        btn.prop('disabled', true).text('Enviando...');
-        $.post(ADMIN_BASE_URL + '/services/enviar_email_cadastro.php', { nome, email }, (res) => {
-            if (res.success) btn.text('✓ Enviado').css('opacity', '0.6');
-            else { btn.prop('disabled', false).text('Enviar email de cadastro'); alert(res.message || 'Erro.'); }
-        }, 'json').fail(() => {
-            btn.prop('disabled', false).text('Enviar email de cadastro');
-            alert('Erro ao comunicar com o servidor.');
-        });
-    });
 });

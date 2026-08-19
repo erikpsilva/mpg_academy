@@ -12,6 +12,19 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 
 header('Content-Type: application/json');
 
+// Erro de banco aqui saía como HTML (fatal do PHP), o r.json() do front estourava e a tela
+// mostrava só "Erro ao carregar os pagamentos.". Foi o que aconteceu quando a migração das
+// colunas mp_taxa_valor/mp_valor_liquido ainda não tinha rodado em produção: a causa existia,
+// mas não chegava a ninguém. Agora qualquer falha volta como JSON com o motivo.
+set_exception_handler(function (Throwable $e) {
+    error_log('[pagamentos-uniforme] ' . $e->getMessage());
+    http_response_code(500);
+    echo json_encode([
+        'success' => false,
+        'message' => 'Erro ao consultar os pagamentos: ' . $e->getMessage(),
+    ]);
+});
+
 require_once dirname(__FILE__, 3) . '/config/api_security.php';
 validateApiAccess($ALLOWED_ORIGINS);
 
@@ -35,7 +48,10 @@ if ($mes !== '' && !preg_match('/^\d{4}-\d{2}$/', $mes)) {
 
 // O pagamento é datado por `pago_em`; o pedido manual nasce pago, então cai no mês em que
 // o admin registrou. COALESCE com criado_em cobre linhas antigas sem pago_em.
-$where  = ["p.status_pagamento = 'pago'"];
+// Pedido de professor/equipe MPG é interno: a academia banca, não há dinheiro envolvido.
+// Ele aparece na fila de produção (admin/uniformes), mas não aqui — esta tela existe pra
+// acompanhar o que entrou em caixa.
+$where  = ["p.status_pagamento = 'pago'", "p.pessoa_tipo = 'aluno'"];
 $params = [];
 if ($mes !== '') {
     $where[]  = "DATE_FORMAT(COALESCE(p.pago_em, p.criado_em), '%Y-%m') = ?";
@@ -102,7 +118,7 @@ foreach ($st->fetchAll() as $r) {
 $meses = $pdo->query("
     SELECT DISTINCT DATE_FORMAT(COALESCE(pago_em, criado_em), '%Y-%m') AS mes
     FROM pedidos_uniforme
-    WHERE status_pagamento = 'pago'
+    WHERE status_pagamento = 'pago' AND pessoa_tipo = 'aluno'
     ORDER BY mes DESC
 ")->fetchAll(PDO::FETCH_COLUMN);
 

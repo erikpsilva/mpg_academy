@@ -149,9 +149,9 @@
         alunoBox.style.display = 'none';
         buscaInput.parentElement.style.display = '';
         turmaField.style.display   = 'none';
-        modeloBlock.style.display   = 'none';
-        detalhesBlock.style.display = 'none';
-        resumoBlock.style.display   = 'none';
+        // Os passos de modelo, personalização e confirmação ficam VISÍVEIS. Esconder o botão
+        // de finalizar até tudo estar preenchido deixava a impressão de que ele não existia —
+        // melhor deixar sempre à mão: o submit valida e diz exatamente o que falta.
         buscaInput.focus();
     });
 

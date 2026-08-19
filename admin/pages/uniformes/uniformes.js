@@ -2,6 +2,7 @@
     var tbody      = document.getElementById('uniformesTableBody');
     var totalGeral = document.getElementById('totalGeral');
     var statsBox   = document.getElementById('uniformesStats');
+    var valoresBox = document.getElementById('uniformesValores');
     var filtros    = document.querySelectorAll('.uniformes__filter');
 
     var modal        = document.getElementById('statusModal');
@@ -27,6 +28,40 @@
 
     function moeda(v) {
         return 'R$ ' + Number(v).toFixed(2).replace('.', ',');
+    }
+
+    // No PDF o fornecedor recebe somente o texto que sera estampado. Prefixos de
+    // equipe/professor ficam numa linha e o nome em outra, ambos em caixa alta.
+    function nomeParaImpressao(texto) {
+        var partes = String(texto || '').split(/\s+[—–-]\s+/);
+        var prefixo = partes.length > 1 ? partes.shift() : '';
+        var nome = partes.length ? partes.join(' — ') : String(texto || '');
+
+        return '<span class="uniformes__printName">'
+             + (prefixo ? '<small>' + escapar(prefixo.toUpperCase()) + '</small>' : '')
+             + '<strong>' + escapar(nome.toUpperCase()) + '</strong>'
+             + '</span>';
+    }
+
+    /**
+     * Tamanhos como o fornecedor precisa ler.
+     *
+     * O nome da peça vem completo e com o gênero — CAMISA FEMININA BABY LOOK, BERMUDA
+     * FEMININA, CALÇÃO MASCULINO. Antes saía só CAMISA e BERMUDA, e a coluna que mostra o
+     * gênero fica de fora da impressão — então no papel não dava pra saber se a peça era
+     * masculina ou feminina, que são modelagens diferentes.
+     */
+    function tamanhosParaImpressao(p) {
+        var html = '<span class="uniformes__printSize"><small>'
+                 + escapar((p.peca_camisa || 'Camisa').toUpperCase())
+                 + '</small><strong>' + escapar(p.tamanho_camisa) + '</strong></span>';
+
+        if (p.tamanho_shorts) {
+            html += '<span class="uniformes__printSize"><small>'
+                  + escapar((p.peca_shorts || p.label_shorts || 'Shorts').toUpperCase())
+                  + '</small><strong>' + escapar(p.tamanho_shorts) + '</strong></span>';
+        }
+        return html;
     }
 
     function carregar() {
@@ -72,10 +107,50 @@
         statsBox.innerHTML = html;
     }
 
+    /**
+     * Quanto custou, separado por produto.
+     *
+     * Acompanha o filtro de status de propósito: filtrando "Pendente" o admin vê quanto
+     * ainda vai sair pra confecção; em "Todos", o gasto acumulado. Os contadores de status
+     * acima continuam sendo do total geral, então o rótulo diz qual recorte está em uso.
+     */
+    function renderValores(lista) {
+        if (!valoresBox) return;
+
+        var totalAluno  = 0;
+        var totalEquipe = 0;
+
+        lista.forEach(function (p) {
+            var v = Number(p.valor) || 0;
+            if (p.tipo_uniforme === 'equipe_tecnica') totalEquipe += v;
+            else totalAluno += v;
+        });
+
+        var recorte = filtroAtivo === 'todos'
+            ? 'todos os pedidos'
+            : (labels[filtroAtivo] || filtroAtivo).toLowerCase();
+
+        valoresBox.innerHTML =
+            '<div class="uniformes__valor uniformes__valor--aluno">'
+          +   '<strong>' + moeda(totalAluno) + '</strong>'
+          +   '<span>Uniforme completo</span>'
+          + '</div>'
+          + '<div class="uniformes__valor uniformes__valor--equipe">'
+          +   '<strong>' + moeda(totalEquipe) + '</strong>'
+          +   '<span>Camisa da comissão técnica</span>'
+          + '</div>'
+          + '<div class="uniformes__valor uniformes__valor--total">'
+          +   '<strong>' + moeda(totalAluno + totalEquipe) + '</strong>'
+          +   '<span>Total &middot; ' + escapar(recorte) + '</span>'
+          + '</div>';
+    }
+
     function render() {
         var lista = filtroAtivo === 'todos'
             ? pedidos
             : pedidos.filter(function (p) { return p.status === filtroAtivo; });
+
+        renderValores(lista);
 
         if (!lista.length) {
             tbody.innerHTML = '<tr><td colspan="' + colspan + '" class="interessados__loading">Nenhum pedido nesse status.</td></tr>';
@@ -83,33 +158,51 @@
         }
 
         var html = '';
-        lista.forEach(function (p) {
-            html += '<tr' + (p.novo ? ' class="uniformes__row--novo"' : '') + '>'
-                  + '<td>' + p.id + (p.novo ? ' <span class="uniformes__novoTag">NOVO</span>' : '') + '</td>'
-                  + '<td>'
+        lista.forEach(function (p, i) {
+            // Sequência da lista, não o id do pedido: o id tem buracos (pedido cancelado,
+            // reserva que expirou) e não diz quantos pedidos existem. O id real fica no
+            // title, que é o número usado pra conversar sobre um pedido específico.
+            // A camisa da comissão técnica é outro produto (só camisa, sem número) e vai
+            // separada pro fornecedor — por isso a linha tem fundo próprio.
+            var classes = [];
+            if (p.novo) classes.push('uniformes__row--novo');
+            if (p.tipo_uniforme === 'equipe_tecnica') classes.push('uniformes__row--equipe');
+
+            html += '<tr' + (classes.length ? ' class="' + classes.join(' ') + '"' : '') + '>'
+                  + '<td title="Pedido #' + p.id + '">' + (i + 1)
+                  + (p.novo ? ' <span class="uniformes__novoTag">NOVO</span>' : '') + '</td>'
+                  + '<td class="uniformes__printExclude">'
                   +   '<strong>' + escapar(p.aluno_nome) + '</strong>'
                   +   '<small class="uniformes__sub">' + escapar(p.aluno_email) + '</small>'
                   + '</td>'
-                  + '<td>' + escapar(p.turma_nome) + '</td>'
-                  + '<td>' + escapar(p.genero_label) + '<small class="uniformes__sub">' + escapar(p.modelo_label) + '</small></td>'
-                  + '<td><strong>' + escapar(p.nome_camisa) + '</strong></td>'
-                  + '<td><span class="uniformes__numero' + (p.conflito_numero ? ' is-conflito' : '') + '">'
-                  +   p.numero + '</span>'
-                  +   (p.conflito_numero ? '<small class="uniformes__sub uniformes__sub--alerta">número duplicado</small>' : '')
+                  + '<td class="uniformes__printExclude">' + escapar(p.turma_nome) + '</td>'
+                  + '<td class="uniformes__printExclude">' + escapar(p.genero_label) + '<small class="uniformes__sub">' + escapar(p.modelo_label) + '</small></td>'
+                  + '<td><strong class="uniformes__screenValue">' + escapar(p.texto_camisa || p.nome_camisa) + '</strong>'
+                  +   nomeParaImpressao(p.texto_camisa || p.nome_camisa) + '</td>'
+                  + '<td>'
+                  +   (p.numero === null
+                        ? '<span class="uniformes__sub">&mdash;</span>'   // equipe técnica não tem número
+                        : '<span class="uniformes__numero' + (p.conflito_numero ? ' is-conflito' : '') + '">' + p.numero + '</span>'
+                          + (p.conflito_numero ? '<small class="uniformes__sub uniformes__sub--alerta">número duplicado</small>' : ''))
                   + '</td>'
                   + '<td>'
-                  +   '<span class="uniformes__tam">' + escapar(p.tamanho_camisa) + '</span>'
-                  +   '<small class="uniformes__sub">camisa</small>'
-                  +   '<span class="uniformes__tam">' + escapar(p.tamanho_shorts) + '</span>'
-                  +   '<small class="uniformes__sub">' + escapar((p.label_shorts || 'shorts').toLowerCase()) + '</small>'
+                  +   '<span class="uniformes__screenValue">'
+                  +     '<span class="uniformes__tam">' + escapar(p.tamanho_camisa) + '</span>'
+                  +     '<small class="uniformes__sub">camisa</small>'
+                  +     (p.tamanho_shorts
+                        ? '<span class="uniformes__tam">' + escapar(p.tamanho_shorts) + '</span>'
+                          + '<small class="uniformes__sub">' + escapar((p.label_shorts || 'shorts').toLowerCase()) + '</small>'
+                        : '<small class="uniformes__sub">só camisa</small>')
+                  +   '</span>'
+                  +   tamanhosParaImpressao(p)
                   + '</td>'
                   + '<td>' + moeda(p.valor) + '</td>'
-                  + '<td>' + escapar(p.pago_em_label) + '</td>'
-                  + '<td><span class="uniformes__badge uniformes__badge--' + p.status + '">'
+                  + '<td class="uniformes__printExclude">' + escapar(p.pago_em_label) + '</td>'
+                  + '<td class="uniformes__printExclude"><span class="uniformes__badge uniformes__badge--' + p.status + '">'
                   +   escapar(p.status_label) + '</span></td>';
 
             if (PODE_EDITAR) {
-                html += '<td>';
+                html += '<td class="uniformes__printExclude">';
                 if (p.proximo_status) {
                     html += '<button class="btn btn--primary btn--sm" data-avancar="' + p.id + '">'
                           + '&rarr; ' + escapar(labels[p.proximo_status] || p.proximo_status) + '</button> ';
@@ -371,6 +464,130 @@
             method: 'POST',
             credentials: 'same-origin'
         }).catch(function () {});
+    }
+
+    // ── Enviar tudo para confecção ──────────────────────────────────────────────
+    //
+    // Acompanha a lista impressa: gera o PDF, manda pro fornecedor e marca tudo como
+    // enviado de uma vez. Fazer linha a linha com dezenas de pedidos é onde alguém pula
+    // um e aquele uniforme nunca sai.
+    var btnEnviarTodos = document.getElementById('btnEnviarTodos');
+    var modalEnviar    = document.getElementById('enviarTodosModal');
+
+    function pendentes() {
+        return pedidos.filter(function (p) { return p.status === 'pendente'; });
+    }
+
+    function fecharEnviarTodos() {
+        if (modalEnviar) modalEnviar.classList.remove('confirmModal--open');
+    }
+
+    if (btnEnviarTodos && modalEnviar) {
+        btnEnviarTodos.addEventListener('click', function () {
+            var lista = pendentes();
+            var info  = document.getElementById('enviarTodosInfo');
+            var erro  = document.getElementById('enviarTodosErro');
+            var ok    = document.getElementById('enviarTodosConfirmar');
+
+            erro.style.display = 'none';
+
+            if (!lista.length) {
+                info.textContent = 'Não há pedidos pendentes no momento — tudo já foi enviado.';
+                ok.style.display = 'none';
+            } else {
+                var camisas = lista.filter(function (p) { return p.tipo_uniforme === 'equipe_tecnica'; }).length;
+                var completos = lista.length - camisas;
+
+                // Mostra a composição: é o que ele vai conferir contra a lista impressa.
+                var detalhe = [];
+                if (completos) detalhe.push(completos + ' uniforme' + (completos === 1 ? '' : 's') + ' completo' + (completos === 1 ? '' : 's'));
+                if (camisas)   detalhe.push(camisas + ' camisa' + (camisas === 1 ? '' : 's') + ' da comissão técnica');
+
+                info.innerHTML = 'Marcar <strong>' + lista.length + ' pedido' + (lista.length === 1 ? '' : 's')
+                               + ' pendente' + (lista.length === 1 ? '' : 's') + '</strong> como enviados para confecção?'
+                               + (detalhe.length ? '<br><small>' + detalhe.join(' · ') + '</small>' : '')
+                               + '<br><br>Pedidos que já avançaram não são afetados.';
+                ok.style.display = '';
+            }
+
+            modalEnviar.classList.add('confirmModal--open');
+        });
+
+        document.getElementById('enviarTodosCancelar').addEventListener('click', fecharEnviarTodos);
+        modalEnviar.addEventListener('click', function (e) { if (e.target === this) fecharEnviarTodos(); });
+
+        document.getElementById('enviarTodosConfirmar').addEventListener('click', function () {
+            var btn  = this;
+            var erro = document.getElementById('enviarTodosErro');
+
+            btn.disabled = true;
+            btn.textContent = 'Enviando...';
+
+            fetch(ADMIN_BASE_URL + '/services/enviar_todos_confeccao.php', {
+                method: 'POST',
+                credentials: 'same-origin'
+            })
+            .then(function (r) {
+                return r.text().then(function (t) {
+                    try { return JSON.parse(t); }
+                    catch (e) {
+                        console.error('Resposta não-JSON ao enviar todos:', t.slice(0, 500));
+                        return { success: false, message: 'O servidor respondeu com erro ' + r.status + '.' };
+                    }
+                });
+            })
+            .then(function (d) {
+                btn.disabled = false;
+                btn.textContent = 'Sim, enviar';
+
+                if (d.success) { fecharEnviarTodos(); carregar(); return; }
+
+                erro.textContent = d.message || 'Não foi possível enviar.';
+                erro.style.display = '';
+            })
+            .catch(function () {
+                btn.disabled = false;
+                btn.textContent = 'Sim, enviar';
+                erro.textContent = 'Erro de conexão.';
+                erro.style.display = '';
+            });
+        });
+    }
+
+    // ── Impressão / PDF ─────────────────────────────────────────────────────────
+    //
+    // Usa a impressão do próprio navegador (Ctrl+P → Salvar como PDF). O layout de papel
+    // vem do @media print no LESS: fundo branco, grade fechada e sem os elementos de tela
+    // (menu, filtros, botões), pra sair parecido com uma planilha que o fornecedor lê.
+    var btnImprimir = document.getElementById('btnImprimir');
+    if (btnImprimir) {
+        btnImprimir.addEventListener('click', function () {
+            atualizarCabecalhoImpressao();
+            window.print();
+        });
+    }
+
+    /** Preenche o cabeçalho que só existe no papel: filtro aplicado e totais. */
+    function atualizarCabecalhoImpressao() {
+        var elFiltro = document.getElementById('printFiltro');
+        var elTotal  = document.getElementById('printTotal');
+        if (!elFiltro || !elTotal) return;
+
+        var lista = filtroAtivo === 'todos'
+            ? pedidos
+            : pedidos.filter(function (p) { return p.status === filtroAtivo; });
+
+        elFiltro.textContent = filtroAtivo === 'todos' ? 'Todos os status' : (labels[filtroAtivo] || filtroAtivo);
+
+        var completos = lista.filter(function (p) { return p.tipo_uniforme !== 'equipe_tecnica'; }).length;
+        var camisas   = lista.length - completos;
+
+        // O fornecedor precisa saber quantas peças de cada tipo, não só o total de linhas.
+        var partes = [lista.length + ' pedido' + (lista.length === 1 ? '' : 's')];
+        if (completos) partes.push(completos + ' uniforme' + (completos === 1 ? '' : 's') + ' completo' + (completos === 1 ? '' : 's'));
+        if (camisas)   partes.push(camisas + ' camisa' + (camisas === 1 ? '' : 's') + ' da comissão técnica');
+
+        elTotal.textContent = partes.join(' · ');
     }
 
     // ── Filtros ─────────────────────────────────────────────────────────────────

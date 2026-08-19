@@ -19,7 +19,9 @@ if (!$perfil) {
 
 $_SESSION['jogador']['nome']  = $perfil['nome'];
 $_SESSION['jogador']['nivel'] = $perfil['nivel'];
-$primeiroNome = explode(' ', $perfil['nome'])[0];
+// trim antes do explode: nome gravado com espaço na frente fazia explode devolver ''
+// e a saudação virava "Bem-vindo, !".
+$primeiroNome = explode(' ', trim($perfil['nome']))[0];
 
 $cfg   = $pdo->query("SELECT valor FROM configuracoes WHERE chave = 'valor_batebola'")->fetch();
 $valor = $cfg ? (float) $cfg['valor'] : 17.00;
@@ -42,23 +44,10 @@ $stConfirmados = $pdo->prepare("
 $stConfirmados->execute([$dataEvento]);
 $confirmados = $stConfirmados->fetchAll(PDO::FETCH_COLUMN);
 
-$chaveSorteio = 'batebola_times_' . $dataEvento;
-$stSeedTimes = $pdo->prepare("SELECT valor FROM configuracoes WHERE chave = ?");
-$stSeedTimes->execute([$chaveSorteio]);
-$seedTimes = $stSeedTimes->fetchColumn();
-$timesSorteados = [];
-
-if ($seedTimes !== false) {
-    $stJogadoresTimes = $pdo->prepare("
-        SELECT j.id, j.nome, j.nivel, j.altura_cm, j.sexo, j.foto
-        FROM batebola_inscricoes bi
-        JOIN jogadores_batebola j ON j.id = bi.jogador_id
-        WHERE bi.data_evento = ? AND bi.status = 'pago'
-        ORDER BY j.nome ASC
-    ");
-    $stJogadoresTimes->execute([$dataEvento]);
-    $timesSorteados = batebolaSortearTimes($stJogadoresTimes->fetchAll(), (int) $seedTimes);
-}
+// Mesma montagem que o admin usa (config/batebola.php), já com as trocas manuais aplicadas.
+// Antes esta tela repetia a lógica do sorteio, e qualquer ajuste feito no admin não
+// aparecia aqui — jogador e admin viam times diferentes.
+$timesSorteados = batebolaTimesDoEvento($pdo, $dataEvento);
 
 $classesTimes = [
     'Azul' => 'bateBolaTimesHome__time--azul',
@@ -86,7 +75,7 @@ $dataFmtExtenso = $dtEvento->format('d') . ' de ' . $meses[(int) $dtEvento->form
             <div class="bateBolaInicio__welcome">
                 <div class="bateBolaInicio__avatar">
                     <?php if (!empty($perfil['foto'])): ?>
-                        <img src="<?= BASE_URL ?>/<?= htmlspecialchars($perfil['foto']) ?>" alt="Foto de <?= htmlspecialchars($perfil['nome']) ?>">
+                        <img src="<?= BASE_URL ?>/<?= htmlspecialchars($perfil['foto']) ?>" alt="Foto de <?= htmlspecialchars($perfil['nome']) ?>" data-lightbox>
                     <?php else: ?>
                         <i class="icon-user" aria-hidden="true"></i>
                     <?php endif; ?>
@@ -188,7 +177,7 @@ $dataFmtExtenso = $dtEvento->format('d') . ' de ' . $meses[(int) $dtEvento->form
                                         <span class="bateBolaTimesHome__player">
                                             <span class="bateBolaTimesHome__avatar">
                                                 <?php if (!empty($membro['foto'])): ?>
-                                                    <img src="<?= BASE_URL ?>/<?= htmlspecialchars($membro['foto']) ?>" alt="Foto de <?= htmlspecialchars($membro['nome']) ?>">
+                                                    <img src="<?= BASE_URL ?>/<?= htmlspecialchars($membro['foto']) ?>" alt="Foto de <?= htmlspecialchars($membro['nome']) ?>" data-lightbox>
                                                 <?php else: ?>
                                                     <i class="icon-user" aria-hidden="true"></i>
                                                 <?php endif; ?>
@@ -207,6 +196,7 @@ $dataFmtExtenso = $dtEvento->format('d') . ' de ' . $meses[(int) $dtEvento->form
     </div>
 </main>
 
+<?php include ROOT . '/includes/lightbox.php'; ?>
 <?php include ROOT . '/includes/footer/footer.php'; ?>
 <?php include ROOT . '/includes/scripts.php'; ?>
 </body>

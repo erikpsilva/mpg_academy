@@ -148,12 +148,16 @@ try {
     // PHP e o do banco podem divergir (no XAMPP local dão 5h de diferença), e como toda a
     // checagem de reserva compara com NOW(), misturar os dois faria a janela de 30 minutos
     // virar horas — ou expirar na hora.
+    // pessoa_tipo/pessoa_id identificam quem pediu desde que o pedido passou a poder ser de
+    // professor ou equipe MPG. Sem preencher, a listagem do admin não acha o nome e mostra
+    // "(removido)" no lugar do aluno.
     $pdo->prepare("
         INSERT INTO pedidos_uniforme
-            (aluno_id, turma_id, genero, modelo, nome_camisa, numero, tamanho_camisa, tamanho_shorts, valor,
+            (pessoa_tipo, pessoa_id, tipo_uniforme,
+             aluno_id, turma_id, genero, modelo, nome_camisa, numero, tamanho_camisa, tamanho_shorts, valor,
              status_pagamento, status_pedido, reserva_expira_em)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'aguardando', 'pendente', DATE_ADD(NOW(), INTERVAL ? MINUTE))
-    ")->execute([$alunoId, $turmaId, $genero, $modelo, $nomeCamisa, $numero,
+        VALUES ('aluno', ?, 'completo', ?, ?, ?, ?, ?, ?, ?, ?, ?, 'aguardando', 'pendente', DATE_ADD(NOW(), INTERVAL ? MINUTE))
+    ")->execute([$alunoId, $alunoId, $turmaId, $genero, $modelo, $nomeCamisa, $numero,
                  $tamanhoCamisa, $tamanhoShorts, $valor, UNIFORME_RESERVA_MINUTOS]);
 
     $pedidoId = (int) $pdo->lastInsertId();

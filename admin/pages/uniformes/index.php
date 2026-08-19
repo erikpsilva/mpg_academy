@@ -36,11 +36,31 @@ $podeEditar = in_array($_SESSION['usuario']['nivel_acesso'] ?? '', ['admin', 'ed
 
             <div class="uniformes__stats" id="uniformesStats"></div>
 
+            <!-- Quanto custou, separado por produto. Acompanha o filtro de status. -->
+            <div class="uniformes__valores" id="uniformesValores"></div>
+
             <div class="uniformes__filters">
                 <button class="uniformes__filter is-active" data-filtro="todos">Todos</button>
                 <?php foreach (UNIFORME_STATUS_FLUXO as $s): ?>
                     <button class="uniformes__filter" data-filtro="<?= $s ?>"><?= UNIFORME_STATUS_LABEL[$s] ?></button>
                 <?php endforeach; ?>
+                <?php if ($podeEditar): ?>
+                <button class="btn btn--gray btn--sm uniformes__enviarTodos" id="btnEnviarTodos" type="button">
+                    &rarr; Enviar todos para confecção
+                </button>
+                <?php endif; ?>
+                <button class="btn btn--primary btn--sm uniformes__imprimir" id="btnImprimir" type="button">
+                    Imprimir lista (PDF)
+                </button>
+            </div>
+            <!-- Só aparece no papel: a tela já tem esses dados no topo. -->
+            <div class="uniformes__printHead">
+                <h1>MPG Academy — Pedido de uniformes</h1>
+                <p>
+                    Emitido em <?= date('d/m/Y') ?> &middot;
+                    Filtro: <span id="printFiltro">Todos</span> &middot;
+                    <span id="printTotal"></span>
+                </p>
             </div>
 
             <div class="row">
@@ -50,16 +70,16 @@ $podeEditar = in_array($_SESSION['usuario']['nivel_acesso'] ?? '', ['admin', 'ed
                             <thead>
                                 <tr>
                                     <th>#</th>
-                                    <th>Aluno</th>
-                                    <th>Turma</th>
-                                    <th>Uniforme</th>
+                                    <th class="uniformes__printExclude">Aluno</th>
+                                    <th class="uniformes__printExclude">Turma</th>
+                                    <th class="uniformes__printExclude">Uniforme</th>
                                     <th>Nome</th>
                                     <th>Nº</th>
-                                    <th>Tam.</th>
+                                    <th>Tamanho</th>
                                     <th>Valor</th>
-                                    <th>Pago em</th>
-                                    <th>Status</th>
-                                    <?php if ($podeEditar): ?><th>Ação</th><?php endif; ?>
+                                    <th class="uniformes__printExclude">Pago em</th>
+                                    <th class="uniformes__printExclude">Status</th>
+                                    <?php if ($podeEditar): ?><th class="uniformes__printExclude">Ação</th><?php endif; ?>
                                 </tr>
                             </thead>
                             <tbody id="uniformesTableBody">
@@ -113,6 +133,19 @@ $podeEditar = in_array($_SESSION['usuario']['nivel_acesso'] ?? '', ['admin', 'ed
                 <div class="confirmModal__actions">
                     <button class="btn btn--gray" id="editarModalFechar" type="button">Cancelar</button>
                     <button class="btn btn--primary" id="editarModalSalvar" type="button">Salvar correção</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Confirmação do envio em massa -->
+        <div class="confirmModal" id="enviarTodosModal">
+            <div class="confirmModal__box">
+                <h3>Enviar todos para confecção</h3>
+                <p id="enviarTodosInfo"></p>
+                <p class="uniformes__editErro" id="enviarTodosErro" style="display:none;"></p>
+                <div class="confirmModal__actions">
+                    <button class="btn btn--gray" id="enviarTodosCancelar" type="button">Cancelar</button>
+                    <button class="btn btn--primary" id="enviarTodosConfirmar" type="button">Sim, enviar</button>
                 </div>
             </div>
         </div>

@@ -14,6 +14,15 @@ define('MP_ACCESS_TOKEN_TEST', 'TEST-4134788022840522-081916-dd4de08a42a18d566e7
 define('MP_WEBHOOK_SECRET_PROD', '8ece70705c82ef0423d89b0099e6df8bef86804614d1608e22e892078538b658');
 define('MP_WEBHOOK_SECRET_TEST', '');
 
+/**
+ * Liga/desliga a seção de pagamento automático no cartão salvo em /meuperfil.
+ *
+ * true mantém exatamente o comportamento atual de produção. Existe porque a tela do
+ * perfil (trazida da versaoPROD) consulta esta constante — sem ela a página quebra.
+ * Trocar pra false esconde a seção sem mexer em mais nada.
+ */
+const MP_COBRANCA_AUTOMATICA_ATIVA = true;
+
 // ─── Tradução dos códigos de rejeição mais comuns do MP (pra log/diagnóstico) ──
 const MP_STATUS_DETAIL_PT = [
     'cc_rejected_insufficient_amount'        => 'saldo/limite insuficiente',

@@ -225,3 +225,149 @@ function batebolaEquilibrarSexoTimes(array $times): array
 
     return $times;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Ajustes manuais do admin sobre o sorteio
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Os times NÃO ficam gravados: batebolaSortearTimes() os recalcula sempre, a partir do
+// seed salvo em configuracoes. Isso é bom (o resultado é reproduzível), mas significa que
+// uma troca feita à mão sumiria no próximo carregamento da página.
+//
+// Por isso a troca é guardada à parte, como uma LISTA DE PARES de jogadores, e reaplicada
+// por cima do sorteio toda vez que os times são montados. Guardar os pares — e não os times
+// prontos — mantém o sorteio como fonte da verdade: se alguém entrar ou sair da lista, o
+// equilíbrio é refeito e as trocas continuam valendo em cima do resultado novo.
+
+/** Chave em `configuracoes` onde ficam as trocas manuais de um domingo. */
+function batebolaChaveTrocas(string $dataEvento): string
+{
+    return 'batebola_trocas_' . $dataEvento;
+}
+
+/** Trocas manuais salvas pro domingo, como lista de pares [idA, idB]. */
+function batebolaTrocasSalvas(PDO $pdo, string $dataEvento): array
+{
+    $st = $pdo->prepare("SELECT valor FROM configuracoes WHERE chave = ?");
+    $st->execute([batebolaChaveTrocas($dataEvento)]);
+    $json = $st->fetchColumn();
+
+    if ($json === false) return [];
+
+    $trocas = json_decode((string) $json, true);
+    return is_array($trocas) ? $trocas : [];
+}
+
+function batebolaSalvarTrocas(PDO $pdo, string $dataEvento, array $trocas): void
+{
+    $pdo->prepare("
+        INSERT INTO configuracoes (chave, valor)
+        VALUES (?, ?)
+        ON DUPLICATE KEY UPDATE valor = VALUES(valor), atualizado_em = CURRENT_TIMESTAMP
+    ")->execute([batebolaChaveTrocas($dataEvento), json_encode(array_values($trocas))]);
+}
+
+/** Zera as trocas — usado ao sortear de novo ou cancelar o sorteio. */
+function batebolaLimparTrocas(PDO $pdo, string $dataEvento): void
+{
+    $pdo->prepare("DELETE FROM configuracoes WHERE chave = ?")
+        ->execute([batebolaChaveTrocas($dataEvento)]);
+}
+
+/**
+ * Reaplica as trocas manuais em cima do resultado do sorteio.
+ *
+ * Um par cujos jogadores não estejam mais nos times (saiu da lista, por exemplo) é
+ * simplesmente ignorado — a troca deixa de fazer sentido sozinha, sem precisar de limpeza.
+ */
+function batebolaAplicarTrocas(array $times, array $trocas): array
+{
+    if (empty($times) || empty($trocas)) return $times;
+
+    foreach ($trocas as $par) {
+        if (!is_array($par) || count($par) !== 2) continue;
+
+        $posA = batebolaPosicaoJogador($times, (int) $par[0]);
+        $posB = batebolaPosicaoJogador($times, (int) $par[1]);
+        if ($posA === null || $posB === null) continue;
+
+        [$tA, $iA] = $posA;
+        [$tB, $iB] = $posB;
+        if ($tA === $tB) continue; // trocar dentro do mesmo time não muda nada
+
+        $tmp = $times[$tA]['jogadores'][$iA];
+        $times[$tA]['jogadores'][$iA] = $times[$tB]['jogadores'][$iB];
+        $times[$tB]['jogadores'][$iB] = $tmp;
+    }
+
+    return $times;
+}
+
+/** Onde um jogador está: [índice do time, índice dentro do time] ou null. */
+function batebolaPosicaoJogador(array $times, int $jogadorId): ?array
+{
+    foreach ($times as $t => $time) {
+        foreach ($time['jogadores'] as $i => $j) {
+            if ((int) ($j['id'] ?? 0) === $jogadorId) return [$t, $i];
+        }
+    }
+    return null;
+}
+
+/**
+ * Monta os times de um domingo já com as trocas manuais aplicadas.
+ *
+ * Existe pra que admin e jogador vejam exatamente a mesma escalação — antes cada tela
+ * repetia a montagem, e bastava uma esquecer as trocas pra mostrarem times diferentes.
+ *
+ * @return array Lista de ['cor' => string, 'jogadores' => array]; vazio se ainda não sorteou.
+ */
+function batebolaTimesDoEvento(PDO $pdo, string $dataEvento): array
+{
+    $st = $pdo->prepare("SELECT valor FROM configuracoes WHERE chave = ?");
+    $st->execute(['batebola_times_' . $dataEvento]);
+    $seed = $st->fetchColumn();
+
+    if ($seed === false) return [];
+
+    $stJog = $pdo->prepare("
+        SELECT j.id, j.nome, j.nivel, j.altura_cm, j.sexo, j.foto
+        FROM batebola_inscricoes bi
+        JOIN jogadores_batebola j ON j.id = bi.jogador_id
+        WHERE bi.data_evento = ? AND bi.status = 'pago'
+        ORDER BY j.nome ASC
+    ");
+    $stJog->execute([$dataEvento]);
+
+    $times = batebolaSortearTimes($stJog->fetchAll(), (int) $seed);
+
+    return batebolaAplicarTrocas($times, batebolaTrocasSalvas($pdo, $dataEvento));
+}
+
+/**
+ * Registra que o admin incluiu alguém na lista (recebeu por fora) ou tirou alguém
+ * (devolveu a grana). É o que alimenta o sininho — serve de lembrete do dinheiro que
+ * entrou ou saiu sem passar pelo Mercado Pago.
+ */
+function batebolaRegistrarMovimentacao(
+    PDO $pdo,
+    int $jogadorId,
+    string $dataEvento,
+    string $acao,
+    ?float $valor = null,
+    ?int $usuarioId = null,
+    ?string $observacao = null
+): void {
+    if (!in_array($acao, ['incluido', 'removido'], true)) return;
+
+    try {
+        $pdo->prepare("
+            INSERT INTO batebola_movimentacoes
+                (jogador_id, data_evento, acao, valor, usuario_id, observacao)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ")->execute([$jogadorId, $dataEvento, $acao, $valor, $usuarioId, $observacao]);
+    } catch (Throwable $e) {
+        // Falhar ao registrar o lembrete nunca pode desfazer a inclusão/remoção em si.
+        error_log('[batebola-movimentacao] ' . $e->getMessage());
+    }
+}

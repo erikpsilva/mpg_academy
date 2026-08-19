@@ -159,21 +159,7 @@
             <li class="sidebar__item">
                 <a href="<?= BASE_URL ?>/admin/alunosteste"
                    class="sidebar__link <?= ($subRoute === 'alunosteste') ? 'sidebar__link--active' : '' ?>">
-                    Alunos Teste
-                </a>
-            </li>
-
-            <li class="sidebar__item">
-                <a href="<?= BASE_URL ?>/admin/todosalunos-teste"
-                   class="sidebar__link <?= ($subRoute === 'todosalunos-teste') ? 'sidebar__link--active' : '' ?>">
-                    Todos Alunos Teste
-                </a>
-            </li>
-
-            <li class="sidebar__item">
-                <a href="<?= BASE_URL ?>/admin/testescancelados"
-                   class="sidebar__link <?= ($subRoute === 'testescancelados') ? 'sidebar__link--active' : '' ?>">
-                    Testes Cancelados
+                    Agendar Aula Experimental
                 </a>
             </li>
 
@@ -181,13 +167,6 @@
                 <a href="<?= BASE_URL ?>/admin/comunicados"
                    class="sidebar__link <?= ($subRoute === 'comunicados') ? 'sidebar__link--active' : '' ?>">
                     Avisos
-                </a>
-            </li>
-
-            <li class="sidebar__item">
-                <a href="<?= BASE_URL ?>/admin/emailcadastro"
-                   class="sidebar__link <?= ($subRoute === 'emailcadastro') ? 'sidebar__link--active' : '' ?>">
-                    Enviar Email de Cadastro
                 </a>
             </li>
 
@@ -249,6 +228,20 @@
                 <a href="<?= BASE_URL ?>/admin/aulas-canceladas"
                    class="sidebar__link <?= ($subRoute === 'aulas-canceladas') ? 'sidebar__link--active' : '' ?>">
                     Aulas Canceladas
+                </a>
+            </li>
+
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/todosalunos-teste"
+                   class="sidebar__link <?= ($subRoute === 'todosalunos-teste') ? 'sidebar__link--active' : '' ?>">
+                    Todos Agendamentos Experimentais
+                </a>
+            </li>
+
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/emailcadastro"
+                   class="sidebar__link <?= ($subRoute === 'emailcadastro') ? 'sidebar__link--active' : '' ?>">
+                    Enviar Email de Cadastro
                 </a>
             </li>
 

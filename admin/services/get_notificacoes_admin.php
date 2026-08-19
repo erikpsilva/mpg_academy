@@ -71,7 +71,9 @@ try {
         FROM pedidos_uniforme p
         JOIN alunos a ON a.id = p.aluno_id
         LEFT JOIN turmas t ON t.id = p.turma_id
-        WHERE p.status_pagamento = 'pago' AND p.visto_admin = 0
+        -- Só pedido de aluno: o sino avisa de venda nova. Pedido de equipe é feito pelo
+        -- próprio admin, já nasce visto e não precisa avisar ninguém.
+        WHERE p.status_pagamento = 'pago' AND p.visto_admin = 0 AND p.pessoa_tipo = 'aluno'
         ORDER BY p.pago_em DESC
         LIMIT 20
     ");
@@ -122,13 +124,47 @@ try {
     // Tabela ainda não migrada — o sino segue funcionando sem essa seção.
 }
 
+// ── Bate Bola: inclusões e remoções feitas à mão pelo admin ──────────────────────
+//
+// Dinheiro que entrou ou saiu por fora do Mercado Pago não deixa rastro em lugar nenhum,
+// então o lembrete é aqui: incluir alguém = recebi por fora; tirar alguém = devolvi a grana.
+$bateBolaMov = [];
+try {
+    $stMov = $pdo->query("
+        SELECT mv.id, mv.acao, mv.valor, mv.data_evento, mv.criado_em,
+               j.nome AS jogador_nome, u.nome AS usuario_nome
+        FROM batebola_movimentacoes mv
+        JOIN jogadores_batebola j ON j.id = mv.jogador_id
+        LEFT JOIN usuarios u      ON u.id = mv.usuario_id
+        WHERE mv.visto_admin = 0
+        ORDER BY mv.criado_em DESC
+        LIMIT 20
+    ");
+
+    foreach ($stMov->fetchAll() as $m) {
+        $bateBolaMov[] = [
+            'id'           => (int) $m['id'],
+            'acao'         => $m['acao'],
+            'jogador_nome' => $m['jogador_nome'],
+            'valor'        => $m['valor'] !== null ? (float) $m['valor'] : null,
+            'data_evento'  => (new DateTime($m['data_evento']))->format('d/m'),
+            'usuario_nome' => $m['usuario_nome'],
+            'criado_em'    => (new DateTime($m['criado_em']))->format('d/m H:i'),
+        ];
+    }
+} catch (PDOException $e) {
+    // Tabela ainda não migrada — o sino segue funcionando sem essa seção.
+}
+
 echo json_encode([
-    'success'         => true,
-    'total'           => count($alunos),
-    'total_alerta'    => count(array_filter($alunos, fn($a) => $a['alerta'] && !$a['notificado'])),
-    'alunos'          => $alunos,
-    'uniformes'       => $uniformes,
-    'total_uniformes' => count($uniformes),
-    'erros_pagamento' => $errosPagamento,
-    'total_erros'     => count($errosPagamento),
+    'success'          => true,
+    'total'            => count($alunos),
+    'total_alerta'     => count(array_filter($alunos, fn($a) => $a['alerta'] && !$a['notificado'])),
+    'alunos'           => $alunos,
+    'uniformes'        => $uniformes,
+    'total_uniformes'  => count($uniformes),
+    'erros_pagamento'  => $errosPagamento,
+    'total_erros'      => count($errosPagamento),
+    'batebola_mov'     => $bateBolaMov,
+    'total_batebola'   => count($bateBolaMov),
 ]);

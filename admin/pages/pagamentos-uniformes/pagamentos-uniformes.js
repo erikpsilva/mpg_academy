@@ -79,7 +79,21 @@
         if (seletor.value) url += '?mes=' + encodeURIComponent(seletor.value);
 
         fetch(url, { credentials: 'same-origin' })
-            .then(function (r) { return r.json(); })
+            // Parse defensivo: se o servidor responder HTML (fatal do PHP), r.json() estoura
+            // e o motivo real some. Melhor mostrar o status e jogar o corpo no console.
+            .then(function (r) {
+                return r.text().then(function (texto) {
+                    try {
+                        return JSON.parse(texto);
+                    } catch (e) {
+                        console.error('Resposta não-JSON de get_pagamentos_uniforme:', texto.slice(0, 600));
+                        return {
+                            success: false,
+                            message: 'O servidor respondeu com erro ' + r.status + '. Veja o console para o detalhe.'
+                        };
+                    }
+                });
+            })
             .then(function (data) {
                 if (!data.success) {
                     lista.innerHTML = '<p class="pagUniformes__vazio">' + escapar(data.message || 'Não foi possível carregar.') + '</p>';

@@ -15,7 +15,7 @@ $(document).ready(() => {
 
     const thumbHtml = (foto, nome) => {
         const img = foto
-            ? '<img src="' + BASE_URL + '/' + foto + '" alt="' + $('<span>').text(nome).html() + '">'
+            ? '<img src="' + BASE_URL + '/' + foto + '" alt="' + $('<span>').text(nome).html() + '" data-lightbox>'
             : '<i class="icon-user" aria-hidden="true"></i>';
         return '<span class="jogadores__thumb">' + img + '</span>';
     };
@@ -90,7 +90,7 @@ $(document).ready(() => {
         $('#editarAltura').text(jogadorSelecionado.altura_cm ? jogadorSelecionado.altura_cm + ' cm' : '—');
         $('#editarFotoPreview').html(
             jogadorSelecionado.foto
-                ? '<img src="' + BASE_URL + '/' + jogadorSelecionado.foto + '" alt="' + jogadorSelecionado.nome + '">'
+                ? '<img src="' + BASE_URL + '/' + jogadorSelecionado.foto + '" alt="' + jogadorSelecionado.nome + '" data-lightbox>'
                 : '<i class="icon-user" aria-hidden="true"></i>'
         );
         $('#editarSenhaNova').val('');

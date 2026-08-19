@@ -16,46 +16,29 @@ if (empty($_SESSION['usuario'])) {
 require_once dirname(__FILE__, 3) . '/config/database.php';
 $pdo = getDbConnection();
 
-// ── Para fazer: agendada + fila (lista plana) ─────────────────────────────────
-$stmtParaFazer = $pdo->query("
+// ── Cancelados: aulas experimentais canceladas (podem ser reagendadas) ────────
+$stmtCancelados = $pdo->query("
     SELECT
         ae.id, ae.status, ae.data_agendada, ae.criado_em,
         at.id   AS aluno_teste_id,
         at.nome, at.email, at.celular,
-        at.is_menor, at.responsavel_nome, at.responsavel_email,
+        at.is_menor, at.responsavel_nome, at.responsavel_email, at.responsavel_celular,
         t.id    AS turma_id, t.nome AS turma_nome, t.nivel,
-        q.nome  AS quadra_nome,
-        ts.token                AS termo_token,
-        ts.assinado_escola_em,
-        ts.assinado_responsavel_em
+        q.nome  AS quadra_nome
     FROM aulas_experimentais ae
     JOIN alunos_teste at ON at.id = ae.aluno_teste_id
     JOIN turmas t        ON t.id  = ae.turma_id
     JOIN quadras q       ON q.id  = t.quadra_id
-    LEFT JOIN termo_assinaturas ts ON ts.aula_experimental_id = ae.id
-    WHERE ae.status IN ('agendada', 'fila')
-    ORDER BY ae.data_agendada ASC, ae.criado_em ASC
+    WHERE ae.status = 'cancelada'
+    ORDER BY ae.criado_em DESC, ae.id DESC
 ");
-$paraFazer = $stmtParaFazer->fetchAll(PDO::FETCH_ASSOC);
+$cancelados = $stmtCancelados->fetchAll(PDO::FETCH_ASSOC);
 
-foreach ($paraFazer as &$r) {
+foreach ($cancelados as &$r) {
     $r['id']             = (int) $r['id'];
     $r['aluno_teste_id'] = (int) $r['aluno_teste_id'];
     $r['turma_id']       = (int) $r['turma_id'];
     $r['is_menor']       = (int) $r['is_menor'];
-
-    $termoStatus = null;
-    if ($r['termo_token']) {
-        $escSigned  = !empty($r['assinado_escola_em']);
-        $respSigned = !empty($r['assinado_responsavel_em']);
-        if ($escSigned && $respSigned)   $termoStatus = 'concluido';
-        elseif ($escSigned)              $termoStatus = 'aguardando_responsavel';
-        elseif ($respSigned)             $termoStatus = 'aguardando_escola';
-        else                             $termoStatus = 'pendente';
-    } elseif ($r['is_menor']) {
-        $termoStatus = 'nao_gerado';
-    }
-    $r['termo_status'] = $termoStatus;
 }
 unset($r);
 
@@ -67,7 +50,7 @@ $stmtJaFizeram = $pdo->query("
         ae.id, ae.criado_em,
         at.id   AS aluno_teste_id,
         at.nome, at.email, at.celular,
-        at.is_menor, at.responsavel_nome, at.responsavel_email,
+        at.is_menor, at.responsavel_nome, at.responsavel_email, at.responsavel_celular,
         t.id    AS turma_id, t.nome AS turma_nome, t.max_alunos,
         q.nome  AS quadra_nome,
         (SELECT COUNT(*) FROM turma_alunos ta
@@ -121,6 +104,6 @@ unset($r);
 
 echo json_encode([
     'success'    => true,
-    'para_fazer' => $paraFazer,
     'ja_fizeram' => $jaFizeram,
+    'cancelados' => $cancelados,
 ]);

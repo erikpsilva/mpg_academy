@@ -17,6 +17,7 @@
 //modules
 @import "../includes/header/header.less";
 @import "../includes/footer/footer.less";
+// Menu lateral com seções recolhíveis.
 @import "../includes/sidebar/sidebar.less";
 
 //pages
@@ -33,7 +34,6 @@
 @import "../pages/filadeespera/filadeespera.less";
 @import "../pages/alunosteste/alunosteste.less";
 @import "../pages/todosalunos-teste/todosalunos-teste.less";
-@import "../pages/testescancelados/testescancelados.less";
 @import "../pages/comunicados/comunicados.less";
 @import "../pages/professores/professores.less";
 @import "../pages/patrocinadores/patrocinadores.less";
@@ -50,7 +50,11 @@
 @import "../pages/batebola/batebola.less";
 @import "../pages/batebolatimes/batebolatimes.less";
 @import "../../includes/uniforme_medidas.less";
+@import "../../includes/lightbox.less";
 @import "../pages/uniformes/uniformes.less";
 @import "../pages/pedirfuniforme/pedirfuniforme.less";
 @import "../pages/erros-pagamento/erros-pagamento.less";
 @import "../pages/pagamentos-uniformes/pagamentos-uniformes.less";
+
+// Ultima camada: garante que nenhuma pagina do admin perca informacoes no mobile.
+@import "modules/admin-responsive.less";

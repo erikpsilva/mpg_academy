@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<title>MPG Academy - Admin - Todos Alunos Teste</title>
+<title>MPG Academy - Admin - Todos Agendamentos Experimentais</title>
 <?php include ROOT . '/admin/includes/assets.php'; ?>
 </head>
 <body>
@@ -17,8 +17,8 @@
 
             <div class="row adminTodosAlunos__pageHeader">
                 <div class="col-md-12">
-                    <h2>Todos Alunos <span>Teste</span></h2>
-                    <p>Consulta geral de todos os alunos teste — os que ainda vão fazer a aula experimental e os que já fizeram. A gestão de agendamentos fica em <a href="<?= BASE_URL ?>/admin/alunosteste">Alunos Teste</a>.</p>
+                    <h2>Todos Agendamentos <span>Experimentais</span></h2>
+                    <p>Consulta geral de quem já fez a aula experimental e de quem teve o teste cancelado. Os agendamentos em aberto ficam em <a href="<?= BASE_URL ?>/admin/alunosteste">Agendar Aula Experimental</a>.</p>
                 </div>
             </div>
 
@@ -56,26 +56,33 @@
     </div>
 </div>
 
-<!-- Modal: confirmar em qual turma a aula teste foi realizada -->
-<div class="adminTodosModal" id="modalRealizar">
-    <div class="adminTodosModal__overlay" id="modalRealizarOverlay"></div>
+<!-- Modal: reagendar aula experimental cancelada -->
+<div class="adminTodosModal" id="modalReagendar">
+    <div class="adminTodosModal__overlay" id="modalReagendarOverlay"></div>
     <div class="adminTodosModal__dialog">
         <div class="adminTodosModal__head">
             <div>
-                <h3>Confirmar realização da aula teste</h3>
-                <p id="modalRealizarAluno">—</p>
+                <h3>Reagendar aula experimental</h3>
+                <p id="modalReagendarAluno">—</p>
             </div>
-            <button class="adminTodosModal__close" id="modalRealizarClose">✕</button>
+            <button class="adminTodosModal__close" id="modalReagendarClose">✕</button>
         </div>
         <div class="adminTodosModal__body">
-            <label class="adminTodosModal__label">Em qual turma o aluno fez a aula teste?</label>
-            <select class="input" id="modalRealizarTurma">
+            <label class="adminTodosModal__label">Turma</label>
+            <select class="input" id="modalReagendarTurma">
                 <option value="">Carregando turmas...</option>
             </select>
+
+            <label class="adminTodosModal__label">Nova data do teste</label>
+            <input type="date" class="input" id="modalReagendarData">
+
+            <div class="adminTodosModal__aviso" style="display:block">
+                Ao confirmar, o aluno (e o responsável, se for menor de idade) recebe automaticamente uma mensagem no WhatsApp avisando que a aula foi reagendada.
+            </div>
         </div>
         <div class="adminTodosModal__foot">
-            <button class="btn btn--outline" id="modalRealizarCancelar">Cancelar</button>
-            <button class="btn btn--primary" id="modalRealizarConfirmar">Confirmar realização</button>
+            <button class="btn btn--outline" id="modalReagendarCancelar">Cancelar</button>
+            <button class="btn btn--primary" id="modalReagendarConfirmar">Reagendar e avisar no WhatsApp</button>
         </div>
     </div>
 </div>

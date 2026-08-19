@@ -103,6 +103,14 @@ a.header__notifEnviar { text-decoration: none; display: inline-block; }
                             <div class="header__notifList" id="notifErrosList"></div>
                         </div>
 
+                        <div class="header__notifSection" id="notifBateBolaSection" style="display:none;">
+                            <div class="header__notifHead">
+                                <strong>💰 Bate Bola — dinheiro por fora</strong>
+                                <a class="header__notifEnviar" href="<?= BASE_URL ?>/admin/batebolapresenca">Ver lista</a>
+                            </div>
+                            <div class="header__notifList" id="notifBateBolaList"></div>
+                        </div>
+
                         <div class="header__notifSection" id="notifUniformesSection" style="display:none;">
                             <div class="header__notifHead">
                                 <strong>Novos pedidos de uniforme</strong>
@@ -164,9 +172,11 @@ a.header__notifEnviar { text-decoration: none; display: inline-block; }
 
             renderUniformes(data.uniformes || []);
             renderErros(data.erros_pagamento || []);
+            renderBateBola(data.batebola_mov || []);
 
-            // Badge: atrasos 25+ dias não notificados + pedidos de uniforme + erros de pagamento
-            var alertas = data.total_alerta + (data.total_uniformes || 0) + (data.total_erros || 0);
+            // Badge: atrasos 25+ dias não notificados + uniformes + erros + movimentações do Bate Bola
+            var alertas = data.total_alerta + (data.total_uniformes || 0)
+                        + (data.total_erros || 0) + (data.total_batebola || 0);
             if (alertas > 0) {
                 badge.textContent   = alertas > 9 ? '9+' : alertas;
                 badge.style.display = '';
@@ -233,6 +243,47 @@ a.header__notifEnviar { text-decoration: none; display: inline-block; }
                   + '<span class="header__notifMeta">' + e.motivo + '</span>'
                   + '</div>'
                   + '<span class="header__notifDias header__notifDias--alerta">' + e.criado_em + '</span>'
+                  + '</a>';
+        });
+
+        box.innerHTML = html;
+        secao.style.display = '';
+    }
+
+    // Bate Bola: quem o admin colocou ou tirou da lista à mão. É lembrete de dinheiro que
+    // entrou ou saiu sem passar pelo Mercado Pago — não existe em nenhum outro relatório.
+    function renderBateBola(lista) {
+        var secao = document.getElementById('notifBateBolaSection');
+        var box   = document.getElementById('notifBateBolaList');
+        if (!secao || !box) return;
+
+        if (!lista.length) {
+            secao.style.display = 'none';
+            box.innerHTML = '';
+            return;
+        }
+
+        var html = '';
+        lista.forEach(function (m) {
+            var entrou = m.acao === 'incluido';
+            var valor  = (m.valor !== null && m.valor !== undefined)
+                ? 'R$ ' + Number(m.valor).toFixed(2).replace('.', ',') : '';
+
+            html += '<a class="header__notifItem header__notifItem--link" href="'
+                  + ADMIN_BASE_URL + '/batebolapresenca">'
+                  + '<span class="header__notifDot' + (entrou ? '' : ' header__notifDot--alerta') + '"></span>'
+                  + '<div class="header__notifInfo">'
+                  + '<span class="header__notifNome">' + m.jogador_nome + '</span>'
+                  + '<span class="header__notifMeta">'
+                  +   (entrou ? 'Entrou na lista de ' : 'Saiu da lista de ') + m.data_evento
+                  +   (valor ? ' · ' + valor : '')
+                  + '</span>'
+                  + '<span class="header__notifMeta">'
+                  +   (entrou ? 'Recebido por fora' : 'Valor devolvido')
+                  +   (m.usuario_nome ? ' · por ' + m.usuario_nome : '')
+                  + '</span>'
+                  + '</div>'
+                  + '<span class="header__notifDias">' + m.criado_em + '</span>'
                   + '</a>';
         });
 

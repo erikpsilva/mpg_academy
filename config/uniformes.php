@@ -22,7 +22,8 @@
  */
 const UNIFORMES_VISIVEL_ALUNO = true;
 
-const UNIFORME_VALOR_PADRAO     = 115.00;
+const UNIFORME_VALOR_PADRAO     = 115.00;  // uniforme completo (camisa + calção)
+const UNIFORME_VALOR_EQUIPE_PADRAO = 49.90;  // camisa da equipe técnica, vendida sozinha
 const UNIFORME_NUMERO_MIN       = 1;
 const UNIFORME_NUMERO_MAX       = 99;
 const UNIFORME_NOME_MAX         = 14;   // caracteres que cabem nas costas da camisa
@@ -41,11 +42,118 @@ const UNIFORME_PARCELAS_MAX = 12;
 const UNIFORME_GENEROS = ['masculino', 'feminino'];
 const UNIFORME_MODELOS = ['padrao', 'libero'];
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Uniforme da equipe técnica
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Dois produtos diferentes convivem na mesma tabela de pedidos:
+//   completo       — camisa + calção, com número e nome. É o do aluno, e também o que
+//                    professor/admin podem pedir.
+//   equipe_tecnica — SÓ a camisa, sem número, com um texto de cargo no lugar (Equipe
+//                    Técnica ou Técnico) seguido do nome da pessoa.
+//
+// Equipe técnica é exclusivo de quem trabalha na academia: professor (tabela `professores`)
+// ou usuário do painel (tabela `admin_usuarios`). Aluno nunca pode pedir — é o que separa
+// a camisa da comissão da camisa de quem joga.
+const UNIFORME_TIPOS = ['completo', 'equipe_tecnica'];
+
+const UNIFORME_TIPO_LABEL = [
+    'completo'       => 'Uniforme completo (camisa + calção)',
+    'equipe_tecnica' => 'Equipe técnica (só camisa)',
+];
+
+/** Quem pode receber um pedido. Aluno não entra em equipe técnica. */
+const UNIFORME_PESSOA_TIPOS = ['aluno', 'professor', 'admin'];
+
+const UNIFORME_PESSOA_LABEL = [
+    'aluno'     => 'Aluno',
+    'professor' => 'Professor',
+    'admin'     => 'Equipe MPG',
+];
+
+/** Texto que vai na camisa da equipe técnica, antes do nome. */
+const UNIFORME_CARGOS = ['equipe_tecnica', 'tecnico'];
+
+const UNIFORME_CARGO_LABEL = [
+    'equipe_tecnica' => 'Equipe Técnica',
+    'tecnico'        => 'Técnico',
+];
+
+/** Imagem de referência da camisa da equipe técnica. */
+const UNIFORME_EQUIPE_IMAGEM = 'images/uniformes/equipetecnica.png';
+
 /** As duas peças que o aluno escolhe tamanho separadamente. */
 const UNIFORME_PECAS = ['camisa', 'shorts'];
 
 /** Aviso do fabricante, exibido junto de toda tabela de medidas. */
 const UNIFORME_AVISO_MEDIDAS = 'As medidas podem variar cerca de 3% por conta da costura.';
+
+/**
+ * Equivalência com a numeração tradicional (P/M/G e 38, 40, 42...).
+ *
+ * A tabela do fabricante é em centímetros, e muita gente não sabe traduzir isso pro tamanho
+ * que costuma vestir — daí a dúvida na hora de pedir. Esta tabela existe só como referência
+ * de apoio: é APROXIMADA, e quem manda continua sendo a medida em cm.
+ *
+ * Chaveada igual a UNIFORME_MEDIDAS (gênero → peça) pra poder ser exibida logo abaixo da
+ * tabela correspondente sem precisar de nenhum de-para no meio do caminho.
+ */
+const UNIFORME_CONVERSAO_AVISO = 'Equivalência aproximada, só pra orientar. Na dúvida entre dois tamanhos, '
+                               . 'confira as medidas em centímetros acima — e, pra um caimento mais folgado, prefira o maior.';
+
+const UNIFORME_CONVERSAO = [
+    'masculino' => [
+        'camisa' => [
+            'coluna' => 'Equivalência aproximada',
+            'linhas' => [
+                ['PP',  'PP / 34-36'],
+                ['P',   'P / 36-38'],
+                ['M',   'M / 40-42'],
+                ['G',   'G / 44-46'],
+                ['GG',  'GG / 48-50'],
+                ['XG',  'XG / 52-54'],
+                ['XG1', 'XGG / 56'],
+                ['XG2', '3G / 58-60'],
+                ['XG3', '4G / 62+'],
+            ],
+        ],
+        'shorts' => [
+            'coluna' => 'Equivalência aproximada',
+            'linhas' => [
+                ['PP',  'PP / 34-36'],
+                ['P',   'P / 38'],
+                ['M',   'M / 40-42'],
+                ['G',   'G / 44-46'],
+                ['GG',  'GG / 48'],
+                ['EXG', 'XG / 50-52'],
+                ['G1',  'XGG / 54-56'],
+            ],
+        ],
+    ],
+    'feminino' => [
+        'camisa' => [
+            'coluna' => 'Equivalência aproximada',
+            'linhas' => [
+                ['PP', 'PP / 34-36'],
+                ['P',  'P / 36-38'],
+                ['M',  'M / 40'],
+                ['G',  'G / 42-44'],
+                ['GG', 'GG / 46-48'],
+                ['XG', 'XG / 50-52'],
+            ],
+        ],
+        'shorts' => [
+            // A bermuda feminina é modelo justo — aqui a referência é a numeração, não P/M/G.
+            'coluna' => 'Numeração feminina aproximada',
+            'linhas' => [
+                ['P',  '36-38'],
+                ['M',  '40-42'],
+                ['G',  '44-46'],
+                ['GG', '48-50'],
+            ],
+        ],
+    ],
+];
 
 /**
  * Tabelas de medidas do fabricante — a fonte da verdade dos tamanhos.
@@ -91,7 +199,7 @@ const UNIFORME_MEDIDAS = [
     ],
     'feminino' => [
         'camisa' => [
-            'label'   => 'Camisa feminina',
+            'label'   => 'Camisa feminina baby look',
             'colunas' => ['Tamanho', 'Altura', 'Largura'],
             'linhas'  => [
                 ['PP', '52 cm', '37 cm'],
@@ -145,6 +253,28 @@ function uniformeValor(PDO $pdo): float
 function uniformeTabelaMedidas(string $genero, string $peca): array
 {
     return UNIFORME_MEDIDAS[$genero][$peca] ?? UNIFORME_MEDIDAS['masculino'][$peca] ?? [];
+}
+
+/**
+ * Preço da camisa da equipe técnica.
+ *
+ * Guardado à parte do uniforme completo porque é outro produto: só a camisa. Fica em
+ * `configuracoes` (chave valor_uniforme_equipe) pra poder ser mudado pelo admin sem deploy,
+ * igual ao valor da matrícula e do Bate Bola.
+ */
+function uniformeValorEquipe(PDO $pdo): float
+{
+    $st = $pdo->prepare("SELECT valor FROM configuracoes WHERE chave = 'valor_uniforme_equipe'");
+    $st->execute();
+    $row = $st->fetch();
+
+    return $row ? (float) $row["valor"] : UNIFORME_VALOR_EQUIPE_PADRAO;
+}
+
+/** Equivalência com a numeração tradicional de uma peça — vazio se não houver. */
+function uniformeTabelaConversao(string $genero, string $peca): array
+{
+    return UNIFORME_CONVERSAO[$genero][$peca] ?? [];
 }
 
 /**
@@ -419,13 +549,17 @@ function uniformeCriarPedidoManual(
             }
         }
 
+        // pessoa_tipo/pessoa_id são obrigatórios desde que o pedido passou a poder ser de
+        // professor ou equipe MPG: é por esse par que as telas descobrem o nome de quem
+        // pediu. Sem preencher aqui, o pedido aparecia como "(removido)" na listagem.
         $pdo->prepare("
             INSERT INTO pedidos_uniforme
-                (aluno_id, turma_id, genero, modelo, nome_camisa, numero,
+                (pessoa_tipo, pessoa_id, tipo_uniforme,
+                 aluno_id, turma_id, genero, modelo, nome_camisa, numero,
                  tamanho_camisa, tamanho_shorts, valor,
                  status_pagamento, status_pedido, pago_em, criado_por_usuario_id, visto_admin)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pago', 'pendente', NOW(), ?, 1)
-        ")->execute([$alunoId, $turmaId, $genero, $modelo, $nomeCamisa, $numero,
+            VALUES ('aluno', ?, 'completo', ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pago', 'pendente', NOW(), ?, 1)
+        ")->execute([$alunoId, $alunoId, $turmaId, $genero, $modelo, $nomeCamisa, $numero,
                      $tamanhoCamisa, $tamanhoShorts, $valor, $criadoPorUsuarioId]);
 
         $pedidoId = (int) $pdo->lastInsertId();
@@ -441,6 +575,277 @@ function uniformeCriarPedidoManual(
     // (mesma regra do fluxo pago pelo site — ver uniformeConfirmarPedido()). O pedido já
     // nasce com status_pagamento = 'pago' e criado_por_usuario_id preenchido, que é o que
     // identifica o pagamento externo naquela página.
+
+    return ['success' => true, 'pedido_id' => $pedidoId];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Pedidos para professor e equipe MPG
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** É gente da casa (professor ou usuário do painel)? Só esses podem pedir equipe técnica. */
+function uniformeEhEquipe(string $pessoaTipo): bool
+{
+    return in_array($pessoaTipo, ['professor', 'admin'], true);
+}
+
+/** Texto que vai estampado na camisa da equipe técnica. */
+function uniformeTextoEquipe(?string $cargo, string $nome): string
+{
+    $prefixo = UNIFORME_CARGO_LABEL[$cargo ?? ''] ?? 'Equipe Técnica';
+    return $prefixo . ' — ' . $nome;
+}
+
+/**
+ * Pessoas que podem receber pedido de equipe, já separadas por origem.
+ *
+ * Professor e admin vêm de tabelas diferentes (`professores` e `admin_usuarios`) e podem ter
+ * o mesmo id, então é o par tipo+id que identifica a pessoa — nunca o id sozinho.
+ *
+ * @return array Lista de ['tipo','id','nome','email','rotulo'].
+ */
+function uniformeEquipeDisponivel(PDO $pdo): array
+{
+    $pessoas = [];
+
+    $stProf = $pdo->query("
+        SELECT id, TRIM(CONCAT(nome, ' ', COALESCE(sobrenome, ''))) AS nome, email
+        FROM professores
+        WHERE status = 'ativo'
+        ORDER BY nome
+    ");
+    foreach ($stProf->fetchAll() as $p) {
+        $pessoas[] = [
+            'tipo'   => 'professor',
+            'id'     => (int) $p['id'],
+            'nome'   => $p['nome'],
+            'email'  => $p['email'],
+            'rotulo' => 'Professor',
+        ];
+    }
+
+    // `batebola` é login só do módulo de vôlei avulso — não é equipe da academia.
+    $stAdm = $pdo->query("
+        SELECT id, nome_completo AS nome, email
+        FROM admin_usuarios
+        WHERE nivel_acesso IN ('admin', 'editor')
+        ORDER BY nome_completo
+    ");
+    foreach ($stAdm->fetchAll() as $u) {
+        $pessoas[] = [
+            'tipo'   => 'admin',
+            'id'     => (int) $u['id'],
+            'nome'   => $u['nome'],
+            'email'  => $u['email'],
+            'rotulo' => 'Equipe MPG',
+        ];
+    }
+
+    return $pessoas;
+}
+
+/** Confere que a pessoa existe de fato na tabela dela. Retorna o nome, ou null. */
+function uniformePessoaNome(PDO $pdo, string $pessoaTipo, int $pessoaId): ?string
+{
+    if ($pessoaTipo === 'aluno') {
+        $st = $pdo->prepare("SELECT nome FROM alunos WHERE id = ?");
+    } elseif ($pessoaTipo === 'professor') {
+        $st = $pdo->prepare("SELECT TRIM(CONCAT(nome, ' ', COALESCE(sobrenome, ''))) FROM professores WHERE id = ?");
+    } elseif ($pessoaTipo === 'admin') {
+        $st = $pdo->prepare("SELECT nome_completo FROM admin_usuarios WHERE id = ?");
+    } else {
+        return null;
+    }
+
+    $st->execute([$pessoaId]);
+    $nome = $st->fetchColumn();
+
+    return $nome !== false ? (string) $nome : null;
+}
+
+/**
+ * Números já ocupados no uniforme COMPLETO da equipe.
+ *
+ * A equipe não está em turma nenhuma, então não cabe no balde turma+gênero do aluno — mas
+ * também não pode ficar sem trava, senão dois professores pedem o mesmo número. Aqui o balde
+ * é a própria equipe: professor e admin dividem a mesma numeração, separada por gênero.
+ *
+ * O número que já é da pessoa nunca aparece como ocupado pra ela (mesma regra do aluno).
+ */
+function uniformeNumerosDoBaldeEquipe(PDO $pdo, string $genero, string $pessoaTipo, int $pessoaId): array
+{
+    uniformeExpirarReservas($pdo);
+
+    $st = $pdo->prepare("
+        SELECT DISTINCT numero, pessoa_tipo, pessoa_id
+        FROM pedidos_uniforme
+        WHERE pessoa_tipo IN ('professor', 'admin')
+          AND tipo_uniforme = 'completo'
+          AND genero = ?
+          AND numero IS NOT NULL
+          AND (
+                status_pagamento = 'pago'
+                OR (status_pagamento = 'aguardando' AND reserva_expira_em > NOW())
+              )
+    ");
+    $st->execute([$genero]);
+
+    $ocupados = [];
+    $meus     = [];
+
+    foreach ($st->fetchAll() as $r) {
+        $numero = (int) $r['numero'];
+        if ($r['pessoa_tipo'] === $pessoaTipo && (int) $r['pessoa_id'] === $pessoaId) {
+            $meus[] = $numero;
+        } else {
+            $ocupados[] = $numero;
+        }
+    }
+
+    $ocupados = array_values(array_diff(array_unique($ocupados), $meus));
+    sort($ocupados);
+    $meus = array_values(array_unique($meus));
+    sort($meus);
+
+    return ['ocupados' => $ocupados, 'meus' => $meus];
+}
+
+/**
+ * Cria um pedido para professor ou equipe MPG. Nasce já pago, com valor zero.
+ *
+ * A academia banca o uniforme da equipe, então não há cobrança nem passagem pelo Mercado
+ * Pago: o pedido entra direto na fila de produção. Valor zero é de propósito — mantém o
+ * pedido fora de Pagamentos Uniformes, que existe pra acompanhar dinheiro que entrou.
+ *
+ * @param string      $tipoUniforme  'completo' ou 'equipe_tecnica'.
+ * @param int|null    $numero        Só no completo; equipe técnica não tem número.
+ * @param string|null $tamanhoShorts Só no completo.
+ * @param string|null $cargo         Só na equipe técnica: 'equipe_tecnica' ou 'tecnico'.
+ *
+ * @return array{success:bool, message?:string, pedido_id?:int}
+ */
+function uniformeCriarPedidoEquipe(
+    PDO $pdo,
+    string $pessoaTipo,
+    int $pessoaId,
+    string $tipoUniforme,
+    string $genero,
+    string $modelo,
+    string $nomeCamisa,
+    ?int $numero,
+    string $tamanhoCamisa,
+    ?string $tamanhoShorts,
+    ?string $cargo,
+    int $criadoPorUsuarioId
+): array {
+    if (!uniformeEhEquipe($pessoaTipo)) {
+        return ['success' => false, 'message' => 'Esse pedido é só para professor ou equipe MPG.'];
+    }
+
+    if (!in_array($tipoUniforme, UNIFORME_TIPOS, true)) {
+        return ['success' => false, 'message' => 'Tipo de uniforme inválido.'];
+    }
+
+    if (!in_array($genero, UNIFORME_GENEROS, true) || !in_array($modelo, UNIFORME_MODELOS, true)) {
+        return ['success' => false, 'message' => 'Modelo de uniforme inválido.'];
+    }
+
+    $pessoaNome = uniformePessoaNome($pdo, $pessoaTipo, $pessoaId);
+    if ($pessoaNome === null) {
+        return ['success' => false, 'message' => 'Pessoa não encontrada.'];
+    }
+
+    if ($nomeCamisa === '') {
+        return ['success' => false, 'message' => 'Informe o nome que vai na camisa.'];
+    }
+
+    if (!in_array($tamanhoCamisa, uniformeTamanhos($genero, 'camisa'), true)) {
+        return ['success' => false, 'message' => 'Tamanho da camisa inválido para esse uniforme.'];
+    }
+
+    // ── O que é exigido muda com o tipo ──────────────────────────────────────
+    if ($tipoUniforme === 'equipe_tecnica') {
+        // Só camisa: número e calção não existem aqui.
+        $numero        = null;
+        $tamanhoShorts = null;
+
+        if (!in_array($cargo, UNIFORME_CARGOS, true)) {
+            return ['success' => false, 'message' => 'Escolha o texto da camisa (Equipe Técnica ou Técnico).'];
+        }
+    } else {
+        $cargo = null;
+
+        if ($numero === null || $numero < UNIFORME_NUMERO_MIN || $numero > UNIFORME_NUMERO_MAX) {
+            return ['success' => false, 'message' => 'Escolha um número de ' . UNIFORME_NUMERO_MIN . ' a ' . UNIFORME_NUMERO_MAX . '.'];
+        }
+
+        if (!in_array((string) $tamanhoShorts, uniformeTamanhos($genero, 'shorts'), true)) {
+            $peca = $genero === 'feminino' ? 'da bermuda' : 'do calção';
+            return ['success' => false, 'message' => 'Tamanho ' . $peca . ' inválido para esse uniforme.'];
+        }
+    }
+
+
+    // Cada produto tem seu preço: a camisa da equipe é vendida sozinha e custa menos que
+    // o uniforme completo. Os dois saem de `configuracoes`, então mudam sem deploy.
+    $valorPeca = $tipoUniforme === 'equipe_tecnica'
+        ? uniformeValorEquipe($pdo)
+        : uniformeValor($pdo);
+
+    try {
+        $pdo->beginTransaction();
+
+        uniformeExpirarReservas($pdo);
+
+        // Mesma trava do fluxo do aluno, no balde da equipe.
+        if ($tipoUniforme === 'completo') {
+            $stLock = $pdo->prepare("
+                SELECT pessoa_tipo, pessoa_id
+                FROM pedidos_uniforme
+                WHERE pessoa_tipo IN ('professor', 'admin')
+                  AND tipo_uniforme = 'completo'
+                  AND genero = ?
+                  AND numero = ?
+                  AND (
+                        status_pagamento = 'pago'
+                        OR (status_pagamento = 'aguardando' AND reserva_expira_em > NOW())
+                      )
+                FOR UPDATE
+            ");
+            $stLock->execute([$genero, $numero]);
+
+            foreach ($stLock->fetchAll() as $dono) {
+                if ($dono['pessoa_tipo'] !== $pessoaTipo || (int) $dono['pessoa_id'] !== $pessoaId) {
+                    $pdo->rollBack();
+                    return [
+                        'success' => false,
+                        'message' => 'O número ' . $numero . ' já está em uso por outra pessoa da equipe.',
+                    ];
+                }
+            }
+        }
+
+        $pdo->prepare("
+            INSERT INTO pedidos_uniforme
+                (pessoa_tipo, pessoa_id, tipo_uniforme, equipe_cargo,
+                 aluno_id, turma_id, genero, modelo, nome_camisa, numero,
+                 tamanho_camisa, tamanho_shorts, valor,
+                 status_pagamento, status_pedido, pago_em, criado_por_usuario_id, visto_admin)
+            VALUES (?, ?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, 'pago', 'pendente', NOW(), ?, 1)
+        ")->execute([
+            $pessoaTipo, $pessoaId, $tipoUniforme, $cargo,
+            $genero, $modelo, $nomeCamisa, $numero,
+            $tamanhoCamisa, $tamanhoShorts, $valorPeca, $criadoPorUsuarioId,
+        ]);
+
+        $pedidoId = (int) $pdo->lastInsertId();
+
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        error_log('[uniforme-pedido-equipe] ' . $e->getMessage());
+        return ['success' => false, 'message' => 'Erro ao criar o pedido. Tente novamente.'];
+    }
 
     return ['success' => true, 'pedido_id' => $pedidoId];
 }

@@ -44,27 +44,53 @@ if (!$nome || $turmaId <= 0) {
     exit;
 }
 
+// O celular virou o dado que identifica a pessoa no agendamento — o e-mail deixou de ser
+// pedido porque muita gente não tem em mãos na hora de agendar pelo WhatsApp.
+if (!$celular) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Informe o celular.']);
+    exit;
+}
+
 require_once dirname(__FILE__, 3) . '/config/database.php';
 $pdo = getDbConnection();
 
-// Bloqueia e-mail duplicado em qualquer status ativo
-if ($email) {
-    $checkStmt = $pdo->prepare("
-        SELECT ae.id, ae.status FROM aulas_experimentais ae
-        JOIN alunos_teste at ON at.id = ae.aluno_teste_id
-        WHERE at.email = ? AND ae.status IN ('agendada', 'fila', 'realizada')
-        LIMIT 1
-    ");
-    $checkStmt->execute([$email]);
-    $existing = $checkStmt->fetch(PDO::FETCH_ASSOC);
-    if ($existing) {
-        $msg = $existing['status'] === 'realizada'
-            ? 'Este e-mail já realizou uma aula experimental.'
-            : 'Este e-mail já está cadastrado em uma aula experimental (agendada ou na fila).';
-        http_response_code(409);
-        echo json_encode(['success' => false, 'message' => $msg]);
-        exit;
+
+// ── Já está agendado? ─────────────────────────────────────────────────────────
+//
+// A pessoa é identificada por NOME + CELULAR, os dois juntos. Só bloqueia quando os dois
+// batem: mesmo celular com nome diferente é liberado de propósito — é a mãe agendando os
+// dois filhos, ou a família que compartilha um número.
+//
+// E só olha agendamento EM ABERTO (agendada ou na fila). Quem já fez a aula (realizada)
+// ou desistiu (cancelada) pode ser agendado de novo — o que trava aqui é marcar a mesma
+// pessoa duas vezes na mesma fila, não impedir que ela volte.
+$normNome    = mb_strtolower(preg_replace('/\s+/u', ' ', trim($nome)), 'UTF-8');
+$normCelular = preg_replace('/\D/', '', $celular);
+
+$stAbertos = $pdo->query("
+    SELECT at.nome, at.celular, ae.status
+    FROM aulas_experimentais ae
+    JOIN alunos_teste at ON at.id = ae.aluno_teste_id
+    WHERE ae.status IN ('agendada', 'fila')
+");
+
+foreach ($stAbertos->fetchAll(PDO::FETCH_ASSOC) as $existente) {
+    $eNome    = mb_strtolower(preg_replace('/\s+/u', ' ', trim((string) $existente['nome'])), 'UTF-8');
+    $eCelular = preg_replace('/\D/', '', (string) $existente['celular']);
+
+    if ($eCelular === '' || $eCelular !== $normCelular || $eNome !== $normNome) {
+        continue;
     }
+
+    http_response_code(409);
+    echo json_encode([
+        'success' => false,
+        'message' => $nome . ' já tem uma aula experimental '
+                   . ($existente['status'] === 'fila' ? 'na fila de espera' : 'agendada')
+                   . ' com esse celular.',
+    ]);
+    exit;
 }
 
 // Verifica se a turma existe e está ativa
@@ -134,8 +160,12 @@ try {
 
     $pdo->commit();
 
-    // Envia email de confirmação se agendada, tiver email e data definida
-    if ($status === 'agendada' && $email && $dataAgendada) {
+    // Confirmação do agendamento: WhatsApp sempre, e-mail só quando houver.
+    //
+    // O e-mail deixou de ser obrigatório no agendamento, mas este bloco inteiro ainda
+    // dependia dele — resultado: agendar alguém sem e-mail não disparava NADA, nem o
+    // WhatsApp, que é justamente o canal que a academia usa.
+    if ($status === 'agendada' && $dataAgendada) {
         $diasSemana = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
         $meses      = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
         $dt         = new DateTime($dataAgendada);
@@ -169,8 +199,10 @@ try {
         require_once dirname(__FILE__, 3) . '/services/whatsapp/wpp_aula_teste_confirmacao.php';
         require_once dirname(__FILE__, 3) . '/services/site/notificar_termo_responsavel.php';
 
-        // E-mail de confirmação para o aluno
-        sendMpgTesteConfirmation($email, $nome, $turmaData['nome'], $dataFmt, $horarioFmt, $endFmt);
+        // E-mail de confirmação para o aluno — só se ele informou um.
+        if ($email) {
+            sendMpgTesteConfirmation($email, $nome, $turmaData['nome'], $dataFmt, $horarioFmt, $endFmt);
+        }
 
         // WhatsApp de confirmação (aluno + responsável se menor)
         $termoUrl = ($isMenor && $termoToken)

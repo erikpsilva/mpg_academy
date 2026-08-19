@@ -42,6 +42,46 @@ const initResponsiveTables = () => {
 };
 
 const initSidebar = () => {
+    // Transforma os títulos já existentes em controles de accordion sem exigir
+    // duplicação da estrutura em cada perfil de usuário.
+    $('.sidebar__section').each(function (index) {
+        const $section = $(this);
+        const $items = $section
+            .nextUntil('.sidebar__section, .sidebar__divider')
+            .filter('.sidebar__item');
+
+        if (!$items.length) return;
+
+        const groupId = `sidebarGroup${index}`;
+        const isCurrentGroup = $items.find('.sidebar__link--active').length > 0;
+        const label = $section.text().trim();
+
+        $items
+            .attr('data-sidebar-group', groupId)
+            .toggleClass('sidebar__item--open', isCurrentGroup);
+
+        $section
+            .toggleClass('sidebar__section--active', isCurrentGroup)
+            .html(`
+                <button type="button" class="sidebar__sectionButton"
+                        aria-expanded="${isCurrentGroup ? 'true' : 'false'}"
+                        data-sidebar-target="${groupId}">
+                    <span>${label}</span>
+                    <span class="sidebar__sectionArrow" aria-hidden="true"></span>
+                </button>
+            `);
+    });
+
+    $('.sidebar').on('click', '.sidebar__sectionButton', function () {
+        const $button = $(this);
+        const groupId = $button.data('sidebar-target');
+        const willOpen = $button.attr('aria-expanded') !== 'true';
+
+        $button.attr('aria-expanded', String(willOpen));
+        $button.closest('.sidebar__section').toggleClass('sidebar__section--active', willOpen);
+        $(`.sidebar__item[data-sidebar-group="${groupId}"]`).toggleClass('sidebar__item--open', willOpen);
+    });
+
     $('#toggleSidebar').click(function () {
         $('.sidebar').toggleClass('open');
         $('.sidebar__overlay').toggleClass('show');

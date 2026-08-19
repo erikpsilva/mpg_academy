@@ -1,0 +1,205 @@
+// Protecoes responsivas globais do admin.
+// Fica por ultimo nos imports para corrigir layouts antigos sem alterar seus estados JS.
+
+.adminLayout,
+.adminLayout__content,
+.adminLayout__content > .container,
+.adminLayout__content > .container-fluid {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.adminLayout__content {
+    img,
+    video,
+    canvas,
+    svg { max-width: 100%; }
+
+    input,
+    select,
+    textarea,
+    button { min-width: 0; }
+
+    p,
+    span,
+    strong,
+    a,
+    td { overflow-wrap: anywhere; }
+}
+
+@media only screen and (max-width: 991px) {
+    .adminLayout__content {
+        overflow-x: hidden;
+
+        // Cabecalhos antigos usam varias combinacoes de nomes, mas todos terminam igual.
+        [class*="pageHeader"] {
+            align-items: flex-start;
+            gap: 14px;
+
+            [class*="actions"] {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+        }
+
+        // Barras de filtros e acoes deixam de forcar rolagem lateral.
+        [class*="Filters"],
+        [class*="filters"],
+        [class*="Filtros"],
+        [class*="filtros"],
+        [class*="Toolbar"],
+        [class*="toolbar"] {
+            max-width: 100%;
+
+            input,
+            select,
+            .input { max-width: 100%; }
+        }
+    }
+}
+
+@media only screen and (max-width: 767px) {
+    body { overflow-x: hidden; }
+
+    .adminLayout__content {
+        padding: 18px 12px;
+
+        > .container,
+        > .container-fluid {
+            padding-left: 0;
+            padding-right: 0;
+        }
+
+        .row {
+            margin-left: -6px;
+            margin-right: -6px;
+        }
+
+        .row > [class*="col-"] {
+            padding-left: 6px;
+            padding-right: 6px;
+        }
+
+        h1 { font-size: 25px; line-height: 1.18; }
+        h2 { font-size: 21px; line-height: 1.22; }
+        h3 { font-size: 17px; line-height: 1.3; }
+
+        [class*="pageHeader"] {
+            margin-left: 0;
+            margin-right: 0;
+            width: 100%;
+
+            > [class*="col-"] {
+                flex: 0 0 100%;
+                max-width: 100%;
+                padding-left: 0;
+                padding-right: 0;
+            }
+
+            [class*="actions"],
+            [class*="Actions"] {
+                justify-content: flex-start;
+                width: 100%;
+
+                .btn,
+                button,
+                a { flex: 1 1 145px; }
+            }
+        }
+
+        [class*="Filters"],
+        [class*="filters"],
+        [class*="Filtros"],
+        [class*="filtros"],
+        [class*="Toolbar"],
+        [class*="toolbar"] {
+            align-items: stretch;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+
+            > * { flex: 1 1 145px; min-width: 0; }
+        }
+
+        // A tabela global em cards sempre mostra todas as celulas e seus rotulos.
+        .responsiveTable > tbody > tr > td {
+            display: grid !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+
+        .responsiveTable > tbody > tr > td[data-label="Acoes"],
+        .responsiveTable > tbody > tr > td[data-label="Ações"] {
+            > div {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                justify-content: center;
+                width: 100%;
+            }
+        }
+
+        // Formularios continuam legiveis e acionaveis em telas estreitas.
+        .formGroup {
+            padding: 16px 12px;
+
+            .row > [class*="col-"] {
+                flex: 0 0 100%;
+                max-width: 100%;
+            }
+
+            input,
+            select,
+            textarea { font-size: 16px; }
+        }
+
+        .btn {
+            max-width: 100%;
+            min-height: 42px;
+            white-space: normal;
+        }
+    }
+
+    // Datas e informacoes auxiliares antes ocultadas no celular voltam a aparecer.
+    .alunos__turmaDesde,
+    .aulas__alunoData,
+    .adminFilaItem__data {
+        display: block !important;
+        flex-basis: 100%;
+        margin-top: 5px;
+        white-space: normal;
+    }
+
+    // Caixas de modal: cabem na viewport e mantem rodape/botoes acessiveis.
+    [class*="Modal__content"],
+    [class*="Modal__box"],
+    [class*="Modal__dialog"],
+    [class*="modal__content"],
+    [class*="modal__box"] {
+        margin: 10px;
+        max-height: calc(100vh - 20px);
+        max-width: calc(100vw - 20px);
+        overflow-x: hidden;
+        overflow-y: auto;
+        width: calc(100vw - 20px);
+    }
+
+    [class*="Modal__foot"],
+    [class*="Modal__actions"],
+    [class*="modal__footer"],
+    [class*="modal__actions"] {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+
+        .btn,
+        button { flex: 1 1 140px; white-space: normal; }
+    }
+}
+
+@media only screen and (max-width: 380px) {
+    .header__user__name { max-width: 82px; overflow-wrap: anywhere; }
+    .header__user__logout { padding-left: 8px; padding-right: 8px; }
+    .adminLayout__content { padding-left: 9px; padding-right: 9px; }
+}

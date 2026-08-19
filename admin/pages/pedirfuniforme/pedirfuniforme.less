@@ -646,3 +646,71 @@
         &__table { padding: 13px 8px; }
     }
 }
+
+// ── Passo 1: para quem é o pedido ─────────────────────────────────────────────
+.pedirUniforme__destino {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+
+    @media @tabletSM { grid-template-columns: 1fr; }
+}
+
+.pedirUniforme__destinoOpt {
+    padding: 16px 18px;
+    border: 1px solid @borderColor;
+    border-radius: 8px;
+    background: @bgPanelLight;
+    color: @white;
+    cursor: pointer;
+    font-family: @font;
+    text-align: left;
+    transition: border-color 0.15s ease, background 0.15s ease;
+
+    strong {
+        display: block;
+        font-size: 15px;
+        font-weight: @semiBold;
+    }
+
+    small {
+        display: block;
+        margin-top: 3px;
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 12px;
+    }
+
+    &:hover { border-color: rgba(255, 213, 0, 0.5); }
+
+    &.is-active {
+        border-color: @primary;
+        background: rgba(255, 213, 0, 0.1);
+
+        small { color: rgba(255, 213, 0, 0.75); }
+    }
+}
+
+// ── Foto da camisa da equipe técnica ──────────────────────────────────────────
+.pedirUniforme__equipeFoto {
+    margin-top: 16px;
+
+    img {
+        display: block;
+        max-width: 260px;
+        width: 100%;
+        border: 1px solid @borderColor;
+        border-radius: 8px;
+    }
+
+    small {
+        display: block;
+        margin-top: 6px;
+        color: rgba(255, 255, 255, 0.45);
+        font-size: 12px;
+    }
+}
+
+// Equipe técnica é só camisa — número e calção não fazem sentido e somem do formulário.
+body[data-uniforme-tipo="equipe_tecnica"][data-destino-uniforme="equipe"] {
+    .pedirUniforme__field[data-so-completo] { display: none; }
+}
