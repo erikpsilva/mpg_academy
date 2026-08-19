@@ -112,9 +112,11 @@ if ($action === 'realizar') {
     $pdo->prepare("UPDATE aulas_experimentais SET status = 'agendada' WHERE id = ?")->execute([$id]);
 
 } elseif ($action === 'reagendar') {
-    if ($aula['status'] !== 'cancelada') {
+    // Reagenda tanto um teste cancelado quanto um que ainda está agendado/na fila
+    // (troca de data e/ou turma). Em todos os casos o registro volta para 'agendada'.
+    if (!in_array($aula['status'], ['cancelada', 'agendada', 'fila'])) {
         http_response_code(409);
-        echo json_encode(['success' => false, 'message' => 'Apenas testes cancelados podem ser reagendados.']);
+        echo json_encode(['success' => false, 'message' => 'Este registro não pode ser reagendado.']);
         exit;
     }
 
@@ -154,8 +156,10 @@ if ($action === 'realizar') {
         $stmtAtivos->execute([$turmaConfirmada]);
         $countAtivos = (int) $stmtAtivos->fetchColumn();
 
-        $stmtAgend = $pdo->prepare("SELECT COUNT(*) FROM aulas_experimentais WHERE turma_id = ? AND status = 'agendada'");
-        $stmtAgend->execute([$turmaConfirmada]);
+        // O próprio registro não conta como vaga ocupada — senão reagendar
+        // uma aula já agendada na mesma turma acusaria "sem vagas".
+        $stmtAgend = $pdo->prepare("SELECT COUNT(*) FROM aulas_experimentais WHERE turma_id = ? AND status = 'agendada' AND id <> ?");
+        $stmtAgend->execute([$turmaConfirmada, $id]);
         $countAgendadas = (int) $stmtAgend->fetchColumn();
 
         if ((int) $turmaData['max_alunos'] - $countAtivos - $countAgendadas <= 0) {

@@ -45,21 +45,11 @@ try {
         }
 
         if ($assinaturaValida !== false) {
+            // A baixa em si vive em mpConfirmarPagamentoAprovado() (config/mercadopago.php),
+            // compartilhada com o retorno do navegador — as duas redes usam exatamente a
+            // mesma regra, e chamar as duas é inofensivo (a função é idempotente).
             $payment = mpConsultarPagamento($accessToken, (string) $paymentId);
-
-            if ($payment && ($payment['status'] ?? '') === 'approved') {
-                $mensalidadeId = (int) ($payment['metadata']['mensalidade_id'] ?? 0);
-                $inscricaoId   = (int) ($payment['metadata']['batebola_inscricao_id'] ?? 0);
-                $pedidoUniforme = (int) ($payment['metadata']['pedido_uniforme_id'] ?? 0);
-
-                if ($mensalidadeId > 0) {
-                    mpMarcarMensalidadePaga($pdo, $mensalidadeId, (string) $payment['id'], $payment);
-                } elseif ($inscricaoId > 0) {
-                    batebolaConfirmarInscricao($pdo, $inscricaoId, (string) $payment['id'], $payment);
-                } elseif ($pedidoUniforme > 0) {
-                    uniformeConfirmarPedido($pdo, $pedidoUniforme, (string) $payment['id'], $payment);
-                }
-            }
+            mpConfirmarPagamentoAprovado($pdo, $payment);
         } else {
             error_log('[mp_webhook] Assinatura inválida — notificação ignorada (payment_id=' . $paymentId . ')');
         }

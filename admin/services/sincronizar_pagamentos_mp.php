@@ -37,8 +37,13 @@ function verificarPagamentoMP(PDO $pdo, string $accessToken, int $mensalidadeId,
         // Consulta direta pelo ID
         $ch = curl_init("https://api.mercadopago.com/v1/payments/{$mpPaymentId}");
     } else {
-        // Busca pelo external_reference
-        $ch = curl_init("https://api.mercadopago.com/v1/payments/search?external_reference={$mensalidadeId}&sort=date_created&criteria=desc&limit=1");
+        // Busca pelo external_reference.
+        //
+        // Estava procurando só o id ("55"), mas o que gravamos no pagamento é
+        // "mensalidade-55" (ver services/site/criar_pagamento.php) — então essa busca
+        // nunca casava, e a sincronização só funcionava pra quem já tinha mp_payment_id.
+        $refBusca = rawurlencode('mensalidade-' . $mensalidadeId);
+        $ch = curl_init("https://api.mercadopago.com/v1/payments/search?external_reference={$refBusca}&sort=date_created&criteria=desc&limit=1");
     }
 
     curl_setopt_array($ch, [

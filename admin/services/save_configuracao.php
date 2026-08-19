@@ -23,7 +23,7 @@ $chave = trim($_POST['chave'] ?? '');
 $valor = $_POST['valor'] ?? '';
 
 // Somente chaves permitidas podem ser alteradas
-$chavesPermitidas = ['pagamento_modo_teste', 'valor_matricula', 'matricula_ativa', 'valor_batebola'];
+$chavesPermitidas = ['pagamento_modo_teste', 'valor_matricula', 'matricula_ativa', 'valor_batebola', 'valor_uniforme', 'valor_uniforme_equipe'];
 if (!in_array($chave, $chavesPermitidas, true)) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Chave inválida.']);

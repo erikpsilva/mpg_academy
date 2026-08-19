@@ -12,13 +12,14 @@ if (!$input) { http_response_code(400); echo json_encode(['success'=>false,'mess
 $mensalidadeId = (int)($input['mensalidade_id'] ?? 0);
 $cardToken     = trim($input['token'] ?? '');
 
-if ($mensalidadeId <= 0 || empty($cardToken)) {
+if ($mensalidadeId <= 0) {
     http_response_code(400);
     echo json_encode(['success'=>false,'message'=>'Dados insuficientes.']);
     exit;
 }
 
 require_once dirname(__FILE__,3) . '/config/mercadopago.php';
+require_once dirname(__FILE__,3) . '/config/app.php';
 
 $pdo = getDbConnection();
 
@@ -48,6 +49,49 @@ $meses = ['01'=>'Jan','02'=>'Fev','03'=>'Mar','04'=>'Abr','05'=>'Mai','06'=>'Jun
 [$rAno,$rMes] = explode('-', $mens['referencia']);
 $refLabel = ($meses[$rMes] ?? $rMes) . '/' . $rAno;
 
+// A conta está impedida por política de criar pagamentos diretamente em /v1/payments.
+// No modo Pro criamos uma preferência, que continua autorizada, e a WebView abre o
+// checkout hospedado. O webhook dá baixa usando o external_reference padronizado.
+if (mpCheckoutModo($pdo) === 'pro') {
+    $pref = mpCriarPreferencia(mpAccessToken($pdo), [
+        'items' => [[
+            'title'       => 'MPG Academy — Mensalidade ' . $refLabel,
+            'quantity'    => 1,
+            'unit_price'  => round($total, 2),
+            'currency_id' => 'BRL',
+        ]],
+        'payer'              => ['email' => $aluno['email']],
+        'external_reference' => 'mensalidade-' . $mensalidadeId,
+        'metadata'           => ['mensalidade_id' => $mensalidadeId],
+        'back_urls'          => [
+            'success' => BASE_URL . '/mensalidades',
+            'pending' => BASE_URL . '/mensalidades',
+            'failure' => BASE_URL . '/mensalidades',
+        ],
+    ]);
+
+    if ($pref['http_code'] >= 300 || empty($pref['body']['init_point'])) {
+        $motivo = mpMotivoApiPt($pref['body'])
+            ?? ($pref['body']['message'] ?? 'Não foi possível preparar o pagamento.');
+        http_response_code(502);
+        echo json_encode(['success' => false, 'message' => $motivo]);
+        exit;
+    }
+
+    echo json_encode([
+        'success'    => true,
+        'status'     => 'redirect',
+        'init_point' => $pref['body']['init_point'],
+    ]);
+    exit;
+}
+
+if (empty($cardToken)) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Dados do cartão insuficientes.']);
+    exit;
+}
+
 $paymentData = [
     'transaction_amount' => $total,
     'token'              => $cardToken,
@@ -61,7 +105,7 @@ $paymentData = [
             'number' => $input['payer']['identification']['number'] ?? preg_replace('/\D/','',$aluno['cpf']),
         ],
     ],
-    'external_reference' => (string) $mensalidadeId,
+    'external_reference' => 'mensalidade-' . $mensalidadeId,
     'metadata'           => ['mensalidade_id' => $mensalidadeId],
 ];
 

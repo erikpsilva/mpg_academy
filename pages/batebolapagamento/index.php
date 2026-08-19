@@ -6,6 +6,7 @@ if (empty($_SESSION['jogador'])) {
 
 require_once ROOT . '/config/database.php';
 require_once ROOT . '/config/batebola.php';
+require_once ROOT . '/config/mercadopago.php';
 
 $pdo        = getDbConnection();
 $jogadorId  = (int) $_SESSION['jogador']['id'];
@@ -122,7 +123,7 @@ $dataFmtCurta   = $dtEvento->format('d/m/Y');
             <?php if ($inscricao && $inscricao['status'] === 'pendente' && !empty($inscricao['pix_qr_code'])): ?>
             <button class="bbPayBtn" id="btnGerarPixBatebola">Ver PIX gerado</button>
             <?php else: ?>
-            <button class="bbPayBtn" id="btnGerarPixBatebola">Gerar PIX e confirmar vaga</button>
+            <button class="bbPayBtn" id="btnGerarPixBatebola"><?= mpCheckoutModo($pdo) === 'pro' ? 'Pagar com PIX e confirmar vaga' : 'Gerar PIX e confirmar vaga' ?></button>
             <?php endif; ?>
             <div id="bbPayMsg" class="bbPayMsg" style="display:none;"></div>
         </div>
@@ -143,6 +144,7 @@ $dataFmtCurta   = $dtEvento->format('d/m/Y');
 <?php include ROOT . '/includes/scripts.php'; ?>
 <script>
 var BASE_URL = "<?= BASE_URL ?>";
+var ROTULO_BTN = "<?= mpCheckoutModo($pdo) === 'pro' ? 'Pagar com PIX e confirmar vaga' : 'Gerar PIX e confirmar vaga' ?>";
 (function () {
     var btn = document.getElementById('btnGerarPixBatebola');
     if (!btn) return;
@@ -157,7 +159,7 @@ var BASE_URL = "<?= BASE_URL ?>";
             fetch(BASE_URL + '/services/site/status_pagamento_batebola.php', { credentials: 'same-origin' })
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
-                    if (data.success && data.status === 'pago') {
+                        if (data.success && data.status === 'pago') {
                         clearInterval(pollTimer);
                         window.location.reload();
                     }
@@ -175,6 +177,11 @@ var BASE_URL = "<?= BASE_URL ?>";
         })
         .then(function (r) { return r.json(); })
         .then(function (data) {
+            // Checkout Pro: o PIX é gerado na página do Mercado Pago.
+            if (data.success && data.status === 'redirect' && data.init_point) {
+                window.location.href = data.init_point;
+                return;
+            }
             if (data.success && data.status === 'pago') {
                 window.location.reload();
                 return;

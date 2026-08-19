@@ -66,3 +66,62 @@
     &--amarelo  { border-left-color: #ffd500; }
     &--verde    { border-left-color: #00c853; }
 }
+
+// ── Troca manual de jogadores entre times ─────────────────────────────────────
+.batebolaTrocaBar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+    padding: 14px 18px;
+    border: 1px solid @borderColor;
+    border-radius: 8px;
+    background: rgba(17, 19, 21, 0.92);
+
+    &__info {
+        color: rgba(255, 255, 255, 0.62);
+        font-size: 13px;
+        line-height: 1.55;
+
+        strong { color: @white; }
+        em     { color: @primary; font-style: normal; }
+    }
+
+    &__tag {
+        display: inline-block;
+        margin-left: 8px;
+        padding: 2px 10px;
+        border-radius: 20px;
+        background: rgba(255, 213, 0, 0.14);
+        color: @primary;
+        font-size: 11px;
+        font-weight: @semiBold;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+}
+
+.batebolaTime__jogador {
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background 0.15s ease, opacity 0.15s ease;
+
+    &:hover { background: rgba(255, 255, 255, 0.05); }
+
+    // Quem foi clicado primeiro.
+    &.is-escolhido {
+        background: rgba(255, 213, 0, 0.16);
+        outline: 1px solid @primary;
+    }
+
+    // Mesmo nível e em outro time — é com esses que a troca é permitida.
+    &.is-compativel {
+        background: rgba(126, 207, 126, 0.14);
+        outline: 1px solid rgba(126, 207, 126, 0.55);
+    }
+
+    // Apaga o resto pra não precisar conferir estrela por estrela.
+    &.is-bloqueado { opacity: 0.28; }
+}

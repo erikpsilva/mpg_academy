@@ -118,35 +118,9 @@ foreach ($rows as $r) {
     }
 }
 
-$stmtReal = $pdo->prepare("
-    SELECT
-        ae.id, ae.criado_em,
-        at.id AS aluno_teste_id, at.nome, at.email, at.celular,
-        at.data_nascimento, at.responsavel_nome, at.responsavel_email,
-        t.nome AS turma_nome,
-        q.nome AS quadra_nome,
-        CASE WHEN a.id IS NOT NULL THEN 1 ELSE 0 END AS ja_aluno,
-        ts.token AS termo_token, ts.assinado_escola_em, ts.assinado_responsavel_em
-    FROM aulas_experimentais ae
-    JOIN alunos_teste at  ON at.id = ae.aluno_teste_id
-    JOIN turmas t         ON t.id  = ae.turma_id
-    JOIN quadras q        ON q.id  = t.quadra_id
-    LEFT JOIN alunos a    ON a.email = at.email AND a.status = 'ativo'
-    LEFT JOIN termo_assinaturas ts ON ts.aula_experimental_id = ae.id
-    WHERE ae.status = 'realizada'
-    ORDER BY ja_aluno ASC, ae.criado_em DESC
-");
-$stmtReal->execute();
-$realizados = $stmtReal->fetchAll(PDO::FETCH_ASSOC);
-
-foreach ($realizados as &$r) {
-    $r['id']             = (int) $r['id'];
-    $r['aluno_teste_id'] = (int) $r['aluno_teste_id'];
-    $r['ja_aluno']       = (int) $r['ja_aluno'];
-}
-
+// Quem já realizou a aula experimental é consultado em `todosalunos-teste`
+// ("Todos Agendamentos Experimentais") — esta tela lista só agendados e fila.
 echo json_encode([
-    'success'    => true,
-    'turmas'     => array_values($turmasMap),
-    'realizados' => $realizados,
+    'success' => true,
+    'turmas'  => array_values($turmasMap),
 ]);

@@ -89,6 +89,29 @@ $meses = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez
                 </div>
             </div>
 
+            <?php if ($souAdmin): ?>
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="bbIncluir">
+                        <div class="bbIncluir__texto">
+                            <h3>Incluir alguém na lista</h3>
+                            <p>
+                                Use quando você já recebeu por fora (PIX na mão, dinheiro).
+                                A pessoa entra como <strong>paga</strong> e o movimento aparece no sininho como lembrete.
+                            </p>
+                        </div>
+                        <div class="bbIncluir__acao">
+                            <select id="bbJogadorSelect">
+                                <option value="">Carregando jogadores...</option>
+                            </select>
+                            <button type="button" class="btn btn--primary" id="bbIncluirBtn" disabled>Incluir como pago</button>
+                        </div>
+                    </div>
+                    <p class="bbIncluir__msg" id="bbIncluirMsg" style="display:none;"></p>
+                </div>
+            </div>
+            <?php endif; ?>
+
             <div class="row">
                 <div class="col-md-12">
                     <div class="interessados__tableWrap">
@@ -114,7 +137,7 @@ $meses = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez
                                             <td>
                                                 <span class="jogadores__thumb">
                                                     <?php if (!empty($c['foto'])): ?>
-                                                        <img src="<?= BASE_URL ?>/<?= htmlspecialchars($c['foto']) ?>" alt="<?= htmlspecialchars($c['nome']) ?>">
+                                                        <img src="<?= BASE_URL ?>/<?= htmlspecialchars($c['foto']) ?>" alt="<?= htmlspecialchars($c['nome']) ?>" data-lightbox>
                                                     <?php else: ?>
                                                         <i class="icon-user" aria-hidden="true"></i>
                                                     <?php endif; ?>
@@ -160,13 +183,102 @@ $meses = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez
     </main>
 </div>
 
+<?php include ROOT . '/includes/lightbox.php'; ?>
 <?php include ROOT . '/admin/includes/footer/footer.php'; ?>
 <?php include ROOT . '/admin/includes/scripts.php'; ?>
 
 <?php if ($souAdmin): ?>
 <script>
 var ADMIN_BASE_URL = "<?= ADMIN_BASE_URL ?>";
+var BB_DATA_EVENTO = "<?= $dataSelecionada ?>";
 var __inscricaoParaRemover = null;
+
+// Abrir a lista já dá as movimentações por vistas — zera o badge do sino, igual aos
+// pedidos de uniforme. O histórico em batebola_movimentacoes continua intacto.
+fetch(ADMIN_BASE_URL + '/services/marcar_movimentacoes_batebola_vistas.php', {
+    method: 'POST', credentials: 'same-origin'
+}).catch(function () {});
+
+// ── Incluir jogador na lista (já pago por fora) ──────────────────────────────
+(function () {
+    var select = document.getElementById('bbJogadorSelect');
+    var botao  = document.getElementById('bbIncluirBtn');
+    var msg    = document.getElementById('bbIncluirMsg');
+    if (!select || !botao) return;
+
+    function aviso(texto, ok) {
+        msg.textContent   = texto;
+        msg.style.color   = ok ? '#7ecf7e' : '#e57373';
+        msg.style.display = '';
+    }
+
+    var ESTRELAS = function (n) {
+        return '★'.repeat(Math.max(0, n)) + '☆'.repeat(Math.max(0, 5 - n));
+    };
+
+    fetch(ADMIN_BASE_URL + '/services/get_jogadores_fora_lista.php?data_evento=' + encodeURIComponent(BB_DATA_EVENTO),
+          { credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (!data.success) {
+                select.innerHTML = '<option value="">Erro ao carregar</option>';
+                aviso(data.message || 'Não foi possível carregar os jogadores.', false);
+                return;
+            }
+            if (!data.jogadores.length) {
+                select.innerHTML = '<option value="">Todos os jogadores já estão na lista</option>';
+                return;
+            }
+            select.innerHTML = '<option value="">Escolha um jogador…</option>' +
+                data.jogadores.map(function (j) {
+                    var d = document.createElement('option');
+                    d.value = j.id;
+                    d.textContent = j.nome + '  ·  ' + ESTRELAS(j.nivel) + (j.altura_cm ? '  ·  ' + j.altura_cm + 'cm' : '');
+                    return d.outerHTML;
+                }).join('');
+            botao.disabled = false;
+        })
+        .catch(function () {
+            select.innerHTML = '<option value="">Erro de conexão</option>';
+        });
+
+    botao.addEventListener('click', function () {
+        var id = select.value;
+        if (!id) { aviso('Escolha um jogador primeiro.', false); return; }
+
+        botao.disabled = true;
+        botao.textContent = 'Incluindo...';
+
+        var body = new URLSearchParams({ jogador_id: id, data_evento: BB_DATA_EVENTO });
+        fetch(ADMIN_BASE_URL + '/services/adicionar_confirmacao_batebola.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            credentials: 'same-origin',
+            body: body.toString(),
+        })
+        // Parse defensivo: resposta não-JSON não pode virar erro mudo.
+        .then(function (r) {
+            return r.text().then(function (t) {
+                try { return JSON.parse(t); }
+                catch (e) {
+                    console.error('Resposta não-JSON ao incluir:', t.slice(0, 500));
+                    return { success: false, message: 'O servidor respondeu com erro ' + r.status + '.' };
+                }
+            });
+        })
+        .then(function (res) {
+            if (res.success) { window.location.reload(); return; }
+            aviso(res.message || 'Não foi possível incluir.', false);
+            botao.disabled = false;
+            botao.textContent = 'Incluir como pago';
+        })
+        .catch(function () {
+            aviso('Erro de conexão.', false);
+            botao.disabled = false;
+            botao.textContent = 'Incluir como pago';
+        });
+    });
+}());
 
 function abrirRemoverConfirmacao(btn) {
     __inscricaoParaRemover = btn.getAttribute('data-inscricao-id');

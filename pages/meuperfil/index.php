@@ -227,6 +227,7 @@ function sel($opt, $val) { return $opt === $val ? ' selected' : ''; }
                         </div>
                     </section>
 
+                    <?php if (MP_COBRANCA_AUTOMATICA_ATIVA): ?>
                     <section class="studentSignupBox studentSignupBox--full" id="autoPagamentoBox">
                         <h2><i class="icon-creditcard" aria-hidden="true"></i> Pagamento automático</h2>
                         <p style="color:#aaa;font-size:13px;margin-bottom:16px;">
@@ -254,6 +255,7 @@ function sel($opt, $val) { return $opt === $val ? ' selected' : ''; }
                             <div id="autoPagBrick_container"></div>
                         </div>
                     </section>
+                    <?php endif; ?>
 
                     <section class="studentSignupBox">
                         <h2><i class="icon-padlock" aria-hidden="true"></i> Acesso</h2>

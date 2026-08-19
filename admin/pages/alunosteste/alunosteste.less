@@ -290,11 +290,40 @@
     }
 
     &__data {
-        color: rgba(255,255,255,.32);
+        align-items: flex-end;
+        background: rgba(255,213,0,.1);
+        border: 1px solid rgba(255,213,0,.3);
+        border-radius: 7px;
+        display: flex;
+        flex-direction: column;
         flex-shrink: 0;
-        font-size: 12px;
+        gap: 1px;
+        min-width: 124px;
+        padding: 7px 10px;
+        text-align: right;
 
-        @media @tabletSM { display: none; }
+        span {
+            color: rgba(255,213,0,.7);
+            font-size: 9px;
+            font-weight: @bold;
+            letter-spacing: .65px;
+            text-transform: uppercase;
+        }
+
+        time {
+            color: @alert;
+            font-size: 15px;
+            font-weight: @bold;
+            line-height: 1.15;
+        }
+
+        &.is-empty {
+            background: rgba(239,68,68,.08);
+            border-color: rgba(239,68,68,.28);
+
+            span, time { color: #f87171; }
+            time { font-size: 12px; }
+        }
     }
 
     &__acoes {
@@ -342,6 +371,18 @@
         opacity: .5;
     }
 
+    // Reagendar (troca data/turma e avisa no WhatsApp)
+    &.btn--reagendarAula {
+        background: rgba(99,179,237,.12);
+        border-color: rgba(99,179,237,.3);
+        color: #63b3ed;
+
+        &:hover:not(:disabled) {
+            background: #63b3ed;
+            color: #111;
+        }
+    }
+
     // Disparar lembrete (manual)
     &.btn--dispararLembrete {
         background: rgba(59,130,246,.12);
@@ -367,128 +408,6 @@
     &.disponivel  { background: rgba(34,197,94,.15);  color: #22c55e; }
     &.lotada      { background: rgba(239,68,68,.15);   color: #f87171; }
     &.sem-limite  { background: rgba(255,255,255,.07); color: rgba(255,255,255,.45); }
-}
-
-// ── Realizados ───────────────────────────────────────────────────────────────
-
-.adminTesteRealizados {
-    background: rgba(255,255,255,.02);
-    border: 1px solid @borderColor;
-    border-radius: 10px;
-    margin-top: 8px;
-    overflow: hidden;
-
-    &__head {
-        align-items: center;
-        background: rgba(255,255,255,.04);
-        border-bottom: 1px solid @borderColor;
-        display: flex;
-        gap: 12px;
-        padding: 14px 20px;
-
-        span:first-child {
-            color: rgba(255,255,255,.75);
-            flex: 1;
-            font-size: 14px;
-            font-weight: @semiBold;
-        }
-    }
-
-    &__count {
-        background: rgba(255,255,255,.08);
-        border-radius: 20px;
-        color: rgba(255,255,255,.5);
-        font-size: 12px;
-        padding: 2px 10px;
-    }
-
-    &__toggle {
-        background: none;
-        border: 1px solid rgba(255,255,255,.15);
-        border-radius: 6px;
-        color: rgba(255,255,255,.45);
-        cursor: pointer;
-        font-size: 12px;
-        padding: 4px 12px;
-        transition: all .18s;
-
-        &:hover {
-            border-color: rgba(255,255,255,.3);
-            color: rgba(255,255,255,.75);
-        }
-    }
-
-    &__body {
-        overflow-x: auto;
-    }
-
-    &__table {
-        border-collapse: collapse;
-        font-size: 13px;
-        min-width: 600px;
-        width: 100%;
-
-        th {
-            border-bottom: 1px solid rgba(255,255,255,.07);
-            color: rgba(255,255,255,.35);
-            font-size: 11px;
-            font-weight: @bold;
-            letter-spacing: .5px;
-            padding: 10px 16px;
-            text-align: left;
-            text-transform: uppercase;
-        }
-
-        td {
-            border-bottom: 1px solid rgba(255,255,255,.04);
-            color: rgba(255,255,255,.7);
-            padding: 10px 16px;
-            vertical-align: middle;
-
-            em {
-                color: rgba(255,255,255,.25);
-                font-style: normal;
-            }
-        }
-
-        tr:last-child td { border-bottom: none; }
-        tr:hover td { background: rgba(255,255,255,.025); }
-
-        tr.row--ja-aluno td { opacity: .55; }
-    }
-}
-
-// ── Badge "Já é aluno" ────────────────────────────────────────────────────────
-
-.badge--aluno {
-    background: rgba(34,197,94,.15);
-    border: 1px solid rgba(34,197,94,.3);
-    border-radius: 20px;
-    color: #22c55e;
-    font-size: 11px;
-    font-weight: @bold;
-    padding: 3px 10px;
-    white-space: nowrap;
-}
-
-.btn--enviarEmailCadastro {
-    background: rgba(251,191,36,.12);
-    border: 1px solid rgba(251,191,36,.3);
-    border-radius: 6px;
-    color: #fbbf24;
-    cursor: pointer;
-    font-size: 12px;
-    font-weight: @bold;
-    padding: 5px 12px;
-    transition: all .18s;
-    white-space: nowrap;
-
-    &:hover:not(:disabled) {
-        background: #fbbf24;
-        color: #111;
-    }
-
-    &:disabled { cursor: not-allowed; opacity: .6; }
 }
 
 // ── Modal cadastrar ───────────────────────────────────────────────────────────
@@ -743,6 +662,24 @@
         align-items: flex-end;
         gap: 6px;
         flex-shrink: 0;
+
+        @media @tabletSM {
+            align-items: stretch;
+            flex-basis: 100%;
+            width: 100%;
+
+            .adminTesteItem__data {
+                align-items: flex-start;
+                min-width: 0;
+                padding: 9px 12px;
+                text-align: left;
+                width: 100%;
+
+                time { font-size: 17px; }
+            }
+
+            .adminTesteTermo { align-self: flex-start; }
+        }
     }
 
     &__menor {
@@ -767,6 +704,44 @@
         gap: 6px;
         justify-content: flex-end;
         margin-top: 2px;
+
+        @media @tabletSM {
+            justify-content: stretch;
+
+            .btn--testeAcao { flex: 1 1 calc(50% - 3px); text-align: center; }
+        }
+    }
+}
+
+@media @tabletSM {
+    .adminTesteItem {
+        align-items: flex-start;
+        gap: 10px;
+        padding: 14px 12px;
+
+        &__info {
+            min-width: 0;
+
+            strong { font-size: 15px; }
+            span { overflow-wrap: anywhere; }
+        }
+
+        &__acoes {
+            flex-wrap: wrap;
+            width: 100%;
+
+            .btn--testeAcao {
+                flex: 1 1 calc(50% - 3px);
+                min-height: 36px;
+                padding: 7px 8px;
+                text-align: center;
+            }
+        }
+    }
+
+    .adminTesteBloco__vagas {
+        flex-wrap: wrap;
+        width: 100%;
     }
 }
 

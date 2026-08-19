@@ -129,6 +129,19 @@ if (!$jaPago && !$expirado && $pedido['segundos_restantes'] !== null) {
 
                 <div id="payError" class="uniformPay__error" role="alert" style="display:none;"></div>
 
+                <?php if (mpCheckoutModo($pdo) === 'pro'): ?>
+                <!--
+                    Checkout Pro: cartão e PIX ficam na página do Mercado Pago. A reserva do
+                    número continua valendo os 30 minutos enquanto o aluno paga lá.
+                -->
+                <div class="uniformPay__proBox" style="text-align:center;padding:8px 0;">
+                    <p style="color:#bbb;font-size:14px;line-height:1.6;margin-bottom:16px;">
+                        Você será levado para o <strong style="color:#fff;">Mercado Pago</strong> para pagar
+                        com <strong style="color:#fff;">cartão ou PIX</strong>, e volta para cá em seguida.
+                    </p>
+                    <button type="button" id="btnCheckoutProUniforme" class="uniformPay__btn">Ir para o pagamento</button>
+                </div>
+                <?php else: ?>
                 <div class="uniformPay__methods">
                     <button type="button" class="uniformPay__method is-active" id="btnMethodCard" onclick="selectMethod('card')">
                         <i class="icon-creditcard"></i>Crédito / Débito
@@ -153,6 +166,7 @@ if (!$jaPago && !$expirado && $pedido['segundos_restantes'] !== null) {
                     </p>
                     <button id="btnGerarPix" class="uniformPay__btn">Gerar QR Code PIX</button>
                 </div>
+                <?php endif; ?>
             </div>
 
             <!-- Aprovado -->
@@ -349,9 +363,45 @@ function verificarPagamento(opcoes) {
     tick();
 }());
 
+// ── Checkout Pro ─────────────────────────────────────────────────────────────
+// Pede a preferência ao servidor e manda o aluno pro Mercado Pago. A confirmação do
+// pedido não depende dele voltar: o webhook identifica pelo external_reference.
+(function () {
+    var btn = document.getElementById('btnCheckoutProUniforme');
+    if (!btn) return;   // modo transparente
+
+    btn.addEventListener('click', function () {
+        btn.disabled = true;
+        btn.textContent = 'Preparando...';
+
+        postPagamento(BASE_URL + '/services/site/criar_pagamento_uniforme.php', { pedido_id: PEDIDO_ID })
+        .then(function (d) {
+            if (d.success && d.status === 'redirect' && d.init_point) {
+                window.location.href = d.init_point;
+                return;
+            }
+            if (d.expirado) {
+                window.location.href = BASE_URL + '/pagamentouniforme?pedido_id=' + PEDIDO_ID;
+                return;
+            }
+            mostrarErroPagamento(d.message || 'Não foi possível preparar o pagamento.');
+            btn.disabled = false;
+            btn.textContent = 'Ir para o pagamento';
+        })
+        .catch(function () {
+            mostrarErroPagamento('Erro de conexão. Tente de novo.');
+            btn.disabled = false;
+            btn.textContent = 'Ir para o pagamento';
+        });
+    });
+}());
+
 // ── Brick de cartão ─────────────────────────────────────────────────────────────
 (function () {
-    var mp = new MercadoPago(MP_PUBLIC_KEY, { locale: 'pt-BR' });
+    // No Checkout Pro esse container não existe — sem a guarda o SDK quebra o script todo.
+    if (!document.getElementById('cardPaymentBrick_container')) return;
+
+var mp = new MercadoPago(MP_PUBLIC_KEY, { locale: 'pt-BR' });
 
     mp.bricks().create('cardPayment', 'cardPaymentBrick_container', {
         initialization: {
@@ -422,7 +472,8 @@ function verificarPagamento(opcoes) {
 }());
 
 // ── PIX ─────────────────────────────────────────────────────────────────────────
-document.getElementById('btnGerarPix').addEventListener('click', function () {
+var __btnPixUni = document.getElementById('btnGerarPix');
+if (__btnPixUni) __btnPixUni.addEventListener('click', function () {
     var btn = this;
     btn.disabled    = true;
     btn.textContent = 'Gerando...';

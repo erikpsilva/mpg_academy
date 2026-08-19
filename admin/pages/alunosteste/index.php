@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<title>MPG Academy - Admin - Alunos Teste</title>
+<title>MPG Academy - Admin - Agendar Aula Experimental</title>
 <?php include ROOT . '/admin/includes/assets.php'; ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
@@ -19,7 +19,7 @@
 
             <div class="row adminTeste__pageHeader">
                 <div class="col-md-8">
-                    <h2>Alunos <span>Teste</span></h2>
+                    <h2>Agendar Aula <span>Experimental</span></h2>
                     <p>Aulas experimentais agendadas e fila de espera para teste. A soma de alunos + testes agendados não ultrapassa o limite da turma.</p>
                 </div>
                 <div class="col-md-4 adminTeste__pageHeader__actions">
@@ -54,12 +54,12 @@
             </div>
             <div class="adminTesteModal__row">
                 <div class="adminTesteModal__field">
-                    <label>E-mail</label>
-                    <input class="input" type="email" id="testeEmail" placeholder="email@exemplo.com">
+                    <label>Celular <span>*</span></label>
+                    <input class="input" type="tel" id="testeCelular" placeholder="(11) 99999-9999" required>
                 </div>
                 <div class="adminTesteModal__field">
-                    <label>Celular</label>
-                    <input class="input" type="tel" id="testeCelular" placeholder="(11) 99999-9999">
+                    <label>E-mail <small>(opcional)</small></label>
+                    <input class="input" type="email" id="testeEmail" placeholder="email@exemplo.com">
                 </div>
             </div>
             <div class="adminTesteModal__row">
@@ -190,6 +190,40 @@
                 <button type="submit" class="btn btn--primary" id="adminTesteEditSubmitBtn">Salvar alterações</button>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- Modal: reagendar aula experimental -->
+<div class="adminTesteModal" id="adminTesteReagendarModal">
+    <div class="adminTesteModal__overlay" id="adminTesteReagendarOverlay"></div>
+    <div class="adminTesteModal__dialog adminTesteModal__dialog--sm">
+        <div class="adminTesteModal__head">
+            <div>
+                <h3>Reagendar aula experimental</h3>
+                <p id="reagendarAluno">—</p>
+            </div>
+            <button class="adminTesteModal__close" id="adminTesteReagendarClose">✕</button>
+        </div>
+        <div class="adminTesteModal__body">
+            <input type="hidden" id="reagendarId">
+            <div class="adminTesteModal__field">
+                <label>Turma <span>*</span></label>
+                <select class="input" id="reagendarTurma">
+                    <option value="">Carregando turmas...</option>
+                </select>
+            </div>
+            <div class="adminTesteModal__field">
+                <label>Nova data da aula <span>*</span></label>
+                <input class="input" type="date" id="reagendarData">
+            </div>
+            <div class="adminTesteModal__aviso is-ok" style="display:block">
+                Ao confirmar, o aluno (e o responsável, se for menor de idade) recebe automaticamente uma mensagem no WhatsApp avisando que a aula foi reagendada.
+            </div>
+            <div class="adminTesteModal__foot">
+                <button type="button" class="adminTesteModal__cancel" id="adminTesteReagendarCancelBtn">Cancelar</button>
+                <button type="button" class="btn btn--primary" id="adminTesteReagendarSubmitBtn">Reagendar e avisar no WhatsApp</button>
+            </div>
+        </div>
     </div>
 </div>
 

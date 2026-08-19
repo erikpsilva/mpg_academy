@@ -102,6 +102,7 @@
     </main>
 </div>
 
+<?php include ROOT . '/includes/lightbox.php'; ?>
 <?php include ROOT . '/admin/includes/footer/footer.php'; ?>
 <?php include ROOT . '/admin/includes/scripts.php'; ?>
 

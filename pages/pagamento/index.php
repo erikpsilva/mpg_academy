@@ -72,6 +72,7 @@ if ($isAvulso) {
 }
 
 $publicKey = mpPublicKey($pdo);
+$checkoutModo = mpCheckoutModo($pdo);   // 'pro' = redireciona pro Mercado Pago
 $modoTeste = mpModoTeste($pdo);
 ?>
 <!DOCTYPE html>
@@ -204,6 +205,28 @@ $modoTeste = mpModoTeste($pdo);
 
             <div id="payError" class="payCard__error" role="alert" style="display:none;"></div>
 
+            <?php if ($checkoutModo === 'pro'): ?>
+            <!--
+                Checkout Pro: o aluno paga na página do Mercado Pago e volta.
+                Está em uso porque o MP bloqueou a criação de pagamento direto nesta conta
+                (403 de política). A chave `checkout_modo` em Configurações devolve o
+                formulário embutido assim que a permissão voltar.
+            -->
+            <div style="text-align:center;padding:8px 0 4px;">
+                <p style="color:#bbb;font-size:14px;line-height:1.6;margin-bottom:18px;">
+                    Você será levado para o <strong style="color:#fff;">Mercado Pago</strong> para concluir o pagamento
+                    com <strong style="color:#fff;">cartão, PIX ou boleto</strong>, e volta para cá em seguida.
+                </p>
+                <button type="button" id="btnCheckoutPro"
+                        style="width:100%;padding:15px;background:#e5c200;color:#111;border:none;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer;">
+                    Ir para o pagamento
+                </button>
+                <small style="display:block;margin-top:12px;color:#777;font-size:12px;line-height:1.5;">
+                    Ambiente seguro do Mercado Pago. Sua mensalidade é baixada automaticamente após a aprovação.
+                </small>
+            </div>
+            <?php else: ?>
+
             <!-- Seletor de método -->
             <div class="payMethodSelect">
                 <button class="payMethodBtn is-active" id="btnMethodCard" onclick="selectMethod('card')">
@@ -223,6 +246,7 @@ $modoTeste = mpModoTeste($pdo);
                 // quebrava a cobrança (ver criar_pagamento.php). Regravar um cartão que já
                 // está salvo não traz benefício nenhum e só adiciona risco à cobrança.
                 ?>
+                <?php if (MP_COBRANCA_AUTOMATICA_ATIVA): ?>
                 <?php if (!$autoPagamentoOn): ?>
                 <label class="payCard__saveCard">
                     <input type="checkbox" id="chkSalvarCartao">
@@ -233,6 +257,7 @@ $modoTeste = mpModoTeste($pdo);
                     &#10003; Cobrança automática ativa<?php if ($cartaoFinal4): ?> no cartão final <?= htmlspecialchars($cartaoFinal4) ?><?php endif; ?>.
                     Este pagamento é avulso e não altera isso.
                 </p>
+                <?php endif; ?>
                 <?php endif; ?>
                 <div id="cardPaymentBrick_container"></div>
             </div>
@@ -248,6 +273,7 @@ $modoTeste = mpModoTeste($pdo);
                     Gerar QR Code PIX
                 </button>
             </div>
+            <?php endif; ?>
         </div>
 
         <!-- ── Aprovado ──────────────────────────────────────────────────── -->
@@ -469,8 +495,62 @@ function mostrarRecusa(data) {
       + '<button type="button" class="btn btn--primary" onclick="location.reload();">Tentar de novo</button>';
 }
 
+// ── Checkout Pro (redireciona pro Mercado Pago) ──────────────────────────────
+//
+// O Brick abaixo só é montado no modo transparente. Aqui pedimos ao servidor uma
+// preferência e mandamos o aluno pro Mercado Pago. A baixa não depende dele voltar:
+// o webhook identifica a cobrança pelo external_reference e confirma sozinho.
+(function () {
+    var btn = document.getElementById('btnCheckoutPro');
+    if (!btn) return;   // modo transparente
+
+    btn.addEventListener('click', function () {
+        btn.disabled = true;
+        btn.textContent = 'Preparando...';
+        limparErroPagamento();
+
+        var body = new URLSearchParams({ contexto: 'mensalidade', referencia_id: MENSALIDADE_ID });
+
+        fetch(BASE_URL + '/services/site/criar_preferencia.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            credentials: 'same-origin',
+            body: body.toString()
+        })
+        .then(function (r) {
+            return r.text().then(function (t) {
+                try { return JSON.parse(t); }
+                catch (e) {
+                    console.error('Resposta não-JSON ao criar preferência:', t.slice(0, 500));
+                    return { success: false, message: 'O servidor respondeu com erro ' + r.status + '.' };
+                }
+            });
+        })
+        .then(function (d) {
+            if (d.success && d.init_point) { window.location.href = d.init_point; return; }
+            mostrarErroPagamento(d.message || 'Não foi possível preparar o pagamento.');
+            btn.disabled = false;
+            btn.textContent = 'Ir para o pagamento';
+        })
+        .catch(function () {
+            mostrarErroPagamento('Erro de conexão. Tente de novo.');
+            btn.disabled = false;
+            btn.textContent = 'Ir para o pagamento';
+        });
+    });
+
+    // Voltando do Mercado Pago, confirma na hora se já caiu.
+    if (document.referrer.indexOf('mercadopago') !== -1) {
+        verificarPagamento({ silencioso: true });
+    }
+}());
+
 // ── Brick cartão ─────────────────────────────────────────────────────────────
 (function () {
+    // No Checkout Pro esse container não existe — sem essa guarda o SDK quebra e leva
+    // junto o resto do script da página.
+    if (!document.getElementById('cardPaymentBrick_container')) return;
+
     var mp            = new MercadoPago(MP_PUBLIC_KEY, { locale: 'pt-BR' });
     var bricksBuilder = mp.bricks();
 
@@ -560,7 +640,8 @@ function mostrarRecusa(data) {
 }());
 
 // ── PIX ──────────────────────────────────────────────────────────────────────
-document.getElementById('btnGerarPix').addEventListener('click', function () {
+var __btnPix = document.getElementById('btnGerarPix');
+if (__btnPix) __btnPix.addEventListener('click', function () {
     var btn = this;
     btn.disabled    = true;
     btn.textContent = 'Gerando...';

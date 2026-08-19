@@ -3,16 +3,54 @@
 require_once __DIR__ . '/mensalidades.php';
 
 // ─── Credenciais de Produção ──────────────────────────────────────────────────
-define('MP_PUBLIC_KEY_PROD',   'APP_USR-5b1fa14f-4426-4495-8b6b-6b6eb690fa7e');
-define('MP_ACCESS_TOKEN_PROD', 'APP_USR-6171189951122609-053113-bbae49b17db317cd8892d8db3c4248f8-131746200');
+//
+// Conta CNPJ (user 3629082884, manoelavieirac@gmail.com), aplicação "MPG Academy"
+// 4134788022840522, declarada como Checkout Transparente + API Pagamentos.
+//
+// Substituiu a conta pessoal 131746200 (nome fantasia "MULTI LOJA MIX", que aparecia
+// pro aluno no checkout) em 19/08/2026.
+//
+// ATENÇÃO: cobranças pendentes criadas na conta antiga NÃO são visíveis por este token.
+// PIX em aberto e pagamentos não confirmados de antes da troca precisam de baixa manual.
+define('MP_PUBLIC_KEY_PROD',   'APP_USR-497a2b32-3066-4547-aa73-d0df2ae8cbbc');
+define('MP_ACCESS_TOKEN_PROD', 'APP_USR-4134788022840522-081916-6ce126f8c99d36be892e4409af96fffb-3629082884');
 
 // ─── Credenciais de Teste ─────────────────────────────────────────────────────
-define('MP_PUBLIC_KEY_TEST',   'APP_USR-74177cfa-58ad-461d-a342-dcd0b122887a');
-define('MP_ACCESS_TOKEN_TEST', 'APP_USR-3700588200978728-053113-3b92864eb4a9feb78a47e32a145414e0-3260785637');
+//
+// Da mesma aplicação da conta CNPJ (4134788022840522), declarada
+// corretamente como API Pagamentos. Vêm com prefixo TEST- e geram card token com
+// live_mode: false — as anteriores eram de um test user (APP_USR-) e devolviam
+// 401 "Unauthorized use of live credentials" em qualquer POST /v1/payments.
+//
+// O pagador NÃO pode ser e-mail @testuser.com ("Payer email forbidden") nem um domínio
+// genérico tipo @teste.com ("excludes_by_rule"). Use um e-mail de domínio real.
+define('MP_PUBLIC_KEY_TEST',   'TEST-13eed63f-902c-4298-bc56-8d3e296a51d7');
+define('MP_ACCESS_TOKEN_TEST', 'TEST-4134788022840522-081916-dd4de08a42a18d566e72580f1602783d-3629082884');
 
 // ─── Assinatura secreta dos Webhooks (valida que a notificação veio do MP) ────
-define('MP_WEBHOOK_SECRET_PROD', '8ece70705c82ef0423d89b0099e6df8bef86804614d1608e22e892078538b658');
+// PENDENTE: colar aqui a "Assinatura secreta" do webhook da aplicação 4134788022840522.
+// Vazio = sem checagem de assinatura. É proposital: o segredo da conta ANTIGA faria toda
+// notificação nova ser rejeitada e nenhuma cobrança receberia baixa. A confirmação continua
+// segura porque mp_webhook.php consulta o pagamento na API do MP antes de dar baixa.
+define('MP_WEBHOOK_SECRET_PROD', '');
 define('MP_WEBHOOK_SECRET_TEST', '');
+
+/**
+ * Cobrança automática no cartão salvo — DESLIGADA.
+ *
+ * Nunca funcionou: o histórico em cobranca_automatica_log tem 0 sucessos e falhas com o
+ * erro 3031 do MP (security_code_id can't be null) em todos os cartões testados. A conta
+ * não consegue cobrar cartão salvo sem CVV pela API de pagamentos, então o cron só gerava
+ * erro todo dia e a mensalidade nunca era paga sozinha.
+ *
+ * Com isto em false somem: a seção de pagamento automático em /meuperfil, o checkbox de
+ * salvar cartão no checkout, e o cron para de tentar cobrar.
+ *
+ * Nada é apagado do banco — as colunas mp_customer_id/mp_card_id/auto_pagamento continuam
+ * lá. Voltar para true reativa tudo, mas só faz sentido depois de migrar para a API oficial
+ * de assinaturas (preapproval), que é o caminho correto pra recorrência.
+ */
+const MP_COBRANCA_AUTOMATICA_ATIVA = false;
 
 // ─── Tradução dos códigos de rejeição mais comuns do MP (pra log/diagnóstico) ──
 const MP_STATUS_DETAIL_PT = [
@@ -54,6 +92,169 @@ const MP_STATUS_DETAIL_ACAO = [
     'cc_rejected_blacklist'                => 'Cartão/titular bloqueado pelo Mercado Pago. Só via PIX ou outro cartão.',
 ];
 
+/**
+ * Erros da API do Mercado Pago que NÃO são recusa de cartão.
+ *
+ * Recusa de cartão vem com `status_detail` (cc_rejected_*) e já é traduzida por
+ * MP_STATUS_DETAIL_PT. Estes aqui acontecem antes: o MP nem chegou a criar o pagamento,
+ * então não há status_detail nenhum e o aluno via a mensagem crua em inglês.
+ */
+const MP_ERRO_API_PT = [
+    // NÃO é o cartão nem a sessão do aluno — é a conta da academia. Desde 19/08/2026 o
+    // Mercado Pago devolve este 403 em POST /v1/payments e POST /v1/orders, antes mesmo de
+    // validar o payload (payload vazio dá o mesmo 403). Leitura continua liberada:
+    // GET /v1/payments/{id} devolve 200. O token OAuth da aplicação mostra o motivo no
+    // próprio escopo: urn:mp:online:payments/read-only.
+    //
+    // Vale pra PIX também, então em modo transparente NENHUM meio funciona. Mandar o aluno
+    // "preencher o cartão de novo" só o faz repetir uma tentativa que nunca vai passar.
+    'PA_UNAUTHORIZED_RESULT_FROM_POLICIES' => 'Pagamento online temporariamente indisponível — não é problema com o seu cartão. Fale com a secretaria da MPG Academy para combinar o pagamento.',
+];
+
+/**
+ * Mensagem em português pra um erro de API (sem status_detail). Devolve null se não for
+ * um caso conhecido — aí quem chama continua usando o texto original.
+ */
+function mpMotivoApiPt(array $body): ?string
+{
+    $codigo = $body['code'] ?? '';
+    return MP_ERRO_API_PT[$codigo] ?? null;
+}
+
+/**
+ * Qual checkout está em uso: 'transparente' (formulário dentro do site) ou 'pro'
+ * (o aluno vai até a página do Mercado Pago e volta).
+ *
+ * Existe porque em 19/08/2026 o MP bloqueou a criação de pagamento direto nesta conta
+ * (403 PA_UNAUTHORIZED_RESULT_FROM_POLICIES em /v1/payments e /v1/orders), enquanto o
+ * Checkout Pro seguiu liberado. A chave permite voltar pro transparente num clique assim
+ * que a permissão for restabelecida, sem depender de deploy.
+ */
+function mpCheckoutModo(PDO $pdo): string
+{
+    static $cache = null;
+    if ($cache !== null) return $cache;
+
+    $st = $pdo->prepare("SELECT valor FROM configuracoes WHERE chave = 'checkout_modo'");
+    $st->execute();
+    $valor = (string) $st->fetchColumn();
+
+    $cache = $valor === 'transparente' ? 'transparente' : 'pro';
+    return $cache;
+}
+
+/** Cria uma preferência de Checkout Pro. Retorna [http_code, body]. */
+function mpCriarPreferencia(string $accessToken, array $dados): array
+{
+    return mpRequest($accessToken, 'POST', '/checkout/preferences', $dados);
+}
+
+/**
+ * Descobre a que cobrança um pagamento pertence, a partir do external_reference.
+ *
+ * Todo pagamento que criamos leva um external_reference no formato `contexto-id`
+ * (mensalidade-55, uniforme-12, batebola-7). O metadata também carrega o id, mas nem todo
+ * fluxo do Mercado Pago propaga metadata até o pagamento — o Checkout Pro, por exemplo,
+ * cria o pagamento a partir de uma preferência. O external_reference sempre chega.
+ *
+ * Por isso este é o identificador confiável, e o metadata vira só um atalho.
+ *
+ * @return array{contexto:string,id:int}|null
+ */
+function mpResolverReferencia(?string $externalRef): ?array
+{
+    $ref = trim((string) $externalRef);
+    if ($ref === '') return null;
+
+    if (!preg_match('/^(mensalidade|uniforme|batebola)-(\d+)$/', $ref, $m)) {
+        return null;
+    }
+
+    return ['contexto' => $m[1], 'id' => (int) $m[2]];
+}
+
+/**
+ * Dá baixa numa cobrança a partir de um pagamento JÁ CONSULTADO na API do MP.
+ *
+ * Extraído do webhook pra poder ser reaproveitado no retorno do navegador — antes essa
+ * lógica existia só lá dentro, então quando a notificação não chegava (webhook mal
+ * configurado, instabilidade, evento errado marcado no painel) a cobrança ficava pendente
+ * mesmo com o dinheiro na conta.
+ *
+ * É seguro chamar duas vezes: mpMarcarMensalidadePaga/batebolaConfirmarInscricao/
+ * uniformeConfirmarPedido saem cedo se já estiver pago, e os lançamentos financeiros
+ * usam INSERT IGNORE.
+ *
+ * Devolve ['contexto' => ..., 'id' => ...] do que foi baixado, ou null.
+ */
+function mpConfirmarPagamentoAprovado(PDO $pdo, ?array $payment): ?array
+{
+    if (!$payment || ($payment['status'] ?? '') !== 'approved') return null;
+
+    $mensalidadeId  = (int) ($payment['metadata']['mensalidade_id'] ?? 0);
+    $inscricaoId    = (int) ($payment['metadata']['batebola_inscricao_id'] ?? 0);
+    $pedidoUniforme = (int) ($payment['metadata']['pedido_uniforme_id'] ?? 0);
+
+    // O Checkout Pro cria o pagamento a partir de uma preferência e pode não propagar o
+    // metadata. O external_reference sempre chega — é ele o identificador de verdade.
+    if (!$mensalidadeId && !$inscricaoId && !$pedidoUniforme) {
+        $ref = mpResolverReferencia($payment['external_reference'] ?? null);
+        if ($ref) {
+            if ($ref['contexto'] === 'mensalidade')   $mensalidadeId  = $ref['id'];
+            elseif ($ref['contexto'] === 'batebola')  $inscricaoId    = $ref['id'];
+            elseif ($ref['contexto'] === 'uniforme')  $pedidoUniforme = $ref['id'];
+        }
+    }
+
+    $mpId = (string) ($payment['id'] ?? '');
+
+    if ($mensalidadeId > 0) {
+        mpMarcarMensalidadePaga($pdo, $mensalidadeId, $mpId, $payment);
+        return ['contexto' => 'mensalidade', 'id' => $mensalidadeId];
+    }
+    if ($inscricaoId > 0) {
+        require_once __DIR__ . '/batebola.php';
+        batebolaConfirmarInscricao($pdo, $inscricaoId, $mpId, $payment);
+        return ['contexto' => 'batebola', 'id' => $inscricaoId];
+    }
+    if ($pedidoUniforme > 0) {
+        require_once __DIR__ . '/uniformes.php';
+        uniformeConfirmarPedido($pdo, $pedidoUniforme, $mpId, $payment);
+        return ['contexto' => 'uniforme', 'id' => $pedidoUniforme];
+    }
+
+    return null;
+}
+
+/**
+ * Segunda rede de segurança do Checkout Pro: confere o pagamento quando o aluno VOLTA
+ * do Mercado Pago pro site.
+ *
+ * O MP acrescenta payment_id/collection_id e status na back_url. Nada disso é confiável
+ * por si só — quem decide é a consulta do pagamento na API com o nosso access token.
+ * O parâmetro serve só pra saber O QUE consultar.
+ *
+ * Chamar no topo das páginas de retorno, antes de montar a tela: assim o aluno já
+ * encontra a cobrança baixada em vez de ver "pendente" logo depois de pagar.
+ */
+function mpProcessarRetornoCheckout(PDO $pdo): ?array
+{
+    $bruto = (string) ($_GET['payment_id'] ?? $_GET['collection_id'] ?? '');
+    $paymentId = preg_replace('/\D/', '', $bruto);   // MP às vezes manda a string "null"
+    if ($paymentId === '') return null;
+
+    // Se o MP já disse que não foi aprovado, nem gasta a chamada.
+    $status = (string) ($_GET['collection_status'] ?? $_GET['status'] ?? '');
+    if ($status !== '' && $status !== 'approved') return null;
+
+    try {
+        $payment = mpConsultarPagamento(mpAccessToken($pdo), $paymentId);
+        return mpConfirmarPagamentoAprovado($pdo, $payment);
+    } catch (Throwable $e) {
+        error_log('[mp-retorno] ' . $e->getMessage());
+        return null;
+    }
+}
 /**
  * Registra uma falha de pagamento pra aparecer em admin/erros-pagamento e no sino.
  *
@@ -268,6 +469,17 @@ function mpCriarPagamento(string $accessToken, array $dados): array
         CURLOPT_SSL_VERIFYHOST => APP_IS_LOCAL ? 0 : 2,
         CURLOPT_TIMEOUT        => 30,
     ]);
+    // O x-request-id da resposta é o que o suporte do Mercado Pago pede pra rastrear uma
+    // recusa. Erros de política (403 "At least one policy returned UNAUTHORIZED") vêm sem
+    // cause[] nenhuma — esse id é a única coisa que permite eles investigarem depois.
+    $requestId = null;
+    curl_setopt($ch, CURLOPT_HEADERFUNCTION, function ($curl, $header) use (&$requestId) {
+        if (stripos($header, 'x-request-id:') === 0) {
+            $requestId = trim(substr($header, strlen('x-request-id:')));
+        }
+        return strlen($header);
+    });
+
     $resp     = curl_exec($ch);
     $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $curlErro = curl_error($ch);
@@ -281,7 +493,7 @@ function mpCriarPagamento(string $accessToken, array $dados): array
         $body['message'] = 'Falha de conexão com o Mercado Pago: ' . $curlErro;
     }
 
-    return ['http_code' => $httpCode, 'body' => $body];
+    return ['http_code' => $httpCode, 'body' => $body, 'request_id' => $requestId];
 }
 
 /**
@@ -564,6 +776,12 @@ function mpMarcarMensalidadePaga(PDO $pdo, int $mensalidadeId, string $mpPayment
  */
 function mpExecutarCobrancaAutomatica(PDO $pdo): array
 {
+    // Desligada: ver MP_COBRANCA_AUTOMATICA_ATIVA. Sai antes de tocar no banco ou na API,
+    // pra não gerar erro nem log de tentativa.
+    if (!MP_COBRANCA_AUTOMATICA_ATIVA) {
+        return ['sucesso' => 0, 'falha' => 0, 'detalhes_falha' => [], 'desligada' => true];
+    }
+
     $hoje        = (new DateTime('now', new DateTimeZone('America/Sao_Paulo')))->format('Y-m-d');
     $accessToken = mpAccessToken($pdo);
 

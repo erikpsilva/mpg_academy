@@ -233,7 +233,11 @@ if (in_array($status, ['approved', 'pending', 'in_process'], true)) {
 
 } else {
     $statusDetail = $body['status_detail'] ?? null;
-    $detail       = $statusDetail ?? ($body['message'] ?? 'Pagamento recusado.');
+    // Sem status_detail o MP nem criou o pagamento — é erro de API, e a mensagem dele vem
+    // em inglês. mpMotivoApiPt() traduz os casos conhecidos (ex.: token expirado).
+    $detail       = mpMotivoApiPt($body)
+                    ?? mpMotivoPt($statusDetail, $body['message'] ?? null)
+                    ?: 'Pagamento recusado.';
 
     // Registra a falha pro admin conseguir ajudar o aluno (admin/erros-pagamento + sino).
     mpRegistrarErroPagamento($pdo, [
@@ -252,7 +256,9 @@ if (in_array($status, ['approved', 'pending', 'in_process'], true)) {
         'mp_status_detail' => $statusDetail,
         'http_code'        => $result['http_code'] ?? null,
         'mensagem'         => mpMotivoPt($statusDetail, $body['message'] ?? null),
-        'detalhe_tecnico'  => mpExtrairErroApi($body, $statusDetail),
+        'detalhe_tecnico'  => mpExtrairErroApi($body, $statusDetail)
+                            // O x-request-id é o que o suporte do MP pede pra rastrear a recusa.
+                            . (!empty($result['request_id']) ? ' | x-request-id: ' . $result['request_id'] : ''),
     ]);
 
     echo json_encode([

@@ -1,13 +1,37 @@
 
 const NIVEL_LABEL = { iniciante: 'Iniciante', intermediario: 'Intermediário', avancado: 'Avançado' };
 
+// criado_em vem como timestamp ("2026-08-12 21:33:35"); data_agendada como date.
+// Corta tanto no "T" do ISO quanto no espaço do MySQL antes de quebrar em partes.
 const fmtData = (str) => {
     if (!str) return '—';
-    const [y, m, d] = str.split('T')[0].split('-');
+    const [y, m, d] = str.split(/[T ]/)[0].split('-');
     return d + '/' + m + '/' + y;
 };
 
 const esc = (s) => $('<span>').text(s).html();
+
+// WhatsApp cadastrado: usa o do responsável quando o aluno é menor de idade
+const whatsAppDoAluno = (r) => {
+    const bruto = (r.is_menor && r.responsavel_celular) ? r.responsavel_celular : r.celular;
+    const digitos = (bruto || '').replace(/\D/g, '');
+    if (digitos.length < 10) return null;
+    return {
+        numero: digitos.length <= 11 ? '55' + digitos : digitos,
+        label:  bruto,
+        doResp: !!(r.is_menor && r.responsavel_celular),
+    };
+};
+
+const btnWhatsApp = (r) => {
+    const wa = whatsAppDoAluno(r);
+    if (!wa) return '<em class="adminTodosTable__semWpp">Sem WhatsApp cadastrado</em>';
+    return '<a class="btn--acaoTodos btn--whatsapp" target="_blank" rel="noopener" ' +
+        'href="https://wa.me/' + wa.numero + '" ' +
+        'title="' + esc(wa.label + (wa.doResp ? ' (responsável)' : '')) + '">' +
+        '💬 Entrar em contato' + (wa.doResp ? ' (resp.)' : '') +
+    '</a>';
+};
 
 // ── Badge de termo ────────────────────────────────────────────────────────────
 
@@ -39,67 +63,19 @@ const renderCell = (label, content, className) => {
     return '<td data-label="' + esc(label) + '"' + (className ? ' class="' + className + '"' : '') + '>' + content + '</td>';
 };
 
-// ── Para fazer ────────────────────────────────────────────────────────────────
-
-const renderAcaoParaFazer = (r) => {
-    if (r.status !== 'agendada') return '<em>—</em>';
-    return '<button class="btn--acaoTodos btn--confirmarRealizado" ' +
-        'data-id="' + r.id + '" ' +
-        'data-nome="' + esc(r.nome) + '" ' +
-        'data-turma-id="' + r.turma_id + '">' +
-        '✓ Confirmar realização' +
-    '</button>';
-};
-
-const renderParaFazer = (lista, startAt) => {
-    if (!lista.length) return '<p class="adminTodosAlunos__empty">Nenhum aluno aguardando aula experimental.</p>';
-
-    const rows = lista.map((r, i) => {
-        const statusBadge = r.status === 'agendada'
-            ? '<span class="badge badge--agendada">Agendada</span>'
-            : '<span class="badge badge--fila">Na fila</span>';
-        const dataLabel = r.status === 'agendada' && r.data_agendada
-            ? fmtData(r.data_agendada)
-            : fmtData(r.criado_em);
-        return '<tr>' +
-            renderCell('#', (startAt + i), 'col-num') +
-            renderCell('Nome', renderNome(r), 'adminTodosTable__aluno') +
-            renderCell('E-mail', (r.email   ? esc(r.email)   : '<em>—</em>'), 'adminTodosTable__email') +
-            renderCell('Celular', (r.celular ? esc(r.celular) : '<em>—</em>')) +
-            renderCell('Turma', esc(r.turma_nome + ' · ' + r.quadra_nome)) +
-            renderCell('Status', statusBadge) +
-            renderCell('Data', dataLabel) +
-            renderCell('Termo', renderTermoBadge(r), 'adminTodosTable__termo') +
-            renderCell('Ação', renderAcaoParaFazer(r), 'adminTodosTable__acoes') +
-        '</tr>';
-    }).join('');
-
-    return '<div class="adminTodosSecao">' +
-        '<div class="adminTodosSecao__head">' +
-            '<h3>Para fazer</h3>' +
-            '<span class="adminTodosSecao__count">' + lista.length + ' aluno' + (lista.length === 1 ? '' : 's') + '</span>' +
-        '</div>' +
-        '<div class="adminTodosSecao__body">' +
-            '<table class="adminTodosTable">' +
-                '<thead><tr><th class="col-num">#</th><th>Nome</th><th>E-mail</th><th>Celular</th><th>Turma</th><th>Status</th><th>Data</th><th>Termo</th><th>Ação</th></tr></thead>' +
-                '<tbody>' + rows + '</tbody>' +
-            '</table>' +
-        '</div>' +
-    '</div>';
-};
-
 // ── Já fizeram ────────────────────────────────────────────────────────────────
 
 const renderAcao = (r) => {
+    let btns = btnWhatsApp(r);
+
     if (r.ja_aluno) {
-        return '<span class="badge badge--aluno">✓ Já é aluno</span>';
+        return btns + '<span class="badge badge--aluno">✓ Já é aluno</span>';
     }
     if (r.na_fila) {
-        return '<span class="badge badge--fila-espera">Na fila de espera' +
+        return btns + '<span class="badge badge--fila-espera">Na fila de espera' +
             (r.fila_turma_nome ? ': ' + esc(r.fila_turma_nome) : '') + '</span>';
     }
 
-    let btns = '';
     if (r.email) {
         btns += '<button class="btn--acaoTodos btn--enviarEmail" ' +
             'data-id="' + r.aluno_teste_id + '" ' +
@@ -153,6 +129,56 @@ const renderJaFizeram = (lista, startAt) => {
     '</div>';
 };
 
+// ── Cancelados ────────────────────────────────────────────────────────────────
+
+const renderResponsavel = (r) => {
+    if (!r.is_menor || !r.responsavel_nome) return '<em>—</em>';
+    let html = esc(r.responsavel_nome);
+    if (r.responsavel_celular) html += '<br><small>' + esc(r.responsavel_celular) + '</small>';
+    return html;
+};
+
+const renderAcaoCancelado = (r) => {
+    return '<button class="btn--acaoTodos btn--reagendarTeste" ' +
+        'data-id="' + r.id + '" ' +
+        'data-nome="' + esc(r.nome) + '" ' +
+        'data-turma-id="' + r.turma_id + '">' +
+        '↻ Reagendar' +
+    '</button>';
+};
+
+const renderCancelados = (lista, startAt) => {
+    if (!lista.length) return '<p class="adminTodosAlunos__empty">Nenhum teste cancelado até o momento.</p>';
+
+    const rows = lista.map((r, i) => {
+        const dataLabel = r.data_agendada ? fmtData(r.data_agendada) : fmtData(r.criado_em);
+        return '<tr>' +
+            renderCell('#', (startAt + i), 'col-num') +
+            renderCell('Nome', renderNome(r), 'adminTodosTable__aluno') +
+            renderCell('E-mail', (r.email   ? esc(r.email)   : '<em>—</em>'), 'adminTodosTable__email') +
+            renderCell('Celular', (r.celular ? esc(r.celular) : '<em>—</em>')) +
+            renderCell('Status', '<span class="badge badge--cancelada">Cancelado</span>') +
+            renderCell('Turma', esc(r.turma_nome + ' · ' + r.quadra_nome)) +
+            renderCell('Data agendada', dataLabel) +
+            renderCell('Responsável', renderResponsavel(r)) +
+            renderCell('Ação', renderAcaoCancelado(r), 'adminTodosTable__acoes') +
+        '</tr>';
+    }).join('');
+
+    return '<div class="adminTodosSecao adminTodosSecao--cancelados">' +
+        '<div class="adminTodosSecao__head">' +
+            '<h3>Cancelaram</h3>' +
+            '<span class="adminTodosSecao__count">' + lista.length + ' registro' + (lista.length === 1 ? '' : 's') + '</span>' +
+        '</div>' +
+        '<div class="adminTodosSecao__body">' +
+            '<table class="adminTodosTable adminTodosTable--cancelados">' +
+                '<thead><tr><th class="col-num">#</th><th>Nome</th><th>E-mail</th><th>Celular</th><th>Status</th><th>Turma</th><th>Data agendada</th><th>Responsável</th><th>Ação</th></tr></thead>' +
+                '<tbody>' + rows + '</tbody>' +
+            '</table>' +
+        '</div>' +
+    '</div>';
+};
+
 // ── Carregar dados ────────────────────────────────────────────────────────────
 
 const carregarDados = () => {
@@ -162,10 +188,10 @@ const carregarDados = () => {
             $('#adminTodosBody').html('<p class="adminTodosAlunos__empty">Erro ao carregar dados.</p>');
             return;
         }
-        const offsetJaFizeram = (res.para_fazer.length || 0) + 1;
+        const offsetCancelados = (res.ja_fizeram.length || 0) + 1;
         $('#adminTodosBody').html(
-            renderParaFazer(res.para_fazer, 1) +
-            renderJaFizeram(res.ja_fizeram, offsetJaFizeram)
+            renderJaFizeram(res.ja_fizeram, 1) +
+            renderCancelados(res.cancelados, offsetCancelados)
         );
     }, 'json').fail(() => {
         $('#adminTodosBody').html('<p class="adminTodosAlunos__empty">Erro ao comunicar com o servidor.</p>');
@@ -216,46 +242,47 @@ const fecharModalFila = () => {
     modalFilaAlunoId = null;
 };
 
-// ── Modal confirmar realização ───────────────────────────────────────────────
+// ── Modal reagendar ──────────────────────────────────────────────────────────
 
-let modalRealizarAulaId = null;
+let modalReagendarAulaId = null;
 
-const abrirModalRealizar = (aulaId, nomeAluno, turmaIdAtual) => {
-    modalRealizarAulaId = aulaId;
-    $('#modalRealizarAluno').text(nomeAluno);
-    $('#modalRealizarTurma').html('<option value="">Carregando turmas...</option>');
-    $('#modalRealizarConfirmar').prop('disabled', false).text('Confirmar realização');
-    $('#modalRealizar').addClass('is-open');
-    $('body').addClass('modal-open');
-
-    if (turmasCache.length) {
-        preencherSelectTurmasRealizar(turmasCache, turmaIdAtual);
-        return;
-    }
-    $.get(ADMIN_BASE_URL + '/services/get_turmas_para_fila.php', (res) => {
-        if (!res.success) {
-            $('#modalRealizarTurma').html('<option value="">Erro ao carregar turmas</option>');
-            return;
-        }
-        turmasCache = res.turmas;
-        preencherSelectTurmasRealizar(turmasCache, turmaIdAtual);
-    }, 'json');
-};
-
-const preencherSelectTurmasRealizar = (turmas, turmaIdAtual) => {
-    const opts = turmas.map(t => {
+const preencherSelectTurmasReagendar = (turmas, turmaIdAtual) => {
+    const opts = turmas.map((t) => {
         const vagaInfo = t.vagas === null ? 'sem limite' : t.vagas + ' vaga' + (t.vagas === 1 ? '' : 's');
         return '<option value="' + t.id + '"' + (t.id === turmaIdAtual ? ' selected' : '') + '>' +
             esc(t.nome) + ' — ' + esc(t.quadra_nome) + ' (' + vagaInfo + ')' +
         '</option>';
     });
-    $('#modalRealizarTurma').html(opts.join(''));
+    $('#modalReagendarTurma').html(opts.join(''));
 };
 
-const fecharModalRealizar = () => {
-    $('#modalRealizar').removeClass('is-open');
+const abrirModalReagendar = (aulaId, nomeAluno, turmaIdAtual) => {
+    modalReagendarAulaId = aulaId;
+    $('#modalReagendarAluno').text(nomeAluno);
+    $('#modalReagendarData').val('');
+    $('#modalReagendarTurma').html('<option value="">Carregando turmas...</option>');
+    $('#modalReagendarConfirmar').prop('disabled', false).text('Reagendar e avisar no WhatsApp');
+    $('#modalReagendar').addClass('is-open');
+    $('body').addClass('modal-open');
+
+    if (turmasCache.length) {
+        preencherSelectTurmasReagendar(turmasCache, turmaIdAtual);
+        return;
+    }
+    $.get(ADMIN_BASE_URL + '/services/get_turmas_para_fila.php', (res) => {
+        if (!res.success) {
+            $('#modalReagendarTurma').html('<option value="">Erro ao carregar turmas</option>');
+            return;
+        }
+        turmasCache = res.turmas;
+        preencherSelectTurmasReagendar(turmasCache, turmaIdAtual);
+    }, 'json');
+};
+
+const fecharModalReagendar = () => {
+    $('#modalReagendar').removeClass('is-open');
     $('body').removeClass('modal-open');
-    modalRealizarAulaId = null;
+    modalReagendarAulaId = null;
 };
 
 // ── Init ──────────────────────────────────────────────────────────────────────
@@ -263,37 +290,41 @@ const fecharModalRealizar = () => {
 $(document).ready(() => {
     carregarDados();
 
-    // Abrir modal de confirmar realização
-    $(document).on('click', '.btn--confirmarRealizado', function () {
-        abrirModalRealizar(
+    // Abrir modal de reagendamento
+    $(document).on('click', '.btn--reagendarTeste', function () {
+        abrirModalReagendar(
             parseInt($(this).data('id')),
             $(this).data('nome'),
             parseInt($(this).data('turma-id'))
         );
     });
 
-    // Fechar modal de confirmar realização
-    $(document).on('click', '#modalRealizarClose, #modalRealizarOverlay, #modalRealizarCancelar', fecharModalRealizar);
+    // Fechar modal de reagendamento
+    $(document).on('click', '#modalReagendarClose, #modalReagendarOverlay, #modalReagendarCancelar', fecharModalReagendar);
 
-    // Confirmar realização da aula teste
-    $(document).on('click', '#modalRealizarConfirmar', function () {
-        const turmaId = $('#modalRealizarTurma').val();
+    // Confirmar reagendamento
+    $(document).on('click', '#modalReagendarConfirmar', function () {
+        const turmaId      = $('#modalReagendarTurma').val();
+        const dataAgendada = $('#modalReagendarData').val();
         if (!turmaId) { alert('Selecione a turma.'); return; }
-        const btn = $(this).prop('disabled', true).text('Salvando...');
+        if (!dataAgendada) { alert('Selecione a nova data do teste.'); return; }
+
+        const btn = $(this).prop('disabled', true).text('Reagendando...');
 
         $.post(ADMIN_BASE_URL + '/services/update_aula_experimental.php', {
-            id:       modalRealizarAulaId,
-            action:   'realizar',
-            turma_id: turmaId,
+            id:            modalReagendarAulaId,
+            action:        'reagendar',
+            turma_id:      turmaId,
+            data_agendada: dataAgendada,
         }, (res) => {
-            fecharModalRealizar();
+            fecharModalReagendar();
             if (res.success) {
                 carregarDados();
             } else {
-                alert(res.message || 'Erro ao confirmar realização.');
+                alert(res.message || 'Erro ao reagendar.');
             }
         }, 'json').fail(() => {
-            btn.prop('disabled', false).text('Confirmar realização');
+            btn.prop('disabled', false).text('Reagendar e avisar no WhatsApp');
             alert('Erro ao comunicar com o servidor.');
         });
     });
@@ -328,7 +359,7 @@ $(document).ready(() => {
     $(document).on('keydown', (e) => {
         if (e.key !== 'Escape') return;
         fecharModalFila();
-        fecharModalRealizar();
+        fecharModalReagendar();
     });
 
     // Aviso de turma lotada

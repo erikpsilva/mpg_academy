@@ -66,6 +66,7 @@ $refLabel = ($meses[$rMes] ?? $rMes) . '/' . $rAno;
 
 $publicKey = mpPublicKey($pdo);
 $modoTeste = mpModoTeste($pdo);
+$checkoutModo = mpCheckoutModo($pdo);
 $apiBase   = appBaseUrl();
 ?>
 <!DOCTYPE html>
@@ -111,7 +112,12 @@ $apiBase   = appBaseUrl();
 <div id="paymentError" style="display:none;background:rgba(255,45,45,0.15);border:1px solid #ff5a5a;border-radius:8px;padding:14px;margin-bottom:16px;color:#ff5a5a;font-size:13px;line-height:1.5;word-break:break-word;"></div>
 
 <div id="paymentForm">
+  <?php if ($checkoutModo === 'pro'): ?>
+  <p style="color:#aaa;font-size:14px;line-height:1.5;margin-bottom:16px;text-align:center;">O pagamento será concluído no ambiente seguro do Mercado Pago.</p>
+  <button type="button" id="btnCheckoutPro" style="width:100%;padding:15px;background:#e5c200;color:#111;border:0;border-radius:8px;font-size:16px;font-weight:800;">Ir para o pagamento</button>
+  <?php else: ?>
   <div id="cardPaymentBrick_container"></div>
+  <?php endif; ?>
 </div>
 
 <div id="paymentSuccess">
@@ -135,7 +141,38 @@ var API_BASE   = '<?= $apiBase ?>';
 var mp = new MercadoPago(MP_KEY, { locale: 'pt-BR' });
 var bricksBuilder = mp.bricks();
 
-bricksBuilder.create('cardPayment', 'cardPaymentBrick_container', {
+var btnCheckoutPro = document.getElementById('btnCheckoutPro');
+if (btnCheckoutPro) {
+  btnCheckoutPro.addEventListener('click', function () {
+    var btn = this;
+    var errDiv = document.getElementById('paymentError');
+    btn.disabled = true;
+    btn.textContent = 'Preparando...';
+    errDiv.style.display = 'none';
+
+    fetch(API_BASE + '/services/site/criar_pagamento_mobile.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TOKEN_URL },
+      body: JSON.stringify({ mensalidade_id: MENS_ID }),
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      if (data.success && data.status === 'redirect' && data.init_point) {
+        window.location.href = data.init_point;
+        return;
+      }
+      throw new Error(data.message || 'Não foi possível preparar o pagamento.');
+    })
+    .catch(function (err) {
+      errDiv.textContent = '❌ ' + err.message;
+      errDiv.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Ir para o pagamento';
+    });
+  });
+}
+
+if (document.getElementById('cardPaymentBrick_container')) bricksBuilder.create('cardPayment', 'cardPaymentBrick_container', {
   initialization: {
     amount: TOTAL,
     payer:  { email: EMAIL },

@@ -115,3 +115,44 @@
 .uniMedidas + .uniMedidas__aviso {
     grid-column: 1 / -1;
 }
+
+// ── Equivalência com a numeração tradicional ──────────────────────────────────
+//
+// Vem recolhida de propósito: é referência de apoio, não a medida oficial. Quem sabe o
+// tamanho não precisa ver; quem está perdido abre e resolve. Cores literais porque este
+// arquivo é importado pelos dois entrypoints (site e admin).
+.uniMedidas__conversao {
+    margin-top: 12px;
+    border-top: 1px dashed rgba(255, 255, 255, 0.14);
+    padding-top: 10px;
+
+    > summary {
+        cursor: pointer;
+        color: #ffd500;
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 1.5;
+        list-style: none;
+        padding: 4px 0;
+
+        &::-webkit-details-marker { display: none; }
+
+        &::before {
+            content: "＋ ";
+            font-weight: 700;
+        }
+
+        &:hover { text-decoration: underline; }
+    }
+
+    &[open] > summary::before { content: "－ "; }
+
+    > .uniMedidas__scroll { margin-top: 10px; }
+}
+
+.uniMedidas__conversaoAviso {
+    margin-top: 8px;
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 11px;
+    line-height: 1.5;
+}

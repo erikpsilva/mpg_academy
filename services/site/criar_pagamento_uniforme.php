@@ -64,7 +64,10 @@ $pedidoId = (int) ($input['pedido_id'] ?? 0);
 $isPix    = ($input['payment_method_id'] ?? '') === 'pix';
 $token    = trim($input['token'] ?? '');
 
-if ($pedidoId <= 0 || (!$isPix && empty($token))) {
+// No Checkout Pro o navegador envia apenas o pedido_id: cartão/PIX são escolhidos no
+// ambiente do Mercado Pago e, portanto, ainda não existe token de cartão nesta etapa.
+// A exigência do token fica abaixo, depois que o modo ativo for lido do banco.
+if ($pedidoId <= 0) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Dados insuficientes.']);
     exit;
@@ -73,9 +76,16 @@ if ($pedidoId <= 0 || (!$isPix && empty($token))) {
 require_once dirname(__FILE__, 3) . '/config/database.php';
 require_once dirname(__FILE__, 3) . '/config/mercadopago.php';
 require_once dirname(__FILE__, 3) . '/config/uniformes.php';
+require_once dirname(__FILE__, 3) . '/config/app.php';   // BASE_URL das back_urls
 
 $pdo     = getDbConnection();
 $alunoId = (int) $_SESSION['aluno']['id'];
+
+if (mpCheckoutModo($pdo) !== 'pro' && !$isPix && empty($token)) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Dados do cartão insuficientes.']);
+    exit;
+}
 
 uniformeExpirarReservas($pdo);
 
@@ -127,6 +137,47 @@ if ($isPix && !empty($pedido['pix_qr_code'])) {
     exit;
 }
 
+// ── Checkout Pro ─────────────────────────────────────────────────────────────
+//
+// Toda a checagem acima vale igual — inclusive a reserva do número, que continua valendo
+// os 30 minutos. Muda só o modo de cobrar: em vez de criar o pagamento direto (bloqueado
+// na conta desde 19/08/2026), mandamos o aluno pro checkout do Mercado Pago.
+//
+// Aqui cartão e PIX convivem: o aluno escolhe na página do MP.
+if (mpCheckoutModo($pdo) === 'pro') {
+    $pref = mpCriarPreferencia($accessToken, [
+        'items' => [[
+            'title'       => $descricao,
+            'quantity'    => 1,
+            'unit_price'  => round($total, 2),
+            'currency_id' => 'BRL',
+        ]],
+        'payer'              => ['email' => $pedido['aluno_email'] ?? ''],
+        'external_reference' => 'uniforme-' . $pedidoId,
+        'metadata'           => ['pedido_uniforme_id' => $pedidoId],
+        'back_urls'          => [
+            'success' => BASE_URL . '/areadoaluno#meus-uniformes',
+            'pending' => BASE_URL . '/areadoaluno#meus-uniformes',
+            'failure' => BASE_URL . '/pagamentouniforme?pedido_id=' . $pedidoId,
+        ],
+    ]);
+
+    if ($pref['http_code'] >= 300 || empty($pref['body']['init_point'])) {
+        $motivo = mpMotivoApiPt($pref['body']) ?? ($pref['body']['message'] ?? 'Não foi possível preparar o pagamento.');
+        http_response_code(502);
+        echo json_encode(['success' => false, 'message' => $motivo]);
+        exit;
+    }
+
+    echo json_encode([
+        'success'    => true,
+        'status'     => 'redirect',
+        'init_point' => $pref['body']['init_point'],
+        'valor_pago' => $total,
+    ]);
+    exit;
+}
+
 if ($isPix) {
     $paymentData = [
         'transaction_amount' => $total,
@@ -165,7 +216,11 @@ $mpPaymentId = $body['id'] ?? null;
 
 if (!in_array($status, ['approved', 'pending', 'in_process'], true)) {
     $statusDetail = $body['status_detail'] ?? null;
-    $detail       = $statusDetail ?? ($body['message'] ?? 'Pagamento recusado.');
+    // Sem status_detail o MP nem criou o pagamento — é erro de API, e a mensagem dele vem
+    // em inglês. mpMotivoApiPt() traduz os casos conhecidos (ex.: token expirado).
+    $detail       = mpMotivoApiPt($body)
+                    ?? mpMotivoPt($statusDetail, $body['message'] ?? null)
+                    ?: 'Pagamento recusado.';
 
     mpRegistrarErroPagamento($pdo, [
         'aluno_id'         => $alunoId,
@@ -184,7 +239,9 @@ if (!in_array($status, ['approved', 'pending', 'in_process'], true)) {
         'mp_status_detail' => $statusDetail,
         'http_code'        => $result['http_code'] ?? null,
         'mensagem'         => mpMotivoPt($statusDetail, $body['message'] ?? null),
-        'detalhe_tecnico'  => mpExtrairErroApi($body, $statusDetail),
+        'detalhe_tecnico'  => mpExtrairErroApi($body, $statusDetail)
+                            // O x-request-id é o que o suporte do MP pede pra rastrear a recusa.
+                            . (!empty($result['request_id']) ? ' | x-request-id: ' . $result['request_id'] : ''),
     ]);
 
     echo json_encode(['success' => false, 'status' => $status ?: 'rejected', 'message' => $detail]);

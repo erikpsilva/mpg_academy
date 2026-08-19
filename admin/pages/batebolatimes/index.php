@@ -33,6 +33,8 @@ $chaveSorteio = 'batebola_times_' . $dataSelecionada;
 if (isset($_GET['cancelar'])) {
     $stCancelar = $pdo->prepare("DELETE FROM configuracoes WHERE chave = ?");
     $stCancelar->execute([$chaveSorteio]);
+    // Sem sorteio não há o que ajustar — as trocas manuais vão junto.
+    batebolaLimparTrocas($pdo, $dataSelecionada);
     header('Location: ' . BASE_URL . '/admin/batebolatimes?data=' . urlencode($dataSelecionada));
     exit;
 }
@@ -45,6 +47,8 @@ if (isset($_GET['seed'])) {
         ON DUPLICATE KEY UPDATE valor = VALUES(valor), atualizado_em = CURRENT_TIMESTAMP
     ");
     $stSalvar->execute([$chaveSorteio, (string) $seedNovo]);
+    // Sorteio novo = escalação nova. Manter trocas antigas aqui misturaria dois resultados.
+    batebolaLimparTrocas($pdo, $dataSelecionada);
     header('Location: ' . BASE_URL . '/admin/batebolatimes?data=' . urlencode($dataSelecionada));
     exit;
 }
@@ -65,7 +69,10 @@ $stConfirmados = $pdo->prepare("
 $stConfirmados->execute([$dataSelecionada]);
 $confirmados = $stConfirmados->fetchAll();
 
-$times = $jaSorteou ? batebolaSortearTimes($confirmados, $seed) : [];
+// batebolaTimesDoEvento() já aplica as trocas manuais por cima do sorteio — é o mesmo
+// helper que a área do jogador usa, pra que os dois nunca mostrem escalações diferentes.
+$times  = $jaSorteou ? batebolaTimesDoEvento($pdo, $dataSelecionada) : [];
+$trocas = $jaSorteou ? batebolaTrocasSalvas($pdo, $dataSelecionada) : [];
 
 $corClasse = [
     'Azul'     => 'batebolaTime--azul',
@@ -149,6 +156,17 @@ $novoSeed = random_int(1, 999999);
                     </div>
                 </div>
             <?php else: ?>
+                <div class="batebolaTrocaBar" id="trocaBar">
+                    <div class="batebolaTrocaBar__info" id="trocaInfo">
+                        <strong>Trocar jogadores:</strong>
+                        clique em um e depois em outro <em>do mesmo nível de estrelas</em>, em times diferentes.
+                        <?php if (!empty($trocas)): ?>
+                            <span class="batebolaTrocaBar__tag"><?= count($trocas) ?> troca<?= count($trocas) === 1 ? '' : 's' ?> manual<?= count($trocas) === 1 ? '' : 'is' ?> aplicada<?= count($trocas) === 1 ? '' : 's' ?></span>
+                        <?php endif; ?>
+                    </div>
+                    <button type="button" class="btn btn--gray btn--sm" id="trocaCancelar" style="display:none;">Cancelar seleção</button>
+                </div>
+
                 <div class="row batebolaTimes">
                     <?php foreach ($times as $time): ?>
                         <div class="col-md-6">
@@ -159,10 +177,14 @@ $novoSeed = random_int(1, 999999);
                                 </div>
                                 <ul class="batebolaTime__lista">
                                     <?php foreach ($time['jogadores'] as $j): ?>
-                                        <li>
+                                        <li class="batebolaTime__jogador"
+                                            data-jogador-id="<?= (int) $j['id'] ?>"
+                                            data-nivel="<?= (int) $j['nivel'] ?>"
+                                            data-nome="<?= htmlspecialchars($j['nome']) ?>"
+                                            data-time="<?= $time['cor'] ?>">
                                             <span class="jogadores__thumb">
                                                 <?php if (!empty($j['foto'])): ?>
-                                                    <img src="<?= BASE_URL ?>/<?= htmlspecialchars($j['foto']) ?>" alt="<?= htmlspecialchars($j['nome']) ?>">
+                                                    <img src="<?= BASE_URL ?>/<?= htmlspecialchars($j['foto']) ?>" alt="<?= htmlspecialchars($j['nome']) ?>" data-lightbox>
                                                 <?php else: ?>
                                                     <i class="icon-user" aria-hidden="true"></i>
                                                 <?php endif; ?>
@@ -174,6 +196,7 @@ $novoSeed = random_int(1, 999999);
                                                 · <?= $j['sexo'] === 'feminino' ? 'F' : 'M' ?>
                                             </span>
                                         </li>
+
                                     <?php endforeach; ?>
                                 </ul>
                             </div>
@@ -186,8 +209,119 @@ $novoSeed = random_int(1, 999999);
     </main>
 </div>
 
+<?php include ROOT . '/includes/lightbox.php'; ?>
 <?php include ROOT . '/admin/includes/footer/footer.php'; ?>
 <?php include ROOT . '/admin/includes/scripts.php'; ?>
+
+<?php if ($jaSorteou): ?>
+<script>
+/**
+ * Troca manual de jogadores entre times.
+ *
+ * Só entre níveis iguais: o sorteio equilibra os times por estrelas, e trocar um 5 por um 2
+ * desmontaria exatamente isso. Com níveis iguais a soma de cada time não muda.
+ *
+ * A tela já bloqueia o que não pode, mas quem decide é o servidor — ele refaz a checagem
+ * antes de gravar (admin/services/trocar_jogadores_time.php).
+ */
+(function () {
+    var ADMIN_BASE_URL = "<?= ADMIN_BASE_URL ?>";
+    var DATA_EVENTO    = "<?= $dataSelecionada ?>";
+
+    var itens     = Array.prototype.slice.call(document.querySelectorAll('.batebolaTime__jogador'));
+    var info      = document.getElementById('trocaInfo');
+    var btnCancel = document.getElementById('trocaCancelar');
+    var infoHtml  = info ? info.innerHTML : '';
+    var escolhido = null;
+
+    function limpar() {
+        escolhido = null;
+        itens.forEach(function (li) {
+            li.classList.remove('is-escolhido', 'is-compativel', 'is-bloqueado');
+        });
+        if (info) info.innerHTML = infoHtml;
+        if (btnCancel) btnCancel.style.display = 'none';
+    }
+
+    function selecionar(li) {
+        escolhido = li;
+        var nivel = li.getAttribute('data-nivel');
+        var time  = li.getAttribute('data-time');
+
+        itens.forEach(function (outro) {
+            if (outro === li) { outro.classList.add('is-escolhido'); return; }
+            // Compatível = mesmo nível e em outro time. O resto fica apagado, pra deixar
+            // óbvio com quem dá pra trocar sem precisar ler as estrelas de um em um.
+            var ok = outro.getAttribute('data-nivel') === nivel && outro.getAttribute('data-time') !== time;
+            outro.classList.add(ok ? 'is-compativel' : 'is-bloqueado');
+        });
+
+        var compativeis = itens.filter(function (o) { return o.classList.contains('is-compativel'); }).length;
+
+        if (info) {
+            info.innerHTML = compativeis
+                ? '<strong>' + li.getAttribute('data-nome') + '</strong> selecionado — '
+                  + 'clique em um dos <strong>' + compativeis + '</strong> jogadores destacados pra trocar.'
+                : '<strong>' + li.getAttribute('data-nome') + '</strong> não tem ninguém do mesmo nível em outro time.';
+        }
+        if (btnCancel) btnCancel.style.display = '';
+    }
+
+    function trocar(destino) {
+        var body = new URLSearchParams({
+            data_evento: DATA_EVENTO,
+            jogador_a:   escolhido.getAttribute('data-jogador-id'),
+            jogador_b:   destino.getAttribute('data-jogador-id')
+        });
+
+        if (info) info.innerHTML = 'Trocando...';
+
+        fetch(ADMIN_BASE_URL + '/services/trocar_jogadores_time.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            credentials: 'same-origin',
+            body: body.toString()
+        })
+        .then(function (r) {
+            return r.text().then(function (t) {
+                try { return JSON.parse(t); }
+                catch (e) {
+                    console.error('Resposta não-JSON na troca:', t.slice(0, 500));
+                    return { success: false, message: 'O servidor respondeu com erro ' + r.status + '.' };
+                }
+            });
+        })
+        .then(function (res) {
+            if (res.success) { window.location.reload(); return; }
+            if (info) info.innerHTML = '<span style="color:#e57373;">' + res.message + '</span>';
+            setTimeout(limpar, 4000);
+        })
+        .catch(function () {
+            if (info) info.innerHTML = '<span style="color:#e57373;">Erro de conexão.</span>';
+            setTimeout(limpar, 4000);
+        });
+    }
+
+    itens.forEach(function (li) {
+        li.addEventListener('click', function (e) {
+            // Clique na foto é do lightbox, não da troca.
+            if (e.target.closest('[data-lightbox]')) return;
+
+            if (!escolhido)          { selecionar(li); return; }
+            if (escolhido === li)    { limpar();       return; }
+            if (li.classList.contains('is-compativel')) { trocar(li); return; }
+
+            // Clicou em alguém incompatível: troca a seleção em vez de recusar em silêncio.
+            limpar();
+            selecionar(li);
+        });
+    });
+
+    if (btnCancel) btnCancel.addEventListener('click', limpar);
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') limpar(); });
+}());
+</script>
+<?php endif; ?>
 
 </body>
 </html>

@@ -44,6 +44,39 @@ $__pecas = isset($medidasPeca) && $medidasPeca
                     </tbody>
                 </table>
             </div>
+
+            <?php
+            // Referência de apoio: a tabela acima é em centímetros, e muita gente não sabe
+            // traduzir isso pro tamanho que costuma vestir. Vem depois, e não antes, porque
+            // é aproximada — quem manda continua sendo a medida do fabricante.
+            $__conv = uniformeTabelaConversao($__g, $__p);
+            ?>
+            <?php if ($__conv): ?>
+            <details class="uniMedidas__conversao">
+                <summary>Não sabe seu tamanho? Ver equivalência com a numeração tradicional</summary>
+
+                <div class="uniMedidas__scroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Tamanho do fabricante</th>
+                                <th><?= htmlspecialchars($__conv['coluna']) ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($__conv['linhas'] as $__cl): ?>
+                            <tr>
+                                <th><?= htmlspecialchars($__cl[0]) ?></th>
+                                <td><?= htmlspecialchars($__cl[1]) ?></td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+
+                <p class="uniMedidas__conversaoAviso"><?= UNIFORME_CONVERSAO_AVISO ?></p>
+            </details>
+            <?php endif; ?>
         </section>
         <?php endforeach; ?>
         </div>

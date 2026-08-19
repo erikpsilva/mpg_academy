@@ -6,6 +6,22 @@ require_once ROOT . '/config/mercadopago.php';
 $pdo       = getDbConnection();
 $modoTeste = mpModoTeste($pdo);
 
+require_once ROOT . '/config/uniformes.php';
+$valorUniforme       = uniformeValor($pdo);
+$valorUniformeEquipe = uniformeValorEquipe($pdo);
+
+// Cobrança de teste: uma avulsa, de valor baixo, do aluno de teste. Serve pra validar o
+// fluxo de pagamento em produção sem tocar na mensalidade de ninguém.
+$stTeste = $pdo->prepare("
+    SELECT m.id, m.valor, m.status, a.nome, a.email
+    FROM mensalidades m
+    JOIN alunos a ON a.id = m.aluno_id
+    WHERE a.email = 'teste.pagamento@mpgacademy.com.br' AND m.tipo = 'avulso'
+    ORDER BY m.id DESC LIMIT 1
+");
+$stTeste->execute();
+$cobrancaTeste = $stTeste->fetch();
+
 $cfgMatricula = $pdo->query("SELECT valor FROM configuracoes WHERE chave = 'valor_matricula'")->fetch();
 $valorMatricula = $cfgMatricula ? (float) $cfgMatricula['valor'] : 0.0;
 
@@ -68,6 +84,86 @@ $emailsNotificacao = $stEmails->fetchAll();
                         </div>
                         <div id="matriculaMsg" class="configMsg" style="margin-top:8px;"></div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Uniformes -->
+            <div class="configSection">
+                <h3>Uniformes</h3>
+                <div class="configCard">
+
+                    <div class="configRow configRow--stack">
+                        <div class="configRow__info">
+                            <strong>Uniforme completo</strong>
+                            <p>Camisa + calção. É o valor cobrado do aluno no pedido pelo site.</p>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
+                            <span style="color:#aaa;font-size:14px;">R$</span>
+                            <input type="number" id="inputValorUniforme" min="0" step="0.01"
+                                   value="<?= number_format($valorUniforme, 2, '.', '') ?>"
+                                   style="background:#1a1a1a;border:1px solid #333;border-radius:6px;color:#ddd;font-size:14px;padding:9px 12px;width:130px;">
+                            <button class="btn btn--primary btn--sm" id="btnSalvarUniforme">Salvar</button>
+                        </div>
+                        <div id="uniformeMsg" class="configMsg" style="margin-top:8px;"></div>
+                    </div>
+
+                    <div class="configRow configRow--stack">
+                        <div class="configRow__info">
+                            <strong>Camisa da equipe técnica</strong>
+                            <p>Só a camisa, para professores e equipe MPG. Não é cobrada pelo sistema — o valor fica registrado no pedido só pra você saber quanto custou.</p>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
+                            <span style="color:#aaa;font-size:14px;">R$</span>
+                            <input type="number" id="inputValorUniformeEquipe" min="0" step="0.01"
+                                   value="<?= number_format($valorUniformeEquipe, 2, '.', '') ?>"
+                                   style="background:#1a1a1a;border:1px solid #333;border-radius:6px;color:#ddd;font-size:14px;padding:9px 12px;width:130px;">
+                            <button class="btn btn--primary btn--sm" id="btnSalvarUniformeEquipe">Salvar</button>
+                        </div>
+                        <div id="uniformeEquipeMsg" class="configMsg" style="margin-top:8px;"></div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Teste de pagamento -->
+            <div class="configSection">
+                <h3>Teste de pagamento</h3>
+                <div class="configCard">
+
+                    <div class="configRow configRow--stack">
+                        <div class="configRow__info">
+                            <strong>Cobrança do aluno de teste</strong>
+                            <?php if ($cobrancaTeste): ?>
+                            <p>
+                                Cobrança avulsa de <strong><?= htmlspecialchars($cobrancaTeste['nome']) ?></strong>,
+                                usada pra testar o pagamento de verdade sem mexer na mensalidade de ninguém.
+                                Situação agora: <strong><?= htmlspecialchars($cobrancaTeste['status']) ?></strong>.
+                            </p>
+                            <?php else: ?>
+                            <p style="color:#e57373;">
+                                Aluno de teste não encontrado — rode o SQL de criação antes de usar esta seção.
+                            </p>
+                            <?php endif; ?>
+                        </div>
+
+                        <?php if ($cobrancaTeste): ?>
+                        <div style="display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap;">
+                            <span style="color:#aaa;font-size:14px;">R$</span>
+                            <input type="number" id="inputCobrancaTeste" min="1" max="50" step="0.01"
+                                   value="<?= number_format((float) $cobrancaTeste['valor'], 2, '.', '') ?>"
+                                   style="background:#1a1a1a;border:1px solid #333;border-radius:6px;color:#ddd;font-size:14px;padding:9px 12px;width:110px;">
+                            <button class="btn btn--primary btn--sm" id="btnSalvarCobrancaTeste">Salvar valor</button>
+                            <button class="btn btn--gray btn--sm" id="btnResetarCobrancaTeste">Voltar para pendente</button>
+                        </div>
+                        <div id="cobrancaTesteMsg" class="configMsg" style="margin-top:8px;"></div>
+                        <p style="margin-top:10px;color:#888;font-size:12px;line-height:1.6;">
+                            Entre na área do aluno com <strong>teste.pagamento@mpgacademy.com.br</strong> e pague essa cobrança
+                            para validar o fluxo ponta a ponta. Depois clique em <em>Voltar para pendente</em> para testar de novo —
+                            isso também remove o lançamento de receita que a baixa gerou.
+                        </p>
+                        <?php endif; ?>
+                    </div>
+
                 </div>
             </div>
 
@@ -420,6 +516,115 @@ var PK_PROD = "<?= substr(MP_PUBLIC_KEY_PROD, 0, 24) ?>";
         })
         .catch(function () { showMsg('Erro de comunicação.', false); })
         .finally(function () { btnAdd.disabled = false; });
+    });
+}());
+</script>
+
+<script>
+/**
+ * Preços dos uniformes.
+ *
+ * Os dois usam o mesmo save_configuracao.php das outras chaves — só muda qual chave é
+ * gravada. Ficarem aqui evita ter que mexer em código toda vez que o fornecedor reajusta.
+ */
+(function () {
+    function ligarPreco(idInput, idBotao, idMsg, chave, rotulo) {
+        var input = document.getElementById(idInput);
+        var btn   = document.getElementById(idBotao);
+        var msg   = document.getElementById(idMsg);
+        if (!input || !btn || !msg) return;
+
+        btn.addEventListener('click', function () {
+            var valor = parseFloat(input.value);
+            if (isNaN(valor) || valor < 0) {
+                msg.textContent = 'Informe um valor válido.';
+                msg.className   = 'configMsg is-error';
+                return;
+            }
+
+            btn.disabled  = true;
+            msg.className = 'configMsg';
+
+            var body = new URLSearchParams({ chave: chave, valor: valor.toFixed(2) });
+            fetch(ADMIN_BASE_URL + '/services/save_configuracao.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                credentials: 'same-origin',
+                body: body.toString()
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.success) {
+                    msg.textContent = rotulo + ': R$ ' + valor.toFixed(2).replace('.', ',') + ' salvo.';
+                    msg.className   = 'configMsg is-ok';
+                } else {
+                    msg.textContent = data.message || 'Não foi possível salvar.';
+                    msg.className   = 'configMsg is-error';
+                }
+            })
+            .catch(function () {
+                msg.textContent = 'Erro de conexão.';
+                msg.className   = 'configMsg is-error';
+            })
+            .finally(function () { btn.disabled = false; });
+        });
+    }
+
+    ligarPreco('inputValorUniforme',       'btnSalvarUniforme',       'uniformeMsg',       'valor_uniforme',        'Uniforme completo');
+    ligarPreco('inputValorUniformeEquipe', 'btnSalvarUniformeEquipe', 'uniformeEquipeMsg', 'valor_uniforme_equipe', 'Camisa da equipe técnica');
+}());
+</script>
+
+<script>
+// Cobrança de teste: muda o valor e devolve pra pendente, pra poder testar o pagamento
+// de verdade quantas vezes precisar.
+(function () {
+    var input = document.getElementById('inputCobrancaTeste');
+    var msg   = document.getElementById('cobrancaTesteMsg');
+    if (!input || !msg) return;   // aluno de teste ainda não criado
+
+    function chamar(dados, botao, textoOriginal) {
+        botao.disabled = true;
+        msg.className = 'configMsg';
+
+        fetch(ADMIN_BASE_URL + '/services/salvar_cobranca_teste.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            credentials: 'same-origin',
+            body: new URLSearchParams(dados).toString()
+        })
+        .then(function (r) {
+            return r.text().then(function (t) {
+                try { return JSON.parse(t); }
+                catch (e) { return { success: false, message: 'Erro ' + r.status + ' no servidor.' }; }
+            });
+        })
+        .then(function (d) {
+            msg.textContent = d.message || (d.success ? 'Feito.' : 'Não foi possível.');
+            msg.className   = 'configMsg ' + (d.success ? 'is-ok' : 'is-error');
+            botao.disabled  = false;
+            botao.textContent = textoOriginal;
+        })
+        .catch(function () {
+            msg.textContent = 'Erro de conexão.';
+            msg.className   = 'configMsg is-error';
+            botao.disabled  = false;
+            botao.textContent = textoOriginal;
+        });
+    }
+
+    document.getElementById('btnSalvarCobrancaTeste').addEventListener('click', function () {
+        var v = parseFloat(input.value);
+        if (isNaN(v) || v < 1 || v > 50) {
+            msg.textContent = 'Use um valor entre R$ 1,00 e R$ 50,00.';
+            msg.className   = 'configMsg is-error';
+            return;
+        }
+        chamar({ acao: 'valor', valor: v.toFixed(2) }, this, 'Salvar valor');
+    });
+
+    document.getElementById('btnResetarCobrancaTeste').addEventListener('click', function () {
+        chamar({ acao: 'resetar' }, this, 'Voltar para pendente');
     });
 }());
 </script>

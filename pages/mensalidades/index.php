@@ -17,6 +17,13 @@ $meses = [
 
 $pdo = getDbConnection();
 
+// Volta do Checkout Pro: confirma o pagamento antes de montar a tela, pra o aluno não
+// ver "pendente" logo depois de pagar. É a segunda rede — a primeira é o webhook, e as
+// duas usam a mesma função, que é idempotente. Sem parâmetro de retorno na URL, sai
+// na hora sem custo nenhum.
+require_once ROOT . '/config/mercadopago.php';
+mpProcessarRetornoCheckout($pdo);
+
 // Turma ativa do aluno (+ desconto pessoal, pra calcular o valor real da próxima fatura)
 $stTurma = $pdo->prepare("
     SELECT t.id AS turma_id, t.nome AS turma_nome, t.valor_mensalidade,

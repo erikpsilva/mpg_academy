@@ -19,6 +19,17 @@ if (empty($_SESSION['aluno'])) {
     exit;
 }
 
+require_once dirname(__FILE__, 3) . '/config/mercadopago.php';
+
+// Cobrança automática desligada (ver MP_COBRANCA_AUTOMATICA_ATIVA em config/mercadopago.php).
+// O endpoint continua existindo pra não quebrar chamada antiga, mas não faz mais nada.
+if (!MP_COBRANCA_AUTOMATICA_ATIVA) {
+    http_response_code(410);
+    echo json_encode(['success' => false, 'message' => 'O pagamento automático foi desativado.']);
+    exit;
+}
+
+
 $input     = json_decode(file_get_contents('php://input'), true);
 $cardToken = trim($input['token'] ?? '');
 
@@ -30,6 +41,8 @@ if (empty($cardToken)) {
 
 require_once dirname(__FILE__, 3) . '/config/database.php';
 require_once dirname(__FILE__, 3) . '/config/mercadopago.php';
+
+
 
 $pdo     = getDbConnection();
 $alunoId = (int) $_SESSION['aluno']['id'];

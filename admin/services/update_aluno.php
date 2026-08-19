@@ -91,6 +91,28 @@ if ($erro) {
 $idade = (new DateTime($nascimento))->diff(new DateTime('today'))->y;
 $isMenor = $idade < 18;
 
+// O termo de responsabilidade ANDA JUNTO com is_menor.
+//
+// Enquanto isso não existia, corrigir a data de nascimento aqui trocava só o is_menor e
+// deixava o termo_status como estava. O resultado era um cadastro se contradizendo na cara
+// do aluno: o banner da área do aluno (que olha termo_status) dizia "o aluno é menor de
+// idade, assine o termo", e a página do termo (que olha is_menor) respondia "não se aplica,
+// aluno maior de idade" — sem nenhuma forma de sair do loop.
+//
+// Quem já assinou e continua menor mantém o 'assinado': recalcular jogaria a assinatura
+// fora e faria o responsável assinar de novo sem motivo.
+$stTermo = $pdo->prepare("SELECT termo_status FROM alunos WHERE id = ?");
+$stTermo->execute([$alunoId]);
+$termoAtual = (string) $stTermo->fetchColumn();
+
+if (!$isMenor) {
+    $termoStatus = 'nao_aplicavel';
+} elseif ($termoAtual === 'assinado') {
+    $termoStatus = 'assinado';
+} else {
+    $termoStatus = 'pendente';
+}
+
 if ($isMenor && ($respNome === '' || strlen($respCpf) !== 11 || $respCelular === '')) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'O aluno é menor de idade — preencha nome, CPF e celular do responsável.']);
@@ -129,7 +151,7 @@ try {
             nome = ?, email = ?, cpf = ?, nascimento = ?, sexo = ?,
             celular = ?, whatsapp = ?, cep = ?, rua = ?, numero = ?, complemento = ?,
             bairro = ?, cidade = ?, estado = ?,
-            is_menor = ?,
+            is_menor = ?, termo_status = ?,
             responsavel_nome = ?, responsavel_parentesco = ?, responsavel_cpf = ?, responsavel_celular = ?,
             atualizado_em = NOW()
         WHERE id = ?
@@ -140,6 +162,7 @@ try {
         $celular, $celular, $cep, $rua, $numero, $complemento ?: null,
         $bairro, $cidade, $estado,
         $isMenor ? 1 : 0,
+        $termoStatus,
         $isMenor ? $respNome : null,
         $isMenor ? $respParentesco : null,
         $isMenor ? $respCpf : null,

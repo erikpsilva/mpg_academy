@@ -309,3 +309,256 @@
         &__editForm { grid-template-columns: 1fr; }
     }
 }
+
+// ── Linha da camisa da comissão técnica ───────────────────────────────────────
+//
+// Produto diferente do uniforme completo: só camisa, sem número, e vai numa contagem
+// separada pro fornecedor. O fundo próprio deixa isso óbvio na hora de bater a lista.
+.uniformes__row--equipe > td {
+    background: rgba(126, 179, 255, 0.09);
+    box-shadow: inset 3px 0 0 rgba(126, 179, 255, 0.65);
+}
+
+.uniformes__imprimir {
+    margin-left: auto;
+}
+
+// Cabeçalho que só existe no papel — na tela esses dados já estão no topo.
+.uniformes__printHead { display: none; }
+.uniformes__printName,
+.uniformes__printSize { display: none; }
+
+// ── Impressão / PDF ───────────────────────────────────────────────────────────
+//
+// Vira uma planilha: fundo branco, texto preto, grade fechada em todas as células.
+// Some tudo que é de tela (menu, filtros, botões de ação) porque no papel não serve
+// pra nada e só rouba largura das colunas que o fornecedor precisa ler.
+@media print {
+    @page {
+        size: A4 landscape;
+        margin: 12mm;
+    }
+
+    body {
+        background: #fff !important;
+        color: #000 !important;
+    }
+
+    .adminLayout__content { padding: 0 !important; }
+
+    .header,
+    .sidebar,
+    .footer,
+    .uniformes__stats,
+    .uniformes__filters,
+    .uniformes__header,
+    .confirmModal,
+    .lightbox,
+    .uniformes__printExclude {
+        display: none !important;
+    }
+
+    .uniformes__printHead {
+        display: block;
+        margin-bottom: 10px;
+
+        h1 {
+            color: #000;
+            font-size: 16pt;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        p {
+            color: #333;
+            font-size: 9pt;
+        }
+    }
+
+    .interessados__tableWrap {
+        overflow: visible !important;
+        border: 0 !important;
+        background: none !important;
+    }
+
+    .uniformes__table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 9pt;
+
+        th, td {
+            border: 1px solid #666 !important;
+            padding: 4px 6px !important;
+            background: #fff !important;
+            color: #000 !important;
+            vertical-align: middle;
+        }
+
+        thead th {
+            background: #e8e8e8 !important;
+            font-weight: 700;
+            // Repete o cabeçalho quando a lista passa de uma página.
+            text-align: left;
+        }
+
+        thead { display: table-header-group; }
+        tr    { page-break-inside: avoid; }
+
+        // Cinco colunas fixas e largas o suficiente para leitura rapida.
+        th:nth-child(1), td:nth-child(1) { width: 7%; text-align: center; }
+        th:nth-child(5), td:nth-child(5) { width: 39%; }
+        th:nth-child(6), td:nth-child(6) { width: 12%; text-align: center; }
+        th:nth-child(7), td:nth-child(7) { width: 27%; }
+        th:nth-child(8), td:nth-child(8) { width: 15%; text-align: right; }
+    }
+
+    .uniformes__screenValue { display: none !important; }
+
+    .uniformes__printName {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+
+        small,
+        strong {
+            color: #000 !important;
+            display: block;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        small { font-size: 8pt; }
+        strong { font-size: 10pt; }
+    }
+
+    .uniformes__printSize {
+        display: inline-flex;
+        flex-direction: column;
+        gap: 1px;
+        margin-right: 18px;
+        vertical-align: top;
+
+        small {
+            color: #444 !important;
+            font-size: 7.5pt;
+            font-weight: 700;
+            line-height: 1.1;
+        }
+
+        strong {
+            color: #000 !important;
+            font-size: 11pt;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+    }
+
+    // No papel a distinção vira uma tarja cinza — cor de fundo clara não sobrevive
+    // à impressão em preto e branco.
+    .uniformes__row--equipe > td {
+        background: #ddd !important;
+        box-shadow: none !important;
+        font-weight: 600;
+    }
+
+    // Os textos auxiliares (e-mail, "camisa", "bermuda") continuam, mas menores,
+    // porque é o que identifica a peça na hora de conferir.
+    .uniformes__sub {
+        color: #444 !important;
+        font-size: 7.5pt;
+    }
+
+    .uniformes__badge,
+    .uniformes__numero,
+    .uniformes__tam {
+        background: none !important;
+        border: 0 !important;
+        color: #000 !important;
+        padding: 0 !important;
+        font-weight: 700;
+    }
+
+    .uniformes__novoTag { display: none !important; }
+}
+
+// ── Coluna da ordem (#) ───────────────────────────────────────────────────────
+//
+// Sem largura mínima a coluna encolhe até o número quebrar em duas linhas — "10" virava
+// um "1" em cima de um "0". Fixa a largura e impede a quebra.
+.uniformes__table {
+    th:first-child,
+    td:first-child {
+        width: 52px;
+        min-width: 52px;
+        white-space: nowrap;
+        text-align: center;
+    }
+}
+
+// A tag NOVO fica embaixo do número, senão empurra a coluna e força a quebra de novo.
+.uniformes__novoTag {
+    display: block;
+    margin-top: 3px;
+}
+
+// ── Quanto custou, por produto ────────────────────────────────────────────────
+.uniformes__valores {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 22px;
+
+    @media @tabletSM { grid-template-columns: 1fr; }
+}
+
+.uniformes__valor {
+    padding: 16px 18px;
+    border: 1px solid @borderColor;
+    border-radius: 8px;
+    background: @bgPanel;
+
+    strong {
+        display: block;
+        color: @white;
+        font-size: 22px;
+        font-weight: @bold;
+        line-height: 1.2;
+    }
+
+    span {
+        display: block;
+        margin-top: 4px;
+        color: rgba(255, 255, 255, 0.55);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    &--aluno  strong { color: #7ecf7e; }
+    &--equipe strong { color: #7eb3ff; }
+
+    &--total {
+        border-color: rgba(255, 213, 0, 0.45);
+        background: rgba(255, 213, 0, 0.07);
+
+        strong { color: @primary; }
+    }
+}
+
+// No papel os valores vão junto — é o que o fornecedor confere no fechamento.
+@media print {
+    .uniformes__valores {
+        display: flex !important;
+        gap: 14px;
+        margin-bottom: 8px;
+    }
+
+    .uniformes__valor {
+        border: 1px solid #666 !important;
+        background: #fff !important;
+        padding: 5px 9px;
+
+        strong { color: #000 !important; font-size: 11pt; }
+        span   { color: #333 !important; font-size: 7.5pt; }
+    }
+}
