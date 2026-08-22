@@ -792,10 +792,15 @@
 // ─────────────────────────────────────────────────────────────────────────────
 //
 // Fica escondida na tela e só aparece na impressão, do bloco marcado com .is-printing.
-// O isolamento usa visibility em vez de display: com display: none o navegador não
-// reserva a página e o conteúdo posicionado some junto.
+// O JS clona a folha da data escolhida pra #adminTestePrintArea, no fim do body, e aqui
+// todo o resto sai com display: none.
+//
+// A primeira versão usava visibility: hidden, que esconde mas MANTÉM a altura — a página do
+// admin continuava ocupando espaço e o navegador emitia folhas em branco depois da lista.
+// Com display: none o documento passa a ter exatamente o tamanho da folha.
 
-.adminTestePrint {
+.adminTestePrint,
+#adminTestePrintArea {
     display: none;
 }
 
@@ -808,22 +813,17 @@
     body.is-printingTurma {
         background: #fff;
 
-        * {
-            visibility: hidden;
-            box-shadow: none !important;
+        // Some com a interface toda; sobra só a área clonada.
+        > *:not(#adminTestePrintArea) {
+            display: none !important;
         }
 
-        .adminTesteData.is-printing .adminTestePrint,
-        .adminTesteData.is-printing .adminTestePrint * {
-            visibility: visible;
-        }
-
-        .adminTesteData.is-printing .adminTestePrint {
+        #adminTestePrintArea {
             display: block;
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
+        }
+
+        .adminTestePrint {
+            display: block;
             color: #000;
             font-family: Arial, Helvetica, sans-serif;
         }
@@ -871,8 +871,9 @@
         }
 
         // Nome ocupa o espaço que sobra; presença é a caixinha de marcar na mão.
-        td:first-child { width: 26px; text-align: center; }
-        td:last-child  { width: 62px; }
+        // 26px cortava: numero de dois digitos quebrava em duas linhas na folha.
+        td:first-child { width: 34px; text-align: center; white-space: nowrap; }
+        td:last-child  { width: 70px; }
 
         small {
             display: block;

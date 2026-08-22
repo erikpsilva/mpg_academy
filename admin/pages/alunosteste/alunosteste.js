@@ -156,7 +156,6 @@ const renderFolhaImpressao = (turma, grupo) => {
                     : '') +
             '</td>' +
             '<td>' + escTxt(f.celular || '-') + '</td>' +
-            '<td>' + (f.termo_status === 'concluido' ? 'Assinado' : 'Pendente') + '</td>' +
             '<td class="adminTestePrint__check"></td>' +
         '</tr>').join('');
 
@@ -171,7 +170,7 @@ const renderFolhaImpressao = (turma, grupo) => {
         '</div>' +
         '<table class="adminTestePrint__tabela">' +
             '<thead><tr>' +
-                '<th>#</th><th>Nome</th><th>Celular</th><th>Termo</th><th>Presen&ccedil;a</th>' +
+                '<th>#</th><th>Nome</th><th>Celular</th><th>Presen&ccedil;a</th>' +
             '</tr></thead>' +
             '<tbody>' + linhas + '</tbody>' +
         '</table>' +
@@ -735,23 +734,28 @@ $(document).ready(() => {
         }
     });
 
-    // Isola UMA data antes de imprimir: o @media print so mostra a secao marcada. Sem isso
-    // sairiam todas as datas da turma na mesma folha, que e justamente o que atrapalhava.
+    // Copia a folha daquela data pra um container solto no fim do body e esconde todo o
+    // resto com display: none.
+    //
+    // A primeira versao escondia o resto com visibility: hidden, que esconde mas MANTEM a
+    // altura — a pagina do admin inteira continuava ocupando espaco e o navegador emitia
+    // folhas em branco depois da lista. display: none tira do fluxo e o documento passa a
+    // ter exatamente o tamanho da folha.
     $(document).on('click', '.btn--imprimirData', function () {
-        const turmaId = $(this).data('turma-id');
-        const dia     = $(this).data('data');
+        const folha = $(this).closest('.adminTesteData').find('.adminTestePrint').first();
+        if (!folha.length) return;
 
-        $('.adminTesteData').removeClass('is-printing');
-        $('.adminTesteData[data-turma-id="' + turmaId + '"][data-data="' + dia + '"]').addClass('is-printing');
+        $('#adminTestePrintArea').remove();
+        $('<div id="adminTestePrintArea"></div>').append(folha.clone()).appendTo('body');
+
         document.body.classList.add('is-printingTurma');
         window.print();
     });
 
-    // afterprint dispara tanto ao imprimir quanto ao cancelar o dialogo — sem isso a secao
-    // ficaria marcada e a impressao seguinte sairia com a data errada.
+    // afterprint dispara tanto ao imprimir quanto ao cancelar o dialogo.
     window.addEventListener('afterprint', function () {
         document.body.classList.remove('is-printingTurma');
-        $('.adminTesteData').removeClass('is-printing');
+        $('#adminTestePrintArea').remove();
     });
 
     $(document).on('click', '.btn--dispararLembrete', function () {
