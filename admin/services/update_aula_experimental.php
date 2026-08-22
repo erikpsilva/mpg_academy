@@ -29,6 +29,7 @@ if ($id <= 0 || !in_array($action, ['realizar', 'cancelar', 'promover', 'reagend
 }
 
 require_once dirname(__FILE__, 3) . '/config/database.php';
+require_once dirname(__FILE__, 3) . '/config/aulas_teste.php';
 $pdo = getDbConnection();
 
 // Busca a entrada atual
@@ -83,30 +84,20 @@ if ($action === 'realizar') {
         exit;
     }
 
-    // Verifica se há vaga disponível para o teste
+    // Vaga é por data: quem sai da fila ocupa lugar no dia em que está marcado, e a
+    // própria inscrição não pode contar contra ela mesma (por isso o $id no fim).
     $turmaStmt = $pdo->prepare("SELECT max_alunos FROM turmas WHERE id = ?");
     $turmaStmt->execute([$turmaId]);
     $turmaData = $turmaStmt->fetch(PDO::FETCH_ASSOC);
+    $maxAlunos = ($turmaData && $turmaData['max_alunos'] !== null) ? (int) $turmaData['max_alunos'] : null;
 
-    if ($turmaData && $turmaData['max_alunos'] !== null) {
-        $stmtAtivos = $pdo->prepare(
-            "SELECT COUNT(*) FROM turma_alunos WHERE turma_id = ? AND status = 'ativo'"
-        );
-        $stmtAtivos->execute([$turmaId]);
-        $countAtivos = (int) $stmtAtivos->fetchColumn();
-
-        $stmtAgend = $pdo->prepare(
-            "SELECT COUNT(*) FROM aulas_experimentais WHERE turma_id = ? AND status = 'agendada'"
-        );
-        $stmtAgend->execute([$turmaId]);
-        $countAgendadas = (int) $stmtAgend->fetchColumn();
-
-        $vagasTeste = (int) $turmaData['max_alunos'] - $countAtivos - $countAgendadas;
-        if ($vagasTeste <= 0) {
-            http_response_code(409);
-            echo json_encode(['success' => false, 'message' => 'Sem vagas de teste disponíveis para promover.']);
-            exit;
-        }
+    if (!aulaTesteCabeNaData($pdo, $turmaId, $aula['data_agendada'] ?? null, $maxAlunos, $id)) {
+        http_response_code(409);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Sem vagas de teste nessa data. Reagende para outro dia antes de promover.',
+        ]);
+        exit;
     }
 
     $pdo->prepare("UPDATE aulas_experimentais SET status = 'agendada' WHERE id = ?")->execute([$id]);
@@ -150,23 +141,18 @@ if ($action === 'realizar') {
         exit;
     }
 
-    // Mesma checagem de vagas usada em "promover"
-    if ($turmaData['max_alunos'] !== null) {
-        $stmtAtivos = $pdo->prepare("SELECT COUNT(*) FROM turma_alunos WHERE turma_id = ? AND status = 'ativo'");
-        $stmtAtivos->execute([$turmaConfirmada]);
-        $countAtivos = (int) $stmtAtivos->fetchColumn();
+    // Vaga é da DATA nova, não da turma inteira: mover alguém pro dia 28/08 só depende de
+    // quantos já estão marcados no 28/08. O $id no fim tira o próprio registro da conta —
+    // senão reagendar dentro da mesma data acusaria "sem vagas" contra si mesmo.
+    $maxAlunos = $turmaData['max_alunos'] !== null ? (int) $turmaData['max_alunos'] : null;
 
-        // O próprio registro não conta como vaga ocupada — senão reagendar
-        // uma aula já agendada na mesma turma acusaria "sem vagas".
-        $stmtAgend = $pdo->prepare("SELECT COUNT(*) FROM aulas_experimentais WHERE turma_id = ? AND status = 'agendada' AND id <> ?");
-        $stmtAgend->execute([$turmaConfirmada, $id]);
-        $countAgendadas = (int) $stmtAgend->fetchColumn();
-
-        if ((int) $turmaData['max_alunos'] - $countAtivos - $countAgendadas <= 0) {
-            http_response_code(409);
-            echo json_encode(['success' => false, 'message' => 'Sem vagas de teste disponíveis nessa turma.']);
-            exit;
-        }
+    if (!aulaTesteCabeNaData($pdo, $turmaConfirmada, $dataAgendada, $maxAlunos, $id)) {
+        http_response_code(409);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Sem vagas de teste nessa turma para o dia ' . date('d/m/Y', strtotime($dataAgendada)) . '.',
+        ]);
+        exit;
     }
 
     $pdo->prepare("UPDATE aulas_experimentais SET status = 'agendada', turma_id = ?, data_agendada = ? WHERE id = ?")

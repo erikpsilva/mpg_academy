@@ -813,12 +813,12 @@
             box-shadow: none !important;
         }
 
-        .adminTesteBloco.is-printing .adminTestePrint,
-        .adminTesteBloco.is-printing .adminTestePrint * {
+        .adminTesteData.is-printing .adminTestePrint,
+        .adminTesteData.is-printing .adminTestePrint * {
             visibility: visible;
         }
 
-        .adminTesteBloco.is-printing .adminTestePrint {
+        .adminTesteData.is-printing .adminTestePrint {
             display: block;
             position: absolute;
             top: 0;
@@ -883,5 +883,59 @@
 
         // Linhas altas o bastante pra caber a caneta.
         tbody tr { height: 26px; }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Seções por data dentro da turma
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Cada data é uma sessão independente: tem a própria contagem de vaga e o próprio
+// botão de impressão. Visualmente precisa ficar claro que os agendados abaixo do
+// cabeçalho pertencem àquele dia, senão a lista parece uma coisa só.
+
+.adminTesteData {
+    border-top: 1px solid rgba(255, 255, 255, .07);
+
+    &:first-child {
+        border-top: 0;
+    }
+
+    &__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+        padding: 12px 20px 10px;
+        background: rgba(255, 255, 255, .02);
+    }
+
+    &__titulo {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        margin: 0;
+    }
+
+    &__dia {
+        font-size: 14px;
+        font-weight: 700;
+        color: #ffd400;
+        letter-spacing: .3px;
+    }
+
+    &__count {
+        font-size: 11px;
+        color: #999;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+    }
+
+    &__acoes {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
     }
 }

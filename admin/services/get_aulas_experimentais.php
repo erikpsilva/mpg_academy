@@ -25,8 +25,6 @@ $stmt = $pdo->prepare("
         q.nome AS quadra_nome,
         (SELECT COUNT(*) FROM turma_alunos ta
             WHERE ta.turma_id = t.id AND ta.status = 'ativo') AS alunos_ativos,
-        (SELECT COUNT(*) FROM aulas_experimentais ae2
-            WHERE ae2.turma_id = t.id AND ae2.status = 'agendada') AS agendadas_count,
         ts.id AS termo_id,
         ts.token AS termo_token,
         ts.assinante_escola_nome,
@@ -54,22 +52,22 @@ foreach ($rows as $r) {
     if (!isset($turmasMap[$tid])) {
         $maxAlunos    = $r['max_alunos'] !== null ? (int) $r['max_alunos'] : null;
         $alunosAtivos = (int) $r['alunos_ativos'];
-        $agendadas    = (int) $r['agendadas_count'];
 
-        $vagasTeste = $maxAlunos !== null
-            ? max(0, $maxAlunos - $alunosAtivos - $agendadas)
-            : null;
+        // Capacidade de teste que a turma tem EM CADA DIA. O desconto dos já agendados é
+        // feito data a data mais abaixo — um teste no dia 21 não tira vaga do dia 28.
+        $vagasPorData = $maxAlunos !== null ? max(0, $maxAlunos - $alunosAtivos) : null;
 
         $turmasMap[$tid] = [
             'turma_id'      => $tid,
             'turma_nome'    => $r['turma_nome'],
             'quadra_nome'   => $r['quadra_nome'],
             'nivel'         => $r['nivel'],
-            'max_alunos'    => $maxAlunos,
-            'alunos_ativos' => $alunosAtivos,
-            'vagas_teste'   => $vagasTeste,
-            'agendados'     => [],
-            'fila'          => [],
+            'max_alunos'     => $maxAlunos,
+            'alunos_ativos'  => $alunosAtivos,
+            'vagas_por_data' => $vagasPorData,
+            'agendados'      => [],   // lista achatada, usada pelos totais do topo
+            'datas'          => [],   // agendados agrupados por dia, cada um com sua vaga
+            'fila'           => [],
         ];
     }
 
@@ -116,6 +114,37 @@ foreach ($rows as $r) {
     } else {
         $turmasMap[$tid]['fila'][] = $entrada;
     }
+}
+
+// ── Agrupamento por data ─────────────────────────────────────────────────────
+//
+// Cada dia é uma "sessão" independente: a vaga de teste vale para aquela data e não é
+// consumida pelas outras. É isso que permite imprimir a folha do dia 21 sem misturar com
+// a do dia 28, e agendar 10 pessoas em cada um deles numa turma de 10 vagas.
+foreach ($turmasMap as $tid => $turma) {
+    $porData = [];
+
+    foreach ($turma['agendados'] as $a) {
+        $dia = $a['data_agendada'] ?: 'sem-data';
+        $porData[$dia][] = $a;
+    }
+
+    ksort($porData);   // datas no formato Y-m-d ordenam corretamente como texto
+
+    $datas = [];
+    foreach ($porData as $dia => $itens) {
+        $datas[] = [
+            'data'        => $dia === 'sem-data' ? null : $dia,
+            'agendados'   => $itens,
+            'total'       => count($itens),
+            // Vaga restante NAQUELE dia. null = turma sem limite.
+            'vagas_teste' => $turma['vagas_por_data'] === null
+                ? null
+                : max(0, $turma['vagas_por_data'] - count($itens)),
+        ];
+    }
+
+    $turmasMap[$tid]['datas'] = $datas;
 }
 
 // Quem já realizou a aula experimental é consultado em `todosalunos-teste`

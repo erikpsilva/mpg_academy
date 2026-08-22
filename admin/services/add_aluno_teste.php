@@ -53,6 +53,7 @@ if (!$celular) {
 }
 
 require_once dirname(__FILE__, 3) . '/config/database.php';
+require_once dirname(__FILE__, 3) . '/config/aulas_teste.php';
 $pdo = getDbConnection();
 
 
@@ -110,26 +111,10 @@ if (!$turmaData) {
     exit;
 }
 
-// Calcula vagas disponíveis para teste
-$status = 'agendada';
-if ($turmaData['max_alunos'] !== null) {
-    $stmtAtivos = $pdo->prepare(
-        "SELECT COUNT(*) FROM turma_alunos WHERE turma_id = ? AND status = 'ativo'"
-    );
-    $stmtAtivos->execute([$turmaId]);
-    $countAtivos = (int) $stmtAtivos->fetchColumn();
-
-    $stmtAgend = $pdo->prepare(
-        "SELECT COUNT(*) FROM aulas_experimentais WHERE turma_id = ? AND status = 'agendada'"
-    );
-    $stmtAgend->execute([$turmaId]);
-    $countAgendadas = (int) $stmtAgend->fetchColumn();
-
-    $vagasTeste = (int) $turmaData['max_alunos'] - $countAtivos - $countAgendadas;
-    if ($vagasTeste <= 0) {
-        $status = 'fila';
-    }
-}
+// Vaga de teste é por DATA, não pela turma inteira (ver config/aulas_teste.php):
+// lotar 21/08 não pode impedir alguém de agendar pro dia 28/08.
+$maxAlunos = $turmaData['max_alunos'] !== null ? (int) $turmaData['max_alunos'] : null;
+$status = aulaTesteCabeNaData($pdo, $turmaId, $dataAgendada, $maxAlunos) ? 'agendada' : 'fila';
 
 try {
     $pdo->beginTransaction();
