@@ -48,3 +48,7 @@ Thumbs.db
 *.mov
 *.wmv
 
+# Dumps locais de producao e artefato reservado do Windows.
+*.sql
+/nul
+

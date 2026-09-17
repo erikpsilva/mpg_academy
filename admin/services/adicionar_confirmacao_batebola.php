@@ -67,7 +67,7 @@ if (!$jogador) {
     exit;
 }
 
-$valor = (float) ($pdo->query("SELECT valor FROM configuracoes WHERE chave = 'valor_batebola'")->fetchColumn() ?: 17.00);
+$valor = batebolaValorEvento($pdo, $dataEvento);
 
 try {
     $pdo->beginTransaction();

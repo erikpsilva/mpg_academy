@@ -40,14 +40,17 @@ $ultimoDia   = date('Y-m-t', strtotime($mesAte . '-01'));
 
 // ── 1. Mensalidades (todos os meses do intervalo) ──────────────────────────
 $inPlaceholders = implode(',', array_fill(0, $numMeses, '?'));
+// Pendentes/atrasadas só de aluno ativo: aluno desativado não vai pagar, e contar a
+// fatura dele fazia a previsão prometer receita que não vem. Pagas contam sempre.
 $stMens = $pdo->prepare("
     SELECT
-        SUM(CASE WHEN status = 'pago'     THEN valor ELSE 0 END) AS pagas,
-        SUM(CASE WHEN status = 'pendente' THEN valor ELSE 0 END) AS pendentes,
-        SUM(CASE WHEN status = 'atrasado' THEN valor ELSE 0 END) AS atrasadas,
-        COUNT(*) AS qtd
-    FROM mensalidades
-    WHERE referencia IN ($inPlaceholders)
+        SUM(CASE WHEN m.status = 'pago'                         THEN m.valor ELSE 0 END) AS pagas,
+        SUM(CASE WHEN m.status = 'pendente' AND a.status = 'ativo' THEN m.valor ELSE 0 END) AS pendentes,
+        SUM(CASE WHEN m.status = 'atrasado' AND a.status = 'ativo' THEN m.valor ELSE 0 END) AS atrasadas,
+        SUM(m.status = 'pago' OR a.status = 'ativo') AS qtd
+    FROM mensalidades m
+    JOIN alunos a ON a.id = m.aluno_id
+    WHERE m.referencia IN ($inPlaceholders)
 ");
 $stMens->execute($meses);
 $mens = $stMens->fetch(PDO::FETCH_ASSOC);

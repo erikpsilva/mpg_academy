@@ -217,6 +217,48 @@ $emailsNotificacao = $stEmails->fetchAll();
 
             <div id="saveMsg" class="configMsg"></div>
 
+            <!-- ── Avisos e notificações ────────────────────────────── -->
+            <?php require_once ROOT . '/config/avisos.php'; ?>
+            <div class="configSection" id="avisos">
+                <h3>Avisos e notificações</h3>
+                <div class="configCard">
+
+                    <div class="configRow configRow--stack">
+                        <div class="configRow__info">
+                            <strong>Mensagens automáticas</strong>
+                            <p>Ligue ou desligue cada aviso que o sistema manda sozinho. Desligar só impede o envio automático — os botões de disparo manual do admin continuam funcionando.</p>
+                        </div>
+                    </div>
+
+                    <?php foreach (avisosCatalogo() as $grupo => $avisos): ?>
+                    <div class="configGroup"><?= htmlspecialchars($grupo) ?></div>
+
+                    <?php foreach ($avisos as $chaveAviso => $aviso): ?>
+                    <?php $avisoLigado = avisoAtivo($pdo, $chaveAviso); ?>
+                    <div class="configRow<?= $avisoLigado ? '' : ' configRow--off' ?>">
+                        <div class="configRow__info">
+                            <strong><?= htmlspecialchars($aviso['titulo']) ?></strong>
+                            <p><?= htmlspecialchars($aviso['descricao']) ?></p>
+                            <div class="configMeta">
+                                <span><?= htmlspecialchars($aviso['quando']) ?></span>
+                                <span><?= htmlspecialchars($aviso['canal']) ?></span>
+                            </div>
+                            <div class="configMsg" data-aviso-msg></div>
+                        </div>
+                        <label class="toggle" title="Ligar ou desligar: <?= htmlspecialchars($aviso['titulo']) ?>">
+                            <input type="checkbox" class="toggleAviso"
+                                   data-chave="<?= htmlspecialchars($chaveAviso) ?>"
+                                   data-titulo="<?= htmlspecialchars($aviso['titulo']) ?>"
+                                   <?= $avisoLigado ? 'checked' : '' ?>>
+                            <span class="toggle__slider"></span>
+                        </label>
+                    </div>
+                    <?php endforeach; ?>
+                    <?php endforeach; ?>
+
+                </div>
+            </div>
+
             <!-- ── E-mails de Notificação ───────────────────────────── -->
             <div class="configSection">
                 <h3>E-mails de Notificação de Atraso</h3>
@@ -572,6 +614,49 @@ var PK_PROD = "<?= substr(MP_PUBLIC_KEY_PROD, 0, 24) ?>";
 
     ligarPreco('inputValorUniforme',       'btnSalvarUniforme',       'uniformeMsg',       'valor_uniforme',        'Uniforme completo');
     ligarPreco('inputValorUniformeEquipe', 'btnSalvarUniformeEquipe', 'uniformeEquipeMsg', 'valor_uniforme_equipe', 'Camisa da equipe técnica');
+}());
+</script>
+
+<script>
+// Avisos e notificações: cada toggle grava a sua chave na hora, sem botão de salvar.
+// A confirmação aparece na própria linha — a lista é longa e uma mensagem só no topo
+// ficaria fora da tela quando o toggle clicado estivesse lá embaixo.
+(function () {
+    document.querySelectorAll('.toggleAviso').forEach(function (toggle) {
+        var linha = toggle.closest('.configRow');
+        var msg   = linha.querySelector('[data-aviso-msg]');
+        var timer = null;
+
+        function mostrar(texto, classe) {
+            clearTimeout(timer);
+            msg.textContent = texto;
+            msg.className   = 'configMsg ' + classe;
+            timer = setTimeout(function () { msg.className = 'configMsg'; }, 3000);
+        }
+
+        toggle.addEventListener('change', function () {
+            var ligado = toggle.checked;
+            toggle.disabled = true;
+
+            fetch(ADMIN_BASE_URL + '/services/save_configuracao.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                credentials: 'same-origin',
+                body: new URLSearchParams({ chave: toggle.dataset.chave, valor: ligado ? '1' : '0' }).toString()
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (!data.success) throw new Error(data.message || 'Não foi possível salvar.');
+                linha.classList.toggle('configRow--off', !ligado);
+                mostrar(ligado ? 'Ligado — volta a ser enviado.' : 'Desligado — não será mais enviado.', 'is-success');
+            })
+            .catch(function (e) {
+                toggle.checked = !ligado;
+                mostrar('Não salvou: ' + e.message, 'is-error');
+            })
+            .finally(function () { toggle.disabled = false; });
+        });
+    });
 }());
 </script>
 

@@ -35,9 +35,9 @@ if ($aluno && !empty($aluno['id'])) {
 $primeiroNome = $aluno ? explode(' ', $aluno['nome'])[0] : '';
 ?>
 <?php if (!empty($_SESSION['_impersonator_aluno'])): ?>
-<div style="position:relative;z-index:1001;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;background:#1a1a1a;color:#e5c200;font-size:13px;padding:9px 16px;text-align:center;">
-    Você (admin) está vendo o site como <strong style="color:#fff;"><?= htmlspecialchars($_SESSION['aluno']['nome'] ?? '') ?></strong>
-    <a href="<?= BASE_URL ?>/admin/services/impersonate_aluno_stop.php" style="color:#e5c200;font-weight:700;text-decoration:underline;">Voltar para admin</a>
+<div class="studentPreviewBar" role="status" aria-label="Visualização como aluno">
+    <span class="studentPreviewBar__message">Você está vendo o site como <strong><?= htmlspecialchars($_SESSION['aluno']['nome'] ?? '', ENT_QUOTES, 'UTF-8') ?></strong></span>
+    <a class="studentPreviewBar__return" href="<?= ADMIN_BASE_URL ?>/services/impersonate_aluno_stop.php">Voltar para admin</a>
 </div>
 <?php endif; ?>
 <?php if ($isStudentArea && $aluno && ($aluno['termo_status'] ?? '') === 'pendente'): ?>
@@ -45,7 +45,7 @@ $primeiroNome = $aluno ? explode(' ', $aluno['nome'])[0] : '';
     ⚠️ O aluno é menor de idade — o responsável precisa assinar o termo de responsabilidade. Clique aqui para assinar.
 </a>
 <?php endif; ?>
-<header class="header<?= $isStudentArea ? ' header--studentArea' : '' ?>">
+<header class="header<?= $isStudentArea ? ' header--studentArea' : '' ?><?= !empty($_SESSION['_impersonator_aluno']) ? ' header--studentPreview' : '' ?>">
     <div class="container">
         <div class="header__inner">
             <a class="header__brand" href="<?= BASE_URL ?>" aria-label="MPG Academy">

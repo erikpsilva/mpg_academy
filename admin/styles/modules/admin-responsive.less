@@ -1,6 +1,43 @@
 // Protecoes responsivas globais do admin.
 // Fica por ultimo nos imports para corrigir layouts antigos sem alterar seus estados JS.
 
+.alunos__header > [class*="col-"] { flex: 1 1 340px; max-width: 100%; min-width: 0; }
+.alunos__statsRow { flex-wrap: wrap; }
+.alunos__statsRow .interessados__totalCard { flex: 1 1 85px; min-width: 0; }
+.alunos__table td, .alunos__table th { padding-left: 8px; padding-right: 8px; }
+.alunos__table .alunos__mensalidadeBadge { min-width: 0; max-width: 100%; }
+.alunos__table .alunos__turmaBadge { white-space: normal; }
+.alunos__toggleWrap > .alunos__toggleBox { display: flex; }
+
+@media only screen and (max-width: 1100px) and (min-width: 768px) {
+    .alunos__tools { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .alunos__toggleWrap { grid-column: 1 / -1; }
+}
+
+@media only screen and (max-width: 767px) {
+    .adminLayout__content .finCards,
+    .adminLayout__content .finDRE { grid-template-columns: minmax(0, 1fr); }
+    .historicoAulas__mesFiltro { flex-wrap: wrap; }
+    .adminLayout__content .historicoAulas__professorFiltro { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; max-width: 100%; }
+    .historicoAulas__professorFiltro::after { display: none; }
+    .historicoAulas__professorFiltro select { width: 100%; min-width: 0; appearance: auto; }
+    .header__row { gap: 8px; padding-top: 8px; padding-bottom: 8px; }
+    .header__logo { flex: 0 0 auto; width: auto; max-width: none; gap: 8px; }
+    .header__user { flex: 1 1 190px; max-width: 100%; width: auto; flex-wrap: wrap; gap: 8px; }
+    .header__user__name { min-width: 0; margin-right: 0; }
+    .header__notif { margin-right: 0; }
+    .header__notifDropdown { position: fixed; top: 72px; right: 10px; width: calc(100vw - 20px); max-height: calc(100dvh - 90px); overflow-y: auto; }
+    .header__impersonating { flex-basis: 100%; flex-wrap: wrap; margin: 0; }
+    .sidebar { height: 100dvh; }
+    .alunos__header { padding: 16px 10px; gap: 16px; }
+    .alunos__statsRow { justify-content: flex-start; gap: 6px; }
+    .alunos__statsRow .interessados__totalCard { padding: 10px 6px; }
+}
+
+@media only screen and (max-height: 500px) {
+    [class*="Modal__box"], [class*="Modal__content"] { max-height: calc(100dvh - 24px); overflow-y: auto; }
+}
+
 .adminLayout,
 .adminLayout__content,
 .adminLayout__content > .container,
@@ -28,6 +65,8 @@
 }
 
 @media only screen and (max-width: 991px) {
+    .adminLayout__content .finCards,
+    .adminLayout__content .finDRE { grid-template-columns: minmax(0, 1fr); }
     .adminLayout__content {
         overflow-x: hidden;
 

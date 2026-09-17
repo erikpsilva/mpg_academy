@@ -402,9 +402,56 @@ function mpGerarTokenCartaoSalvo(string $accessToken, string $cardId, string $cu
     $token = $resp['body']['id'] ?? null;
 
     return [
-        'token' => $token,
-        'erro'  => $token ? null : mpExtrairErroApi($resp['body']),
+        'token'    => $token,
+        'erro'     => $token ? null : mpExtrairErroApi($resp['body']),
+        'invalido' => !$token && mpCartaoSalvoInexistente($resp['http_code'], $resp['body']),
     ];
+}
+
+/**
+ * Se a resposta do MP diz que o cliente ou o cartão salvo NÃO EXISTEM nesta conta.
+ *
+ * É diferente de uma recusa (sem saldo, cartão bloqueado): aqui tentar de novo nunca vai
+ * funcionar. Acontece quando o cartão foi salvo em outra conta do Mercado Pago — clientes e
+ * cartões pertencem à conta que os criou e não passam para a conta nova. Foi o caso da
+ * troca para a conta CNPJ: quem salvou cartão antes continuou com o ID da conta antiga, e a
+ * cobrança passou a voltar "404 Customer not found (código 2002)" em toda tentativa.
+ */
+function mpCartaoSalvoInexistente(int $httpCode, array $body): bool
+{
+    $status = (int) ($body['status'] ?? $httpCode);
+    if ($status !== 404 && $httpCode !== 404) return false;
+
+    $textos = [strtolower((string) ($body['message'] ?? ''))];
+    foreach ((array) ($body['cause'] ?? []) as $c) {
+        if (!is_array($c)) continue;
+        if ((string) ($c['code'] ?? '') === '2002') return true;
+        $textos[] = strtolower((string) ($c['description'] ?? ''));
+    }
+
+    foreach ($textos as $t) {
+        if (strpos($t, 'customer not found') !== false || strpos($t, 'card not found') !== false) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * Tira do aluno um cartão salvo que não existe mais na conta atual do Mercado Pago.
+ *
+ * Desliga o pagamento automático e limpa os IDs: sem isso a cobrança automática tenta o
+ * mesmo cartão morto em todo cron e em toda entrada no admin, e cada tentativa vira mais um
+ * erro no sino. Limpar o mp_customer_id também é o que deixa o aluno cadastrar o cartão de
+ * novo — salvar_cartao.php reaproveitaria o ID antigo e falharia.
+ */
+function mpDescartarCartaoSalvoInexistente(PDO $pdo, int $alunoId): void
+{
+    $pdo->prepare("
+        UPDATE alunos
+        SET mp_customer_id = NULL, mp_card_id = NULL, cartao_bandeira = NULL, cartao_final4 = NULL, auto_pagamento = 0
+        WHERE id = ?
+    ")->execute([$alunoId]);
 }
 
 /** Cartões já salvos num customer do Mercado Pago. */
@@ -598,6 +645,7 @@ function mpExecutarCobrancaAutomatica(PDO $pdo): array
         WHERE m.status IN ('pendente', 'atrasado')
           AND DATE(m.vencimento) <= ?
           AND a.auto_pagamento = 1
+          AND a.status = 'ativo'
           AND a.mp_customer_id IS NOT NULL
           AND a.mp_card_id IS NOT NULL
           AND cl.id IS NULL
@@ -605,9 +653,10 @@ function mpExecutarCobrancaAutomatica(PDO $pdo): array
     $st->execute([$hoje, $hoje]);
     $mensalidades = $st->fetchAll(PDO::FETCH_ASSOC);
 
-    $sucesso       = 0;
-    $falha         = 0;
-    $detalhesFalha = [];
+    $sucesso            = 0;
+    $falha              = 0;
+    $detalhesFalha      = [];
+    $cartoesDescartados = [];
 
     $meses = ['01'=>'Jan','02'=>'Fev','03'=>'Mar','04'=>'Abr','05'=>'Mai','06'=>'Jun',
               '07'=>'Jul','08'=>'Ago','09'=>'Set','10'=>'Out','11'=>'Nov','12'=>'Dez'];
@@ -626,11 +675,23 @@ function mpExecutarCobrancaAutomatica(PDO $pdo): array
             $refLabel = ($meses[$refMes] ?? $refMes) . '/' . $refAno;
         }
 
+        // O mesmo aluno pode ter mais de uma fatura na lista; se o cartão dele já foi
+        // descartado nesta rodada, não há o que tentar nas seguintes.
+        if (isset($cartoesDescartados[$m['aluno_id']])) {
+            continue;
+        }
+
         $tokenResult = mpGerarTokenCartaoSalvo($accessToken, $m['mp_card_id'], $m['mp_customer_id']);
 
         if (!$tokenResult['token']) {
             $motivoToken = 'Token do cartão: ' . $tokenResult['erro'];
             mpLogCobrancaAutomatica($pdo, $m['aluno_id'], $m['mensalidade_id'], $hoje, 'falha', $motivoToken);
+
+            if ($tokenResult['invalido']) {
+                mpTratarCartaoSalvoInexistente($pdo, $m, $total, $motivoToken);
+                $cartoesDescartados[$m['aluno_id']] = true;
+            }
+
             $detalhesFalha[] = ['aluno' => $m['nome'], 'motivo' => $motivoToken];
             $falha++;
             continue;
@@ -667,6 +728,25 @@ function mpExecutarCobrancaAutomatica(PDO $pdo): array
             $motivo = 'status: ' . ($status ?: 'sem resposta') . ' | ' . mpExtrairErroApi($body, $statusDetail);
             mpLogCobrancaAutomatica($pdo, $m['aluno_id'], $m['mensalidade_id'], $hoje, 'falha', $motivo, $mpPaymentId);
 
+            // Cliente ou cartão que não existe na conta atual: tentar de novo nunca vai dar
+            // certo. Descarta o cartão e avisa o admin uma vez, com o que fazer.
+            if (mpCartaoSalvoInexistente((int) ($result['http_code'] ?? 0), $body)) {
+                mpTratarCartaoSalvoInexistente($pdo, $m, $total, $motivo);
+                $cartoesDescartados[$m['aluno_id']] = true;
+                $detalhesFalha[] = ['aluno' => $m['nome'], 'motivo' => $motivo];
+                $falha++;
+                continue;
+            }
+
+            // O admin entra no painel várias vezes por dia e cada entrada roda esta cobrança
+            // de novo (auth_check.php). Sem esta checagem, a mesma recusa virava dezenas de
+            // linhas iguais no sino — foram 50 da mesma fatura em 4 dias.
+            if (mpErroCobrancaJaRegistradoHoje($pdo, (int) $m['aluno_id'], (int) $m['mensalidade_id'], $motivo)) {
+                $detalhesFalha[] = ['aluno' => $m['nome'], 'motivo' => $motivo];
+                $falha++;
+                continue;
+            }
+
             // Também entra em admin/erros-pagamento: a cobrança automática falha sem ninguém
             // olhando, então é justamente onde o admin mais precisa ser avisado.
             mpRegistrarErroPagamento($pdo, [
@@ -691,6 +771,50 @@ function mpExecutarCobrancaAutomatica(PDO $pdo): array
     }
 
     return ['sucesso' => $sucesso, 'falha' => $falha, 'detalhes_falha' => $detalhesFalha];
+}
+
+/**
+ * Cartão salvo que não existe na conta atual: descarta o cartão e deixa UM aviso no admin
+ * dizendo o que fazer — em vez da mensagem crua da API repetida a cada tentativa.
+ */
+function mpTratarCartaoSalvoInexistente(PDO $pdo, array $m, float $total, string $motivoApi): void
+{
+    mpDescartarCartaoSalvoInexistente($pdo, (int) $m['aluno_id']);
+
+    mpRegistrarErroPagamento($pdo, [
+        'aluno_id'         => (int) $m['aluno_id'],
+        'aluno_nome'       => $m['nome'] ?? null,
+        'contexto'         => 'mensalidade',
+        'referencia_id'    => (int) $m['mensalidade_id'],
+        'referencia_label' => 'Cobrança automática (cartão salvo)',
+        'valor'            => $total,
+        'metodo'           => 'cartao_salvo',
+        'origem'           => 'cron',
+        'mp_status'        => '404',
+        'mensagem'         => 'Cartão salvo não existe mais no Mercado Pago (foi salvo na conta antiga). Pagamento automático desligado: o aluno paga esta fatura pelo site e cadastra o cartão de novo em Meu Perfil.',
+        'detalhe_tecnico'  => $motivoApi,
+    ]);
+}
+
+/**
+ * Se a mesma falha de cobrança automática já foi registrada hoje para esta fatura.
+ * Evita repetir o aviso a cada entrada no admin — ver mpExecutarCobrancaAutomatica().
+ */
+function mpErroCobrancaJaRegistradoHoje(PDO $pdo, int $alunoId, int $mensalidadeId, string $motivo): bool
+{
+    try {
+        $st = $pdo->prepare("
+            SELECT 1 FROM pagamento_erros
+            WHERE aluno_id = ? AND referencia_id = ? AND origem = 'cron'
+              AND detalhe_tecnico = ? AND DATE(criado_em) = CURDATE()
+            LIMIT 1
+        ");
+        $st->execute([$alunoId, $mensalidadeId, $motivo]);
+        return (bool) $st->fetchColumn();
+    } catch (Throwable $e) {
+        // Na dúvida, registra: um aviso a mais é melhor que uma falha escondida.
+        return false;
+    }
 }
 
 function mpLogCobrancaAutomatica(PDO $pdo, int $alunoId, int $mensalidadeId, string $hoje, string $status, ?string $motivo = null, ?string $mpPaymentId = null): void

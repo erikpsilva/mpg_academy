@@ -18,11 +18,16 @@ $stmt = $pdo->prepare("
     SELECT m.id, m.aluno_id, m.valor, m.vencimento, m.data_pagamento, m.status,
            m.mp_taxa_valor, m.mp_valor_liquido, m.mp_payment_method,
            a.nome AS aluno_nome, a.celular,
+           a.responsavel_nome, a.responsavel_parentesco, a.responsavel_celular,
            COALESCE(t.nome, '—') AS turma_nome
     FROM mensalidades m
     JOIN alunos a ON a.id = m.aluno_id
     LEFT JOIN turmas t ON t.id = m.turma_id
     WHERE m.referencia = ?
+      -- Fatura em aberto de aluno desativado não entra: não vai ser cobrada, e somar ela
+      -- em Pendente/Atrasado inflava o que falta receber. Fatura PAGA de aluno que saiu
+      -- depois continua contando, porque é dinheiro que de fato entrou.
+      AND (m.status = 'pago' OR a.status = 'ativo')
     ORDER BY (m.status = 'pago'), a.nome
 ");
 $stmt->execute([$mesFiltro]);
@@ -151,7 +156,30 @@ function fmtBrlMens(float $v): string {
             }
         ?>
             <tr>
-                <td class="mensAdminTable__aluno"><?= htmlspecialchars($f['aluno_nome']) ?></td>
+                <?php
+                // Com quem falar sobre a fatura: o responsável quando o aluno tem um
+                // cadastrado (menor de idade), senão o próprio aluno.
+                $temResp     = !empty($f['responsavel_celular']);
+                $contatoFone = $temResp ? $f['responsavel_celular'] : $f['celular'];
+                $parentesco  = ['pai' => 'pai', 'mae' => 'mãe', 'responsavel_legal' => 'responsável'][$f['responsavel_parentesco'] ?? ''] ?? '';
+                $contatoNome = $temResp
+                    ? trim(($f['responsavel_nome'] ?? '') . ($parentesco ? ' (' . $parentesco . ')' : ''))
+                    : 'Próprio aluno';
+                $waDigitos   = preg_replace('/\D/', '', (string) $contatoFone);
+                if ($waDigitos !== '' && strlen($waDigitos) <= 11) $waDigitos = '55' . $waDigitos;
+                ?>
+                <td class="mensAdminTable__aluno">
+                    <?= htmlspecialchars($f['aluno_nome']) ?>
+                    <?php if ($contatoFone): ?>
+                    <span class="mensAdminTable__contato">
+                        <a href="https://wa.me/<?= $waDigitos ?>" target="_blank" rel="noopener"
+                           title="Abrir conversa no WhatsApp"><?= htmlspecialchars($contatoFone) ?></a>
+                        <small><?= htmlspecialchars($contatoNome) ?></small>
+                    </span>
+                    <?php else: ?>
+                    <span class="mensAdminTable__contato"><small>Sem telefone cadastrado</small></span>
+                    <?php endif; ?>
+                </td>
                 <td><?= htmlspecialchars($f['turma_nome']) ?></td>
                 <td>
                     <?= fmtBrlMens((float) $f['valor']) ?>

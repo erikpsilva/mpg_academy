@@ -35,9 +35,15 @@ const initResponsiveTables = () => {
 
     prepareAll(document);
     new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => mutation.addedNodes.forEach((node) => {
-            if (node.nodeType === Node.ELEMENT_NODE) prepareAll(node);
-        }));
+        const tables = new Set();
+        mutations.forEach((mutation) => {
+            const parentTable = mutation.target.closest && mutation.target.closest('table');
+            if (parentTable) tables.add(parentTable);
+            mutation.addedNodes.forEach((node) => {
+                if (node.nodeType === Node.ELEMENT_NODE) prepareAll(node);
+            });
+        });
+        tables.forEach(prepareTable);
     }).observe(document.body, { childList: true, subtree: true });
 };
 
@@ -85,10 +91,20 @@ const initSidebar = () => {
     $('#toggleSidebar').click(function () {
         $('.sidebar').toggleClass('open');
         $('.sidebar__overlay').toggleClass('show');
+        $(this).attr('aria-expanded', String($('.sidebar').hasClass('open')));
     });
 
     $('#sidebarOverlay, #closeSidebar').click(function () {
         $('.sidebar').removeClass('open');
         $('.sidebar__overlay').removeClass('show');
+        $('#toggleSidebar').attr('aria-expanded', 'false');
+    });
+
+    $('#toggleSidebar').attr({ 'aria-label': 'Abrir menu', 'aria-expanded': 'false' });
+    $(document).on('keydown', function (event) {
+        if (event.key === 'Escape' && $('.sidebar').hasClass('open')) {
+            $('#closeSidebar').trigger('click');
+            $('#toggleSidebar').trigger('focus');
+        }
     });
 };

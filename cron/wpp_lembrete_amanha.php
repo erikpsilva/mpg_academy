@@ -6,11 +6,17 @@
  */
 
 define('CRON_RUN', true);
+
+// Recusa quem abrir a URL sem o header da KingHost. Ver cron/_auth.php.
+require_once dirname(__FILE__) . '/_auth.php';
 require_once dirname(__FILE__, 2) . '/config/app.php';
 require_once dirname(__FILE__, 2) . '/config/database.php';
 require_once dirname(__FILE__, 2) . '/services/whatsapp/wpp_aula_teste_lembrete.php';
 
 $pdo = getDbConnection();
+
+require_once dirname(__FILE__, 2) . '/config/avisos.php';
+avisoCronExigeAtivo($pdo, 'aviso_teste_vespera', 'Lembretes véspera (amanhã)');
 
 $alvo = (new DateTime('now', new DateTimeZone('America/Sao_Paulo')))->modify('+1 day')->format('Y-m-d');
 

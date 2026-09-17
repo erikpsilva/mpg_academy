@@ -53,6 +53,28 @@ p{font-size:18px;line-height:1.45;color:#e7e7e7;margin:0 0 12px}
 .big-number{font-size:110px;font-weight:900;color:#ffd400;line-height:.9}
 .section-no{position:absolute;right:48px;top:30px;font-size:68px;color:rgba(255,212,0,.12);font-weight:900}
 @media screen {body{padding:20px} .page{margin:0 auto 20px;box-shadow:0 18px 45px rgba(0,0,0,.55)}}
+@media screen and (max-width: 1319px) {
+  body { padding: 12px; }
+  .page { width: 100%; height: auto; min-height: 0; padding: 28px 22px; }
+  .hero { height: auto; margin-top: 24px; }
+  .hero > *, .cols2 > *, .cards > * { min-width: 0; }
+  .logo-lockup { max-width: 100%; padding: 18px; gap: 12px; }
+  .logo-lockup img { max-width: 38%; height: auto; }
+  .footer { position: relative; bottom: auto; left: auto; right: auto; gap: 12px; margin-top: 28px; }
+  .page p, .page h1, .page h2, .page h3 { overflow-wrap: anywhere; }
+  .page img { max-width: 100%; }
+}
+@media screen and (max-width: 767px) {
+  .hero, .cols2, .cards, .stats { grid-template-columns: minmax(0, 1fr) !important; }
+  h1 { font-size: 32px; } h2 { font-size: 27px; } h3 { font-size: 21px; }
+  .quote { font-size: 23px; } .big-number { font-size: 70px; }
+  .hero-visual { min-height: 240px; }
+  .ball { width: 200px; height: 200px; right: 0; top: 20px; }
+  .uniform-wrap { height: 360px; }
+  .table { display: block; overflow-x: auto; }
+  .ribbon { position: relative; right: auto; top: auto; transform: none; padding: 10px; margin-top: 14px; }
+  .topbar { gap: 12px; } .topbar img { max-width: 40%; }
+}
 </style>
 </head>
 <body>

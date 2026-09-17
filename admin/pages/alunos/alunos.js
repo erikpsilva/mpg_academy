@@ -62,10 +62,25 @@ const renderMensalidade = (detalhes) => {
     return html;
 };
 
+const renderContatoAluno = (r) => {
+    const menor = Number(r.menor_idade) === 1;
+    const escape = value => $('<span>').text(value || '').html();
+    const telefone = String((menor ? r.responsavel_celular : r.celular) || '').trim();
+    let numero = telefone.replace(/\D/g, '');
+    if (numero.length === 10 || numero.length === 11) numero = '55' + numero;
+    const valido = /^\d{12,15}$/.test(numero);
+    const contato = telefone && valido
+        ? '<a class="alunos__whatsapp" href="https://wa.me/' + numero + '" target="_blank" rel="noopener noreferrer">' + escape(telefone) + '</a>'
+        : '<span>' + escape(telefone || 'WhatsApp não informado') + '</span>';
+    return '<div class="alunos__contato">' + contato + (menor
+        ? '<span class="alunos__responsavel">Responsável: ' + escape(r.responsavel_nome || 'Nome não informado') + '</span>'
+        : '') + '</div>';
+};
+
 const renderTabela = (registros) => {
     const tbody = $('#alunosTableBody');
     if (!registros || registros.length === 0) {
-        tbody.html('<tr><td colspan="7" class="interessados__empty">Nenhum aluno encontrado.</td></tr>');
+        tbody.html('<tr><td colspan="8" class="interessados__empty">Nenhum aluno encontrado.</td></tr>');
         return;
     }
     const rows = registros.map(r => {
@@ -89,7 +104,8 @@ const renderTabela = (registros) => {
             '<td class="interessados__id">' + r.id + '</td>' +
             '<td class="alunos__cellNome"><strong>' + $('<span>').text(r.nome).html() + '</strong>' +
                 (atrasoBadge ? '<br>' + atrasoBadge : '') + '</td>' +
-            '<td class="alunos__cellEmail">' + $('<span>').text(r.email).html() + '</td>' +
+            '<td class="alunos__cellIdade">' + (r.idade == null ? 'Não informada' : Number(r.idade) + (Number(r.idade) === 1 ? ' ano' : ' anos')) + '</td>' +
+            '<td class="alunos__cellContato">' + renderContatoAluno(r) + '</td>' +
             '<td class="alunos__cellTurma">' + turmaCell + '</td>' +
             '<td class="alunos__cellMensalidade">' + renderMensalidade(r.mensalidade_detalhes) + '</td>' +
             '<td class="alunos__cellStatus"><span class="statusBadge statusBadge--' + r.status + '">' + r.status.toUpperCase() + '</span></td>' +
@@ -117,14 +133,19 @@ const renderPaginacao = (pagina, totalPaginas) => {
 
 let paginaAtual = 1;
 
-const carregarAlunos = (pagina, busca, turmaId) => {
+const carregarAlunos = (pagina, busca, turmaId, incluirInativos) => {
     paginaAtual = pagina;
     const tbody = $('#alunosTableBody');
-    tbody.html('<tr><td colspan="7" class="interessados__loading">Carregando...</td></tr>');
+    tbody.html('<tr><td colspan="8" class="interessados__loading">Carregando...</td></tr>');
 
-    $.get(ADMIN_BASE_URL + '/services/get_alunos.php', { pagina, busca, turma_id: turmaId || '' }, (res) => {
+    $.get(ADMIN_BASE_URL + '/services/get_alunos.php', {
+        pagina,
+        busca,
+        turma_id: turmaId || '',
+        incluir_inativos: incluirInativos ? '1' : ''
+    }, (res) => {
         if (!res.success) {
-            tbody.html('<tr><td colspan="7" class="interessados__empty">Erro ao carregar dados.</td></tr>');
+            tbody.html('<tr><td colspan="8" class="interessados__empty">Erro ao carregar dados.</td></tr>');
             return;
         }
         $('#totalGeral').text(res.totalGeral);
@@ -133,15 +154,18 @@ const carregarAlunos = (pagina, busca, turmaId) => {
 
         const turmaSel  = $('#filtraTurma option:selected').text();
         const filtrando = turmaId > 0;
+        // Sem o sufixo, uma lista so de ativos e uma lista com inativos ficam
+        // indistinguiveis — o total muda e nao fica claro por que.
+        const escopo = incluirInativos ? ' (ativos + inativos)' : ' ativo(s)';
         $('#resultCount').html(
             busca || filtrando
-                ? res.total + ' aluno(s)' + (filtrando ? ' na turma <strong>' + $('<span>').text(turmaSel).html() + '</strong>' : '') + (busca ? ' — busca: "' + $('<span>').text(busca).html() + '"' : '')
-                : res.total + ' aluno(s)'
+                ? res.total + ' aluno(s)' + escopo + (filtrando ? ' na turma <strong>' + $('<span>').text(turmaSel).html() + '</strong>' : '') + (busca ? ' — busca: "' + $('<span>').text(busca).html() + '"' : '')
+                : res.total + ' aluno(s)' + escopo
         );
         renderTabela(res.registros);
         renderPaginacao(res.pagina, res.totalPaginas);
     }, 'json').fail(() => {
-        tbody.html('<tr><td colspan="7" class="interessados__empty">Erro ao comunicar com o servidor.</td></tr>');
+        tbody.html('<tr><td colspan="8" class="interessados__empty">Erro ao comunicar com o servidor.</td></tr>');
     });
 };
 
@@ -1038,27 +1062,39 @@ const initFaturasDrawer = () => {
 $(document).ready(() => {
     if (ALUNO_VIEW === 'lista') {
         carregarFiltroTurmas();
-        carregarAlunos(1, '', 0);
+        carregarAlunos(1, '', 0, false);
 
         let debounceTimer;
 
+        // Estado atual dos tres filtros da barra, para nao reler os mesmos campos
+        // em cada handler.
+        const filtros = () => ({
+            busca:    $('#buscaAlunos').val().trim(),
+            turmaId:  parseInt($('#filtraTurma').val()) || 0,
+            inativos: $('#mostraInativos').is(':checked')
+        });
+
         $('#buscaAlunos').on('input', function () {
             clearTimeout(debounceTimer);
-            const busca   = $(this).val().trim();
-            const turmaId = parseInt($('#filtraTurma').val()) || 0;
-            debounceTimer = setTimeout(() => carregarAlunos(1, busca, turmaId), 400);
+            const f = filtros();
+            debounceTimer = setTimeout(() => carregarAlunos(1, f.busca, f.turmaId, f.inativos), 400);
         });
 
         $('#filtraTurma').on('change', function () {
-            const turmaId = parseInt($(this).val()) || 0;
-            const busca   = $('#buscaAlunos').val().trim();
-            carregarAlunos(1, busca, turmaId);
+            const f = filtros();
+            carregarAlunos(1, f.busca, f.turmaId, f.inativos);
+        });
+
+        // Volta pra pagina 1: com os inativos entrando ou saindo da lista, a pagina
+        // em que o usuario estava deixa de corresponder ao mesmo trecho de dados.
+        $('#mostraInativos').on('change', function () {
+            const f = filtros();
+            carregarAlunos(1, f.busca, f.turmaId, f.inativos);
         });
 
         $(document).on('click', '.btn--pag', function () {
-            const busca   = $('#buscaAlunos').val().trim();
-            const turmaId = parseInt($('#filtraTurma').val()) || 0;
-            carregarAlunos(parseInt($(this).data('pag')), busca, turmaId);
+            const f = filtros();
+            carregarAlunos(parseInt($(this).data('pag')), f.busca, f.turmaId, f.inativos);
         });
     }
 

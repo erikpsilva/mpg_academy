@@ -37,7 +37,9 @@ if ($mensalidadeId > 0) {
     $stmt->execute([$mensalidadeId]);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } elseif (preg_match('/^\d{4}-\d{2}$/', $mes)) {
-    $stmt = $pdo->prepare($baseSql . " WHERE m.referencia = ? AND m.status IN ('pendente','atrasado')");
+    // Disparo em massa do mês: aluno desativado fica de fora. Cobrar uma fatura específica
+    // (mensalidade_id acima) continua possível, porque aí o admin escolheu a pessoa.
+    $stmt = $pdo->prepare($baseSql . " WHERE m.referencia = ? AND m.status IN ('pendente','atrasado') AND a.status = 'ativo'");
     $stmt->execute([$mes]);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } else {

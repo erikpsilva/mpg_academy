@@ -23,10 +23,10 @@ $_SESSION['jogador']['nivel'] = $perfil['nivel'];
 // e a saudação virava "Bem-vindo, !".
 $primeiroNome = explode(' ', trim($perfil['nome']))[0];
 
-$cfg   = $pdo->query("SELECT valor FROM configuracoes WHERE chave = 'valor_batebola'")->fetch();
-$valor = $cfg ? (float) $cfg['valor'] : 17.00;
-
 $dataEvento = batebolaProximoDomingo($pdo);
+$valor      = batebolaValorEvento($pdo, $dataEvento);
+$especial   = batebolaEhEspecial($dataEvento);
+
 $stInsc = $pdo->prepare("SELECT status FROM batebola_inscricoes WHERE jogador_id = ? AND data_evento = ?");
 $stInsc->execute([$_SESSION['jogador']['id'], $dataEvento]);
 $statusInscricao  = $stInsc->fetchColumn() ?: null;
@@ -93,6 +93,7 @@ $dataFmtExtenso = $dtEvento->format('d') . ' de ' . $meses[(int) $dtEvento->form
         </div>
 
         <?php include ROOT . '/includes/batebola_janela.php'; ?>
+        <?php include ROOT . '/includes/batebola_avisos.php'; ?>
 
         <!-- ── Participar do próximo domingo ─────────────────────────────── -->
         <?php if ($statusInscricao === 'pago'): ?>
@@ -100,7 +101,7 @@ $dataFmtExtenso = $dtEvento->format('d') . ' de ' . $meses[(int) $dtEvento->form
             <div>
                 <span class="bateBolaInicio__ctaTag">✅ Vaga garantida</span>
                 <h2>Você tá dentro do Bate Bola de <?= $dataFmtExtenso ?>!</h2>
-                <p>Te esperamos domingo, das 10h às 13h, na <?= BATEBOLA_LOCAL_NOME ?> — <?= BATEBOLA_LOCAL_ENDERECO ?>.</p>
+                <p>Te esperamos domingo, das <?= batebolaHorarioTexto($dataEvento) ?>, na <?= BATEBOLA_LOCAL_NOME ?> — <?= BATEBOLA_LOCAL_ENDERECO ?>.<?= $especial ? ' Nessa edição jogamos uma hora a mais — vai até as ' . BATEBOLA_ESPECIAL_FIM . '!' : '' ?></p>
             </div>
         </section>
         <?php elseif ($vagasEsgotadas): ?>
@@ -122,9 +123,9 @@ $dataFmtExtenso = $dtEvento->format('d') . ' de ' . $meses[(int) $dtEvento->form
         <?php else: ?>
         <section class="bateBolaInicio__cta">
             <div>
-                <span class="bateBolaInicio__ctaTag"><?php if ($statusInscricao === 'pendente'): ?>⏳ Pagamento pendente<?php else: ?>🏐 Bate Bola de domingo<?php endif; ?></span>
+                <span class="bateBolaInicio__ctaTag"><?php if ($statusInscricao === 'pendente'): ?>⏳ Pagamento pendente<?php elseif ($especial): ?>🏐 Edição especial — 1h a mais<?php else: ?>🏐 Bate Bola de domingo<?php endif; ?></span>
                 <h2>Domingo, <?= $dataFmtExtenso ?> — garanta sua vaga!</h2>
-                <p><?= $vagasConfirmadas ?>/<?= BATEBOLA_MAX_VAGAS ?> vagas confirmadas · R$ <?= number_format($valor, 2, ',', '.') ?> via PIX</p>
+                <p><?= $vagasConfirmadas ?>/<?= BATEBOLA_MAX_VAGAS ?> vagas confirmadas · R$ <?= number_format($valor, 2, ',', '.') ?> via PIX<?= $especial ? ' · jogo até as ' . BATEBOLA_ESPECIAL_FIM : '' ?></p>
             </div>
             <a class="bateBolaButton bateBolaButton--primary" href="<?= BASE_URL ?>/batebolapagamento">
                 <?= $statusInscricao === 'pendente' ? 'Concluir pagamento' : 'Quero participar' ?> <i class="icon-go" aria-hidden="true"></i>
@@ -137,7 +138,7 @@ $dataFmtExtenso = $dtEvento->format('d') . ' de ' . $meses[(int) $dtEvento->form
                 <h2>Bate Bola MPG</h2>
                 <dl>
                     <div><dt><i class="icon-calendar" aria-hidden="true"></i> Quando</dt><dd>Domingos</dd></div>
-                    <div><dt><i class="icon-timescompetitivos" aria-hidden="true"></i> Horário</dt><dd>Das 10h às 13h</dd></div>
+                    <div><dt><i class="icon-timescompetitivos" aria-hidden="true"></i> Horário</dt><dd>Das <?= batebolaHorarioTexto($dataEvento) ?><?= $especial ? ' (1h a mais nessa edição)' : '' ?></dd></div>
                     <div>
                         <dt><i class="icon-zonanorte" aria-hidden="true"></i> Local</dt>
                         <dd><?= BATEBOLA_LOCAL_NOME ?><small><?= BATEBOLA_LOCAL_ENDERECO ?></small></dd>

@@ -787,13 +787,20 @@ if ($id > 0) {
                     <input class="input alunos__search"
                            type="text"
                            id="buscaAlunos"
-                           placeholder="Nome ou e-mail">
+                           placeholder="Aluno, responsável ou telefone">
                 </label>
                 <label class="alunos__filtroWrap" for="filtraTurma">
                     <span>Filtrar por turma</span>
                     <select class="input alunos__filtroTurma" id="filtraTurma">
                         <option value="">Todas as turmas</option>
                     </select>
+                </label>
+                <label class="alunos__toggleWrap" for="mostraInativos">
+                    <span>Inativos</span>
+                    <span class="alunos__toggleBox">
+                        <input type="checkbox" id="mostraInativos" class="alunos__toggleCheck">
+                        <span class="alunos__toggleLabel">Mostrar inativos</span>
+                    </span>
                 </label>
                 <div class="alunos__resultMeta">
                     <span id="resultCount"></span>
@@ -808,15 +815,16 @@ if ($id > 0) {
                                 <tr>
                                     <th>#</th>
                                     <th>Nome</th>
-                                    <th>E-mail</th>
+                                    <th>Idade</th>
+                                    <th>WhatsApp / Responsável</th>
                                     <th>Turma</th>
                                     <th>Mensalidade</th>
                                     <th>Status</th>
-                                    <th></th>
+                                    <th>Ações</th>
                                 </tr>
                             </thead>
                             <tbody id="alunosTableBody">
-                                <tr><td colspan="7" class="interessados__loading">Carregando...</td></tr>
+                                <tr><td colspan="8" class="interessados__loading">Carregando...</td></tr>
                             </tbody>
                         </table>
                     </div>

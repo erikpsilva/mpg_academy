@@ -185,8 +185,13 @@ if ($action === 'realizar') {
             ? 'das ' . substr($horario['hora_inicio'], 0, 5) . 'h às ' . substr($horario['hora_fim'], 0, 5) . 'h'
             : 'a confirmar';
 
-        require_once dirname(__FILE__, 3) . '/services/whatsapp/wpp_aula_teste_confirmacao.php';
-        wppAulaTesteReagendada($alunoData, $turmaData, $dataFmt, $horarioFmt);
+        require_once dirname(__FILE__, 3) . '/config/avisos.php';
+
+        // O reagendamento acontece de qualquer jeito; o toggle só decide se o aluno é avisado.
+        if (avisoAtivo($pdo, 'aviso_teste_reagendamento')) {
+            require_once dirname(__FILE__, 3) . '/services/whatsapp/wpp_aula_teste_confirmacao.php';
+            wppAulaTesteReagendada($alunoData, $turmaData, $dataFmt, $horarioFmt);
+        }
     }
 }
 

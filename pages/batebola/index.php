@@ -1,6 +1,12 @@
 <?php
-// Necessário pro aviso da janela de inscrição (includes/batebola_janela.php).
+// Necessário pro aviso da janela de inscrição (includes/batebola_janela.php) e pros avisos
+// de horário novo / plano mensal (includes/batebola_avisos.php), que dependem de saber
+// qual é o próximo domingo.
+require_once ROOT . '/config/database.php';
 require_once ROOT . '/config/batebola.php';
+
+$pdo        = getDbConnection();
+$dataEvento = batebolaProximoDomingo($pdo);
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -24,6 +30,7 @@ require_once ROOT . '/config/batebola.php';
                     <p class="bateBolaHero__lead">O Bate Bola da MPG Academy é um encontro para jogar, encontrar a galera e curtir o vôlei em um ambiente leve, organizado e acolhedor.</p>
 
                     <?php include ROOT . '/includes/batebola_janela.php'; ?>
+                    <?php include ROOT . '/includes/batebola_avisos.php'; ?>
 
                     <div class="bateBolaHero__actions">
                         <?php if (!empty($_SESSION['jogador'])): ?>
@@ -40,7 +47,7 @@ require_once ROOT . '/config/batebola.php';
                     <h2>Bate Bola MPG</h2>
                     <dl>
                         <div><dt><i class="icon-calendar" aria-hidden="true"></i> Quando</dt><dd>Domingos</dd></div>
-                        <div><dt><i class="icon-timescompetitivos" aria-hidden="true"></i> Horário</dt><dd>Das 10h às 13h</dd></div>
+                        <div><dt><i class="icon-timescompetitivos" aria-hidden="true"></i> Horário</dt><dd>Das <?= batebolaHorarioTexto($dataEvento) ?></dd></div>
                         <div>
                             <dt><i class="icon-zonanorte" aria-hidden="true"></i> Local</dt>
                             <dd><?= BATEBOLA_LOCAL_NOME ?><small><?= BATEBOLA_LOCAL_ENDERECO ?></small></dd>

@@ -10,9 +10,8 @@ require_once ROOT . '/config/batebola.php';
 $pdo        = getDbConnection();
 $jogadorId  = (int) $_SESSION['jogador']['id'];
 $dataEvento = batebolaProximoDomingo($pdo);
-
-$cfg   = $pdo->query("SELECT valor FROM configuracoes WHERE chave = 'valor_batebola'")->fetch();
-$valor = $cfg ? (float) $cfg['valor'] : 17.00;
+$valor      = batebolaValorEvento($pdo, $dataEvento);
+$especial   = batebolaEhEspecial($dataEvento);
 
 $stJog = $pdo->prepare("SELECT nome FROM jogadores_batebola WHERE id = ?");
 $stJog->execute([$jogadorId]);
@@ -70,6 +69,7 @@ $dataFmtCurta   = $dtEvento->format('d/m/Y');
 .bbPayClosed__icon { font-size: 44px; margin-bottom: 14px; }
 .bbPayClosed h2 { color: #ffd500; font-size: 20px; margin-bottom: 8px; }
 .bbPayClosed p { color: #aaa; }
+.bbPayNote { background: rgba(255,213,0,.1); border: 1px solid rgba(255,213,0,.3); border-radius: 8px; padding: 10px 14px; color: #ffd500; font-size: 13px; margin-bottom: 16px; }
 </style>
 </head>
 <body>
@@ -84,7 +84,7 @@ $dataFmtCurta   = $dtEvento->format('d/m/Y');
         <div class="bbPayOk">
             <div class="bbPayOk__icon">✅</div>
             <h2>Vaga garantida!</h2>
-            <p><?= htmlspecialchars($perfil['nome']) ?>, sua vaga pro Bate Bola de <strong style="color:#fff;"><?= $dataFmtExtenso ?></strong> está confirmada.</p>
+            <p><?= htmlspecialchars($perfil['nome']) ?>, sua vaga pro Bate Bola de <strong style="color:#fff;"><?= $dataFmtExtenso ?></strong> está confirmada<?= $especial ? ' — nessa edição jogamos até as ' . BATEBOLA_ESPECIAL_FIM . '!' : '.' ?></p>
             <a href="<?= BASE_URL ?>/batebolainicio" class="btn btn--primary">Voltar ao início</a>
         </div>
 
@@ -107,10 +107,18 @@ $dataFmtCurta   = $dtEvento->format('d/m/Y');
             <h1 class="bbPayCard__title">Confirmar participação</h1>
             <p class="bbPayCard__sub">Bate Bola — <?= $dataFmtExtenso ?></p>
 
+            <?php if ($especial): ?>
+            <p class="bbPayNote">🏐 Edição especial: <b>uma hora a mais de jogo</b>, até as <?= BATEBOLA_ESPECIAL_FIM ?>. Por isso o valor desse domingo é R$ <?= number_format($valor, 2, ',', '.') ?> — a partir de <?= (new DateTime(BATEBOLA_HORARIO_NOVO_DESDE))->format('d/m') ?> volta pra R$ 17,00.</p>
+            <?php endif; ?>
+
+            <?php if (batebolaAvisoHorarioNovo($dataEvento)): ?>
+            <p class="bbPayNote">⏰ A partir de <?= (new DateTime(BATEBOLA_HORARIO_NOVO_DESDE))->format('d/m') ?> o Bate Bola passa a ser das <?= batebolaHorarioTexto(BATEBOLA_HORARIO_NOVO_DESDE) ?>.</p>
+            <?php endif; ?>
+
             <div class="bbPaySummary">
                 <div class="bbPaySummary__row"><span>Jogador</span><span><?= htmlspecialchars($perfil['nome']) ?></span></div>
                 <div class="bbPaySummary__row"><span>Data</span><span><?= $dataFmtCurta ?> (domingo)</span></div>
-                <div class="bbPaySummary__row"><span>Horário</span><span>10h às 13h</span></div>
+                <div class="bbPaySummary__row"><span>Horário</span><span><?= batebolaHorarioTexto($dataEvento) ?></span></div>
                 <div class="bbPaySummary__row"><span>Local</span><span>Quadra Orion</span></div>
                 <div class="bbPaySummary__row bbPaySummary__row--total"><span>Total (PIX)</span><span>R$ <?= number_format($valor, 2, ',', '.') ?></span></div>
             </div>

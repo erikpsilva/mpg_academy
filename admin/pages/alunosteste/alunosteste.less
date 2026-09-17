@@ -940,3 +940,34 @@
         flex-wrap: wrap;
     }
 }
+
+// Mensagem pós-aula ("conseguiu comparecer?") no cabeçalho de cada data. Azul em vez do
+// verde padrão das ações: é um envio para a lista inteira, não uma ação sobre um aluno só,
+// e não deve se confundir com "Realizada" ou "Imprimir lista" ao lado.
+.btn--posAula {
+    background: rgba(96, 165, 250, .12);
+    border-color: rgba(96, 165, 250, .35);
+    color: #7cb6ff;
+
+    &:hover:not(:disabled) {
+        background: rgba(96, 165, 250, .2);
+        border-color: rgba(96, 165, 250, .6);
+        color: #a8cdff;
+    }
+
+    &:disabled {
+        cursor: wait;
+        opacity: .6;
+    }
+
+    // Bloqueado até o dia seguinte à aula: cinza e sem hover, pra não parecer um botão
+    // esperando carregar (que é o que o estado :disabled comum sugere).
+    &.is-bloqueado,
+    &.is-bloqueado:disabled {
+        background: rgba(255, 255, 255, .04);
+        border-color: rgba(255, 255, 255, .12);
+        color: rgba(255, 255, 255, .38);
+        cursor: not-allowed;
+        opacity: 1;
+    }
+}

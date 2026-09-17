@@ -10,11 +10,18 @@
  */
 
 define('CRON_RUN', true);
+
+// Recusa quem abrir a URL sem o header da KingHost. Ver cron/_auth.php.
+require_once dirname(__FILE__) . '/_auth.php';
 require_once dirname(__FILE__, 2) . '/config/app.php';
 require_once dirname(__FILE__, 2) . '/config/database.php';
 require_once dirname(__FILE__, 2) . '/services/whatsapp/zapi.php';
 
 $pdo  = getDbConnection();
+
+require_once dirname(__FILE__, 2) . '/config/avisos.php';
+avisoCronExigeAtivo($pdo, 'aviso_treino_dia', 'Lembretes de treino');
+
 $now  = new DateTime('now', new DateTimeZone('America/Sao_Paulo'));
 $hoje = $now->format('Y-m-d');
 

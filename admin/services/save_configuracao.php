@@ -22,11 +22,26 @@ if (empty($_SESSION['usuario'])) {
 $chave = trim($_POST['chave'] ?? '');
 $valor = $_POST['valor'] ?? '';
 
-// Somente chaves permitidas podem ser alteradas
-$chavesPermitidas = ['pagamento_modo_teste', 'valor_matricula', 'matricula_ativa', 'valor_batebola', 'valor_uniforme', 'valor_uniforme_equipe'];
+require_once dirname(__FILE__, 3) . '/config/avisos.php';
+
+// Somente chaves permitidas podem ser alteradas. As dos avisos vêm do catálogo em
+// config/avisos.php, para que aviso novo não precise ser lembrado aqui também.
+$chavesAvisos     = avisosChaves();
+$chavesPermitidas = array_merge(
+    ['pagamento_modo_teste', 'valor_matricula', 'matricula_ativa', 'valor_batebola', 'valor_uniforme', 'valor_uniforme_equipe'],
+    $chavesAvisos
+);
 if (!in_array($chave, $chavesPermitidas, true)) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Chave inválida.']);
+    exit;
+}
+
+// Aviso só aceita ligado/desligado. Qualquer outro valor seria lido como "ligado" por
+// avisoAtivo() e o toggle mostraria um estado que não é o gravado.
+if (in_array($chave, $chavesAvisos, true) && !in_array($valor, ['0', '1'], true)) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Valor inválido para aviso: use 0 ou 1.']);
     exit;
 }
 

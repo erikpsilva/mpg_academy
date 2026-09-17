@@ -28,12 +28,24 @@ $pagina    = max(1, (int) ($_GET['pagina'] ?? 1));
 $porPagina = 20;
 $offset    = ($pagina - 1) * $porPagina;
 
+// Por padrao a listagem traz so quem esta ativo; o checkbox da tela reabre os demais.
+// "Inativo" aqui segue a mesma conta dos cards do topo (totalGeral - totalAtivos),
+// ou seja, tudo que nao esta 'ativo' — inclui os 'pendente'.
+$incluirInativos = ($_GET['incluir_inativos'] ?? '') === '1';
+
 $conditions = [];
 $params     = [];
 
+if (!$incluirInativos) {
+    $conditions[] = "a.status = 'ativo'";
+}
+
 if ($busca !== '') {
-    $conditions[] = '(a.nome LIKE ? OR a.email LIKE ?)';
+    $conditions[] = '(a.nome LIKE ? OR a.email LIKE ? OR a.celular LIKE ? OR a.responsavel_nome LIKE ? OR a.responsavel_celular LIKE ?)';
     $like         = '%' . $busca . '%';
+    $params[]     = $like;
+    $params[]     = $like;
+    $params[]     = $like;
     $params[]     = $like;
     $params[]     = $like;
 }
@@ -74,7 +86,13 @@ $efetivo = "
     )";
 
 $stmt = $pdo->prepare("
-    SELECT a.id, a.nome, a.email, a.status, a.criado_em,
+    SELECT a.id, a.nome, a.status, a.criado_em, a.celular,
+           a.responsavel_nome, a.responsavel_celular,
+           CASE WHEN a.nascimento > '1900-01-01' AND a.nascimento <= CURDATE()
+                THEN TIMESTAMPDIFF(YEAR, a.nascimento, CURDATE()) ELSE NULL END AS idade,
+           CASE WHEN a.nascimento > '1900-01-01' AND a.nascimento <= CURDATE()
+                THEN TIMESTAMPDIFF(YEAR, a.nascimento, CURDATE()) < 18
+                ELSE a.is_menor END AS menor_idade,
            GROUP_CONCAT(t.nome ORDER BY t.nome SEPARATOR ', ') AS turmas_nomes,
            SUM(COALESCE(t.valor_mensalidade, 0)) AS mensalidade_base,
            SUM($efetivo) AS mensalidade_total,

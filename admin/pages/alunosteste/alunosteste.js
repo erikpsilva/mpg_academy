@@ -191,8 +191,32 @@ const badgeVagas = (vagas) => {
 /**
  * Uma secao por data agendada, cada uma com sua contagem de vaga e seu botao de impressao.
  */
+/** Data de hoje em São Paulo, no formato do banco (YYYY-MM-DD). */
+const hojeSP = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
+
 const renderGrupoData = (turma, grupo) => {
     const rotulo = grupo.data ? fmtData(grupo.data) : 'Sem data definida';
+
+    // Um botão por data, liberado a partir do próprio dia da aula. Em data futura ele
+    // aparece bloqueado, dizendo quando libera, em vez de sumir — assim ninguém fica
+    // procurando. O servidor aplica a mesma regra.
+    let botaoPosAula = '';
+    if (grupo.data && grupo.total > 0) {
+        const liberado  = grupo.data <= hojeSP();
+        const liberaFmt = grupo.data.slice(8, 10) + '/' + grupo.data.slice(5, 7);
+
+        botaoPosAula =
+            '<button class="btn--testeAcao btn--posAula' + (liberado ? '' : ' is-bloqueado') + '"' +
+                ' data-turma-id="' + turma.turma_id + '"' +
+                ' data-turma-nome="' + $('<span>').text(turma.turma_nome).html() + '"' +
+                ' data-data="' + grupo.data + '"' +
+                ' data-total="' + grupo.total + '"' +
+                ' data-exemplo="' + escTxt(String(grupo.agendados[0].nome || '').trim().split(' ')[0]) + '"' +
+                (liberado
+                    ? ' title="Enviar para os agendados de ' + fmtData(grupo.data) + '"'
+                    : ' disabled title="Libera em ' + liberaFmt + ', no dia da aula"') +
+            '>&#128172; ' + (liberado ? 'Mensagem pós-aula' : 'Pós-aula libera ' + liberaFmt) + '</button>';
+    }
 
     return '<div class="adminTesteData" data-turma-id="' + turma.turma_id + '"' +
                 ' data-data="' + (grupo.data || 'sem-data') + '">' +
@@ -203,6 +227,7 @@ const renderGrupoData = (turma, grupo) => {
             '</p>' +
             '<div class="adminTesteData__acoes">' +
                 badgeVagas(grupo.vagas_teste) +
+                botaoPosAula +
                 '<button class="btn--testeAcao btn--imprimirData"' +
                     ' data-turma-id="' + turma.turma_id + '"' +
                     ' data-data="' + (grupo.data || 'sem-data') + '">&#128424; Imprimir lista</button>' +
@@ -773,6 +798,36 @@ $(document).ready(() => {
         }, 'json').fail(() => {
             alert('Erro ao comunicar com o servidor.');
             btn.prop('disabled', false).text(labelOriginal);
+        });
+    });
+
+    // Mensagem pós-aula para todos os agendados da data. O texto é fixo e o servidor coloca
+    // o primeiro nome de cada aluno — o admin só confirma, não digita nada. O exemplo usa
+    // o nome de um aluno de verdade da lista, pra ficar claro que cada um recebe o seu.
+    $(document).on('click', '.btn--posAula', function () {
+        const btn           = $(this);
+        const data          = String(btn.data('data'));
+        const total         = btn.data('total');
+        const exemploNome   = btn.data('exemplo') || 'Pedro';
+        const labelOriginal = btn.html();
+
+        if (!confirm(
+            'Enviar a mensagem pós-aula por WhatsApp para os ' + total + ' agendado(s) de ' +
+            fmtData(data) + ' em "' + btn.data('turma-nome') + '"?\n\n' +
+            'Cada aluno recebe com o próprio nome. Exemplo:\n' +
+            '"Oi ' + exemploNome + ', conseguiu comparecer ao treino? Gostou da aula?"\n\n' +
+            'Quem já recebeu a mensagem pós-aula desta data é pulado.'
+        )) return;
+
+        btn.prop('disabled', true).text('Enviando...');
+        $.post(ADMIN_BASE_URL + '/services/disparar_pos_aula.php',
+            { turma_id: btn.data('turma-id'), data: data },
+            (res) => alert(res.message || (res.success ? 'Mensagens enviadas.' : 'Não foi possível enviar.')),
+            'json'
+        ).fail((xhr) => {
+            alert((xhr.responseJSON && xhr.responseJSON.message) || 'Erro ao comunicar com o servidor.');
+        }).always(() => {
+            btn.prop('disabled', false).html(labelOriginal);
         });
     });
 

@@ -46,9 +46,7 @@ if (!$jogador) {
 }
 
 $dataEvento = batebolaProximoDomingo($pdo);
-
-$cfg   = $pdo->query("SELECT valor FROM configuracoes WHERE chave = 'valor_batebola'")->fetch();
-$valor = $cfg ? (float) $cfg['valor'] : 17.00;
+$valor      = batebolaValorEvento($pdo, $dataEvento);
 
 // Já pago pra essa data — nada a fazer, só confirma.
 $stExist = $pdo->prepare("SELECT id, status, pix_qr_code, pix_qr_code_base64 FROM batebola_inscricoes WHERE jogador_id = ? AND data_evento = ?");

@@ -39,6 +39,7 @@ $st = $pdo->query("
           AND nl.mensalidade_id = m.id
           AND nl.tipo = 'atraso_25dias'
     WHERE m.status = 'atrasado'
+      AND a.status = 'ativo'
       AND DATEDIFF(CURDATE(), m.vencimento) >= 25
       AND nl.id IS NULL
     ORDER BY dias_atraso DESC

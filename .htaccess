@@ -11,6 +11,10 @@ RewriteRule ^(.*)$ https://www.mpgacademy.com.br/$1 [R=301,L]
 # Bloquear acesso direto à pasta config
 RewriteRule ^config/ - [F,L]
 
+# A pasta cron/ NÃO é bloqueada aqui de propósito: o cron da KingHost dispara os scripts
+# abrindo a URL deles. Quem protege é cron/_auth.php, que exige o header X-Cron-Auth do
+# painel — bloquear no .htaccess barraria a própria KingHost.
+
 # Redirecionar URLs amigaveis para index.php
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]

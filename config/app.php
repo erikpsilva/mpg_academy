@@ -19,6 +19,24 @@ function appHostName(): string {
 }
 
 function appIsLocal(): bool {
+    // ── Linha de comando (os crons) ──────────────────────────────────────────
+    //
+    // Em CLI não existe HTTP_HOST, então appHostName() devolve "localhost" e o sistema
+    // se dava por LOCAL. As consequências eram silenciosas e graves: o cron tentava
+    // conectar em root@localhost (credenciais do XAMPP) e o sendWhatsApp() gravava a
+    // mensagem num arquivo em vez de enviar — devolvendo true nos dois casos, então o
+    // log registrava "enviado" e ninguém recebia nada.
+    //
+    // MPG_ENV decide quando existe. Sem ela, o sistema operacional resolve: a máquina de
+    // desenvolvimento é Windows (XAMPP) e o servidor é Linux.
+    if (PHP_SAPI === 'cli') {
+        $env = getenv('MPG_ENV');
+        if (is_string($env) && $env !== '') {
+            return $env === 'local';
+        }
+        return PHP_OS_FAMILY === 'Windows';
+    }
+
     $host = appHostName();
 
     // Localhost padrão

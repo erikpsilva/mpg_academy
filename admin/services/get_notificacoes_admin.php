@@ -29,6 +29,7 @@ $st = $pdo->query("
     FROM mensalidades m
     JOIN alunos a ON a.id = m.aluno_id
     WHERE m.status = 'atrasado'
+      AND a.status = 'ativo'
     ORDER BY dias_atraso DESC
 ");
 $rows = $st->fetchAll();

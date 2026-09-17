@@ -1,5 +1,5 @@
 <?php
-define('ROOT', dirname(__DIR__, 2));
+if (!defined('ROOT')) define('ROOT', dirname(__DIR__, 2));
 require_once ROOT . '/config/app.php';
 require_once ROOT . '/config/database.php';
 

@@ -246,3 +246,45 @@
         grid-template-columns: 1fr;
     }
 }
+
+// ── Avisos e notificações ────────────────────────────────────────────────────
+// Rótulo de grupo dentro do mesmo card: separa "Alunos matriculados" de "Aula
+// experimental" sem abrir um card novo para cada um, que espalharia os toggles.
+.configGroup {
+    background: rgba(255, 255, 255, 0.025);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.42);
+    font-size: 11px;
+    font-weight: @semiBold;
+    letter-spacing: 0.08em;
+    padding: 14px 24px 10px;
+    text-transform: uppercase;
+}
+
+// Quando e por onde o aviso sai — o que o admin precisa saber antes de desligar.
+.configMeta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+
+    span {
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 20px;
+        color: rgba(255, 255, 255, 0.56);
+        font-size: 11px;
+        line-height: 1.4;
+        padding: 2px 9px;
+    }
+}
+
+// Aviso desligado fica visivelmente apagado, para dar pra ver de relance o que está
+// parado sem ter que ler cada toggle.
+.configRow--off .configRow__info {
+    strong { color: rgba(255, 255, 255, 0.5); }
+    .configMeta span { border-color: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.34); }
+}
+
+.configRow__info .configMsg[data-aviso-msg] {
+    margin-top: 8px;
+}

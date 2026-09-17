@@ -59,8 +59,11 @@ if ($id > 0) {
     $id = (int) $pdo->lastInsertId();
 }
 
-// Dispara WhatsApp apenas quando comunicado é publicado pela primeira vez
-if ($publicado && !$eraPublicado) {
+require_once dirname(__FILE__, 3) . '/config/avisos.php';
+
+// Dispara WhatsApp apenas quando comunicado é publicado pela primeira vez — e só se o aviso
+// estiver ligado. O comunicado em si é publicado de qualquer jeito.
+if ($publicado && !$eraPublicado && avisoAtivo($pdo, 'aviso_comunicado')) {
     require_once dirname(__FILE__, 3) . '/config/app.php';
     require_once dirname(__FILE__, 3) . '/services/whatsapp/zapi.php';
 

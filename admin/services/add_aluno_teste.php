@@ -184,35 +184,46 @@ try {
         require_once dirname(__FILE__, 3) . '/services/whatsapp/wpp_aula_teste_confirmacao.php';
         require_once dirname(__FILE__, 3) . '/services/site/notificar_termo_responsavel.php';
 
-        // E-mail de confirmação para o aluno — só se ele informou um.
-        if ($email) {
-            sendMpgTesteConfirmation($email, $nome, $turmaData['nome'], $dataFmt, $horarioFmt, $endFmt);
-        }
+        require_once dirname(__FILE__, 3) . '/config/avisos.php';
 
-        // WhatsApp de confirmação (aluno + responsável se menor)
         $termoUrl = ($isMenor && $termoToken)
             ? BASE_URL . '/termo?token=' . $termoToken
             : '';
 
-        $alunoWpp = [
-            'nome'                => $nome,
-            'celular'             => $celular,
-            'is_menor'            => $isMenor,
+        $dadosTermo = [
+            'responsavel_email'   => $responsavelEmail,
             'responsavel_nome'    => $responsavelNome,
             'responsavel_celular' => $responsavelCelular,
+            'aluno_nome'          => $nome,
+            'turma_nome'          => $turmaData['nome'],
         ];
-        wppAulaTesteConfirmacao($alunoWpp, $turmaData, $dataFmt, $horarioFmt, $termoUrl);
 
-        // E-mail + WhatsApp do termo para o responsável (menor)
-        // WPP já enviado junto com a confirmação em wppAulaTesteConfirmacao(); só envia email aqui
-        if ($isMenor && $termoUrl && $responsavelEmail) {
-            notificarTermoResponsavel([
-                'responsavel_email'   => $responsavelEmail,
+        if (avisoAtivo($pdo, 'aviso_teste_confirmacao')) {
+            // E-mail de confirmação para o aluno — só se ele informou um.
+            if ($email) {
+                sendMpgTesteConfirmation($email, $nome, $turmaData['nome'], $dataFmt, $horarioFmt, $endFmt);
+            }
+
+            // WhatsApp de confirmação (aluno + responsável se menor)
+            $alunoWpp = [
+                'nome'                => $nome,
+                'celular'             => $celular,
+                'is_menor'            => $isMenor,
                 'responsavel_nome'    => $responsavelNome,
                 'responsavel_celular' => $responsavelCelular,
-                'aluno_nome'          => $nome,
-                'turma_nome'          => $turmaData['nome'],
-            ], $termoUrl, true);
+            ];
+            wppAulaTesteConfirmacao($alunoWpp, $turmaData, $dataFmt, $horarioFmt, $termoUrl);
+
+            // E-mail do termo para o responsável (menor).
+            // O WhatsApp do termo já foi junto com a confirmação em wppAulaTesteConfirmacao().
+            if ($isMenor && $termoUrl && $responsavelEmail) {
+                notificarTermoResponsavel($dadosTermo, $termoUrl, true);
+            }
+        } elseif ($isMenor && $termoUrl) {
+            // Confirmação desligada, mas o termo não é aviso: sem a assinatura do responsável
+            // o menor não pode entrar em quadra. Vai o termo sozinho, por e-mail e WhatsApp,
+            // sem a mensagem de "aula confirmada".
+            notificarTermoResponsavel($dadosTermo, $termoUrl, false);
         }
     }
 

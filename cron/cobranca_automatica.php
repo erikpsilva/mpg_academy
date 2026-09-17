@@ -19,6 +19,9 @@
  */
 
 define('CRON_RUN', true);
+
+// Recusa quem abrir a URL sem o header da KingHost. Ver cron/_auth.php.
+require_once dirname(__FILE__) . '/_auth.php';
 require_once dirname(__FILE__, 2) . '/config/app.php';
 require_once dirname(__FILE__, 2) . '/config/database.php';
 require_once dirname(__FILE__, 2) . '/config/mercadopago.php';

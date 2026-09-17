@@ -30,6 +30,7 @@
 @import "../pages/assinaturas/assinaturas.less";
 @import "../pages/patrocinio/patrocinio.less";
 @import "../includes/batebola_janela.less";
+@import "../includes/batebola_avisos.less";
 @import "../includes/uniforme_medidas.less";
 @import "../includes/lightbox.less";
 @import "../pages/batebola/batebola.less";
@@ -38,3 +39,12 @@
 @import "../pages/batebolameusdados/batebolameusdados.less";
 @import "../pages/pedidouniforme/pedidouniforme.less";
 @import "../pages/pagamentouniforme/pagamentouniforme.less";
+
+// O cadastro precisa caber antes do breakpoint de celular.
+@media only screen and (min-width: 992px) and (max-width: 1199px) {
+    .bateBolaSignup__grid {
+        grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+        gap: 32px;
+    }
+    .bateBolaSignup__grid > * { min-width: 0; }
+}

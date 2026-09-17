@@ -47,6 +47,18 @@ if (!$aluno) {
 $accessToken = mpAccessToken($pdo);
 
 $customerId = $aluno['mp_customer_id'];
+
+// Um cliente salvo pode não existir na conta atual do Mercado Pago — quem cadastrou cartão
+// antes da troca para a conta CNPJ ficou com o ID da conta antiga. Anexar o cartão novo a
+// esse ID falharia sempre, e o aluno nunca conseguiria reativar o pagamento automático.
+// Nesse caso o ID antigo é descartado e o cliente é buscado ou criado na conta atual.
+if (!empty($customerId)) {
+    $confere = mpRequest($accessToken, 'GET', '/v1/customers/' . urlencode($customerId));
+    if (mpCartaoSalvoInexistente($confere['http_code'], $confere['body'])) {
+        $customerId = null;
+    }
+}
+
 if (empty($customerId)) {
     $customerId = mpObterOuCriarCustomer($accessToken, $aluno['email']);
 }

@@ -54,13 +54,20 @@ $stmt = $pdo->prepare('
 ');
 $stmt->execute([$nome, $email, $celular]);
 
-$emailSent = sendMpgSignupConfirmation($email, $nome);
+require_once dirname(__FILE__, 2) . '/../config/avisos.php';
+
+// Com o aviso desligado o cadastro segue normal, só não sai o e-mail — e a mensagem na tela
+// não pode prometer um e-mail que não vai chegar, nem falar em falha que não houve.
+$avisoLigado = avisoAtivo($pdo, 'aviso_interesse_email');
+$emailSent   = $avisoLigado ? sendMpgSignupConfirmation($email, $nome) : false;
 
 http_response_code(201);
 echo json_encode([
     'success' => true,
-    'message' => $emailSent
-        ? 'Cadastro realizado com sucesso! Enviamos uma confirmação para o seu e-mail.'
-        : 'Cadastro realizado com sucesso! Não foi possível enviar o e-mail de confirmação agora.',
+    'message' => !$avisoLigado
+        ? 'Cadastro realizado com sucesso! Em breve entraremos em contato.'
+        : ($emailSent
+            ? 'Cadastro realizado com sucesso! Enviamos uma confirmação para o seu e-mail.'
+            : 'Cadastro realizado com sucesso! Não foi possível enviar o e-mail de confirmação agora.'),
     'email_sent' => $emailSent,
 ]);

@@ -112,4 +112,27 @@
         color: @white;
         font-weight: @semiBold;
     }
+
+    // Contato embaixo do nome: telefone clicável (abre o WhatsApp) e de quem é o número.
+    &__contato {
+        display: block;
+        margin-top: 4px;
+        font-weight: normal;
+        line-height: 1.35;
+
+        a {
+            color: #5ce69a;
+            font-size: 13px;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+
+            &:hover { color: #8ff3b8; }
+        }
+
+        small {
+            display: block;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 12px;
+        }
+    }
 }

@@ -10,10 +10,12 @@ $dbConfig = APP_IS_LOCAL
         'pass' => '',
     ]
     : [
-        'host' => 'localhost',
-        'name' => 'mpgacademy_mpg_db',
+        // KingHost nao aceita 'localhost': o MySQL roda em outro servidor.
+        // Host alternativo, caso o principal falhe: mysql65-farm2.uni5.net
+        'host' => 'mysql.mpgacademy.com.br',
+        'name' => 'mpgacademy',
         'user' => 'mpgacademy',
-        'pass' => 'Theking!@389518',
+        'pass' => 'Theking389518',
     ];
 
 define('DB_HOST', getenv('MPG_DB_HOST') ?: $dbConfig['host']);

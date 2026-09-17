@@ -1,14 +1,91 @@
 <?php
 
 /**
- * Configurações e helpers do Bate Bola — encontro avulso de vôlei (domingo, 10h-13h,
- * Quadra Orion), separado do sistema de mensalidades/turmas da escola.
+ * Configurações e helpers do Bate Bola — encontro de vôlei aos domingos na Quadra Orion,
+ * separado do sistema de mensalidades/turmas da escola.
+ *
+ * Duas regras aqui dependem de data e viram sozinhas, sem ninguém precisar lembrar de
+ * mexer em nada depois:
+ *   - o horário muda de 10h-13h pra 12h-15h a partir de 13/09/2026;
+ *   - 06/09/2026 é uma edição especial, com uma hora a mais de jogo e valor próprio.
  */
 
 const BATEBOLA_MAX_VAGAS  = 24;
 const BATEBOLA_TIME_CORES = ['Azul', 'Vermelho', 'Amarelo', 'Verde'];
 const BATEBOLA_LOCAL_NOME = 'Quadra Orion';
 const BATEBOLA_LOCAL_ENDERECO = 'Rua André Domingues, 40 – Jardim Paraíso, São Paulo/SP – CEP 02417-080';
+
+/**
+ * Edição especial: um domingo só, com uma hora a mais de jogo — vai até as 14h em vez das
+ * 13h — e por isso R$ 23 em vez do valor de sempre.
+ *
+ * A regra vive só nestas constantes. Passado esse domingo, preço, horário e o destaque na
+ * tela voltam ao normal sozinhos, sem precisar lembrar de reverter nada.
+ */
+const BATEBOLA_ESPECIAL_DATA  = '2026-09-06';
+const BATEBOLA_ESPECIAL_VALOR = 23.00;
+const BATEBOLA_ESPECIAL_FIM   = '14h';
+
+/** Se a data informada é a edição especial com hora extra. */
+function batebolaEhEspecial(string $dataEvento): bool
+{
+    return $dataEvento === BATEBOLA_ESPECIAL_DATA;
+}
+
+/**
+ * Valor do PIX pra um domingo específico: o valor da edição especial, senão o valor padrão
+ * configurado em `configuracoes.valor_batebola`. Usar sempre esta função em vez de ler
+ * `valor_batebola` direto, pra que o valor cobrado (Mercado Pago) e o valor exibido nas
+ * telas nunca fiquem desencontrados.
+ */
+function batebolaValorEvento(PDO $pdo, string $dataEvento): float
+{
+    if (batebolaEhEspecial($dataEvento)) {
+        return BATEBOLA_ESPECIAL_VALOR;
+    }
+
+    $cfg = $pdo->query("SELECT valor FROM configuracoes WHERE chave = 'valor_batebola'")->fetch();
+    return $cfg ? (float) $cfg['valor'] : 17.00;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Horário: 10h-13h até 06/09/2026, 12h-15h de 13/09/2026 em diante
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// A virada é por DATA DO ENCONTRO, não por "hoje". Assim a tela do domingo 06/09 continua
+// mostrando o horário antigo enquanto ele é o próximo encontro, e no instante em que
+// 13/09 vira o próximo domingo tudo já aparece com o horário novo — sem deploy, sem
+// alguém precisar editar texto.
+
+const BATEBOLA_HORARIO_NOVO_DESDE = '2026-09-13';
+
+/** Horário de um domingo, como ['inicio' => '10h', 'fim' => '13h']. */
+function batebolaHorario(string $dataEvento): array
+{
+    if ($dataEvento >= BATEBOLA_HORARIO_NOVO_DESDE) {
+        return ['inicio' => '12h', 'fim' => '15h'];
+    }
+
+    // A edição especial estende só o fim: começa no horário de sempre e joga uma hora a mais.
+    return ['inicio' => '10h', 'fim' => batebolaEhEspecial($dataEvento) ? BATEBOLA_ESPECIAL_FIM : '13h'];
+}
+
+/** Horário de um domingo pronto pra exibir: "10h às 13h", "12h às 15h". */
+function batebolaHorarioTexto(string $dataEvento): string
+{
+    $h = batebolaHorario($dataEvento);
+    return $h['inicio'] . ' às ' . $h['fim'];
+}
+
+/**
+ * Se ainda cabe avisar sobre a mudança de horário — ou seja, se o próximo encontro ainda
+ * é no horário antigo. Quando 13/09 vira o próximo domingo, isso passa a ser false e o
+ * aviso some sozinho de todas as telas.
+ */
+function batebolaAvisoHorarioNovo(string $dataEvento): bool
+{
+    return $dataEvento < BATEBOLA_HORARIO_NOVO_DESDE;
+}
 
 /** Se um domingo específico foi marcado pelo admin como "sem Bate Bola". */
 function batebolaDataBloqueada(PDO $pdo, string $dataEvento): bool

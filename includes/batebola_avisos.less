@@ -1,0 +1,70 @@
+// Avisos do Bate Bola sobre mudanças (includes/batebola_avisos.php): horário novo e plano
+// mensal. Segue a mesma linguagem visual do aviso da janela de inscrição (bbJanela) —
+// bloco escuro com barra colorida à esquerda —, pra que os dois se leiam como um conjunto
+// e não como dois componentes diferentes empilhados.
+.bbAviso {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    flex-wrap: nowrap;
+    margin: 0 0 16px;
+    padding: 16px 18px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-left: 4px solid @yellow;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.32);
+
+    &__icone {
+        flex-shrink: 0;
+        font-size: 20px;
+        line-height: 1.3;
+    }
+
+    &__texto {
+        flex: 1;
+        min-width: 0;
+
+        strong {
+            display: block;
+            margin-bottom: 6px;
+            color: @white;
+            font-size: 15px;
+            line-height: 1.35;
+        }
+
+        span {
+            display: block;
+            color: rgba(255, 255, 255, 0.72);
+            font-size: 13px;
+            line-height: 1.55;
+
+            b {
+                color: @yellow;
+                font-weight: 700;
+            }
+        }
+    }
+
+    // A edição especial fica no amarelo da marca: é a chamada do domingo que está à venda
+    // agora, então é ela que deve puxar o olho primeiro.
+    &--especial {
+        border-left-color: @yellow;
+        background: linear-gradient(90deg, rgba(255, 213, 0, 0.08), rgba(0, 0, 0, 0.32) 55%);
+    }
+
+    // Azul em vez do amarelo: o aviso do horário fala do futuro, não do domingo à venda —
+    // cor diferente pra não competir com o de cima.
+    &--horario {
+        border-left-color: #4ea8ff;
+
+        .bbAviso__texto span b { color: #7cc0ff; }
+    }
+
+    @media @mobile-large {
+        padding: 14px 15px;
+        gap: 11px;
+
+        &__icone { font-size: 17px; }
+        &__texto strong { font-size: 14px; }
+    }
+}
