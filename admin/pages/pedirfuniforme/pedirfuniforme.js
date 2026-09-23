@@ -172,6 +172,8 @@
     }
 
     function generoAtual() {
+        if (corteUnico()) return generoDoCadastro();
+
         var m = modeloSelecionado();
         return m ? m.getAttribute('data-genero') : 'masculino';
     }
@@ -200,6 +202,20 @@
         return produtoAtual() === 'regata' ? 'regata' : 'camisa';
     }
 
+    /** Peça única (regata): sem masculino/feminino/infantil pra escolher. */
+    function corteUnico() {
+        return !!fichaProduto().corte_unico;
+    }
+
+    /**
+     * Corte gravado num produto de peça única: o do cadastro do aluno. Não muda a peça —
+     * é só o balde da numeração (turma + corte), que precisa ser o mesmo do uniforme dele
+     * pra o número continuar sendo dele.
+     */
+    function generoDoCadastro() {
+        return (alunoAtual && alunoAtual.sexo === 'feminino') ? 'feminino' : 'masculino';
+    }
+
     function temShorts() {
         return fichaProduto().pecas.indexOf('shorts') !== -1;
     }
@@ -212,6 +228,14 @@
         // ("Tipo de uniforme"); mostrar os dois seletores confundiria qual manda.
         var campoProduto = document.getElementById('produtoField');
         if (campoProduto) campoProduto.style.display = destinoEhAluno() ? '' : 'none';
+
+        // Peça única troca os cartões de corte por um aviso do que é a peça.
+        var boxModelos = document.getElementById('modelosBox');
+        var boxUnico   = document.getElementById('produtoUnicoAviso');
+        var unico      = corteUnico() && destinoEhAluno();
+
+        if (boxModelos) boxModelos.hidden = unico;
+        if (boxUnico)   boxUnico.hidden   = !unico;
 
         form.querySelectorAll('[data-genero-card]').forEach(function (card) {
             var vale = cortes.indexOf(card.getAttribute('data-genero-card')) !== -1;
@@ -420,7 +444,7 @@
         var m = modeloSelecionado();
 
         if (!alunoIdInput.value)     return erro('Selecione o aluno.');
-        if (!m)                      return erro('Escolha o modelo do uniforme.');
+        if (!m && !corteUnico())     return erro('Escolha o modelo do uniforme.');
         if (!nomeCamisa.value.trim()) return erro('Informe o nome que vai na camiseta.');
         if (!numeroInput.value)      return erro('Escolha o número da camiseta.');
         if (!pecas.camisa.input.value) {
@@ -437,8 +461,10 @@
             aluno_id:    alunoIdInput.value,
             produto:     produtoAtual(),
             turma_id:    turmaSelect.value,
-            genero:      m.getAttribute('data-genero'),
-            modelo:      m.getAttribute('data-modelo'),
+            // Peça única não tem corte nem cor escolhidos na tela: o corte sai do cadastro
+            // (só pro balde da numeração) e o modelo é o fixo do produto.
+            genero:      corteUnico() ? generoDoCadastro() : m.getAttribute('data-genero'),
+            modelo:      corteUnico() ? 'padrao'           : m.getAttribute('data-modelo'),
             nome_camisa: nomeCamisa.value.trim(),
             numero:      numeroInput.value,
             // A regata vai no campo da camisa — ver uniformeValidarTamanhos().

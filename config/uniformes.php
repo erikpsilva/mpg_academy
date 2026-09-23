@@ -112,11 +112,17 @@ const UNIFORME_PRODUTOS = [
         'imagem'      => 'images/uniformes/socamisa.png',
         'venda_aluno' => true,
     ],
+    // A regata não entra na conversa de corte: é uma peça só, unissex, na arte preta. Quem
+    // pede escolhe o tamanho e pronto. O `genero` continua sendo gravado no pedido porque é
+    // ele que define o balde da numeração (turma + corte) — mas vem do cadastro da pessoa,
+    // não de uma escolha na tela, e não muda nada na peça.
     'regata' => [
         'nome'        => 'Camiseta regata',
-        'descricao'   => 'Regata sem manga, com nome e número. Corte unissex.',
+        'descricao'   => 'Regata sem manga, com nome e número. Peça única, unissex.',
         'pecas'       => ['regata'],
         'cortes'      => ['masculino', 'feminino'],
+        'corte_unico' => true,
+        'modelo_fixo' => 'padrao',
         'valor_chave' => 'valor_uniforme_regata',
         'imagem'      => 'images/uniformes/camisetaRegata.png',
         'venda_aluno' => true,
@@ -484,6 +490,27 @@ function uniformeProdutosDoAluno(): array
     return array_filter(UNIFORME_PRODUTOS, fn($p) => $p['venda_aluno']);
 }
 
+/**
+ * Produto de peça única, sem escolha de corte (hoje só a regata).
+ *
+ * A tela não pergunta masculino/feminino/infantil nesses casos, e o `modelo` é sempre o
+ * mesmo — quem chama grava o que uniformeModeloDoProduto() devolver, não o que vier do
+ * formulário.
+ */
+function uniformeCorteUnico(string $tipo): bool
+{
+    return !empty(uniformeProduto($tipo)['corte_unico']);
+}
+
+/** Modelo (cor) de um produto: fixo quando o produto só existe numa arte. */
+function uniformeModeloDoProduto(string $tipo, string $modeloEscolhido): string
+{
+    $fixo = uniformeProduto($tipo)['modelo_fixo'] ?? null;
+    if ($fixo !== null) return $fixo;
+
+    return in_array($modeloEscolhido, UNIFORME_MODELOS, true) ? $modeloEscolhido : 'padrao';
+}
+
 /** Todo produto leva número, menos a camisa da equipe técnica (que leva o cargo). */
 function uniformeTemNumero(string $tipo): bool
 {
@@ -816,6 +843,9 @@ function uniformeCriarPedidoManual(
     if (!in_array($genero, uniformeProdutoCortes($tipoUniforme), true)) {
         return ['success' => false, 'message' => 'Esse produto não é vendido no corte ' . mb_strtolower(uniformeGeneroLabel($genero), 'UTF-8') . '.'];
     }
+
+    // Regata tem arte única: o modelo não vem da tela.
+    $modelo = uniformeModeloDoProduto($tipoUniforme, $modelo);
 
     if ($numero < UNIFORME_NUMERO_MIN || $numero > UNIFORME_NUMERO_MAX) {
         return ['success' => false, 'message' => 'Escolha um número de 1 a 99.'];

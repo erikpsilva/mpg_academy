@@ -129,8 +129,21 @@ $generoPadrao = in_array($sexoAluno, UNIFORME_GENEROS, true) ? $sexoAluno : 'mas
                     </div>
                 </section>
 
-                <section class="uniformOrder__block">
+                <section class="uniformOrder__block" id="uniformCorteBlock">
                     <h2><span>3</span> Modelo e tamanho do corte</h2>
+
+                    <?php
+                    // A regata é peça única, unissex: não tem masculina/feminina/infantil pra
+                    // escolher. Em vez dos cartões de modelo, ela mostra só o que é — o corte
+                    // gravado no pedido vem do cadastro e serve apenas pro balde de numeração.
+                    ?>
+                    <div class="uniformOrder__unico" id="uniformProdutoUnico" hidden>
+                        <img src="<?= BASE_URL ?>/images/uniformes/camisetaRegata.png" alt="Camiseta regata">
+                        <div>
+                            <strong>Peça única, unissex</strong>
+                            <p>A regata não tem versão masculina, feminina ou infantil: é um modelo só, na arte preta. Você escolhe o nome, o número e o tamanho — a grade vai do PP ao XG3.</p>
+                        </div>
+                    </div>
 
                     <div class="uniformOrder__models">
                         <?php
@@ -166,6 +179,12 @@ $generoPadrao = in_array($sexoAluno, UNIFORME_GENEROS, true) ? $sexoAluno : 'mas
 
                     <p class="uniformOrder__productNote" id="uniformProductNote"></p>
                 </section>
+
+                <?php
+                // Corte gravado no pedido da regata: sai do cadastro do aluno e serve só pro
+                // balde da numeração (turma + corte). A peça é a mesma pra todo mundo.
+                ?>
+                <input type="hidden" id="uniformGeneroPadrao" value="<?= $generoPadrao ?>">
 
                 <section class="uniformOrder__block">
                     <h2><span>4</span> Personalização</h2>

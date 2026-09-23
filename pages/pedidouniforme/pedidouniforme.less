@@ -218,6 +218,42 @@
         gap: 14px;
     }
 
+    // Peça única (regata): ocupa o lugar dos cartões de corte e explica por que não há
+    // masculino/feminino/infantil pra escolher.
+    &__unico {
+        display: grid;
+        grid-template-columns: 190px minmax(0, 1fr);
+        gap: 18px;
+        align-items: center;
+        padding: 14px;
+        border: 2px solid rgba(255, 213, 0, 0.35);
+        border-radius: 8px;
+        background: rgba(0, 0, 0, 0.28);
+
+        img {
+            width: 100%;
+            aspect-ratio: 4 / 3;
+            display: block;
+            border-radius: 6px;
+            background: #f4f4f4;
+            object-fit: contain;
+        }
+
+        strong {
+            display: block;
+            margin-bottom: 6px;
+            color: @yellow;
+            font-size: 15px;
+        }
+
+        p {
+            margin: 0;
+            color: rgba(255, 255, 255, 0.75);
+            font-size: 13px;
+            line-height: 1.6;
+        }
+    }
+
     &__productNote {
         margin: 14px 0 0;
         color: rgba(255, 255, 255, 0.6);
@@ -972,6 +1008,11 @@
         &__products {
             grid-template-columns: minmax(0, 1fr);
             gap: 10px;
+        }
+
+        &__unico {
+            grid-template-columns: minmax(0, 1fr);
+            gap: 12px;
         }
 
         &__size {

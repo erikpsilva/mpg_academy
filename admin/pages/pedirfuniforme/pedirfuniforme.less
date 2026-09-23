@@ -225,6 +225,41 @@
         gap: 12px;
     }
 
+    // Peça única (regata): ocupa o lugar dos cartões de corte.
+    &__unico {
+        display: grid;
+        grid-template-columns: 160px minmax(0, 1fr);
+        gap: 14px;
+        align-items: center;
+        padding: 12px;
+        border: 2px solid rgba(255, 213, 0, 0.32);
+        border-radius: 6px;
+        background: #0c0d0f;
+
+        img {
+            width: 100%;
+            aspect-ratio: 4 / 3;
+            display: block;
+            border-radius: 4px;
+            background: #f4f4f4;
+            object-fit: contain;
+        }
+
+        strong {
+            display: block;
+            margin-bottom: 5px;
+            color: @alert;
+            font-size: 14px;
+        }
+
+        p {
+            margin: 0;
+            color: #b9b9b9;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+    }
+
     // Cartões de produto (uniforme completo, só a camisa, regata) — a primeira escolha
     // da tela, com foto e preço à vista.
     &__produtos {

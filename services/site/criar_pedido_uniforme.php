@@ -75,6 +75,10 @@ if (!in_array($modelo, UNIFORME_MODELOS, true)) {
     exit;
 }
 
+// Produto de arte única (regata) grava sempre o mesmo modelo, venha o que vier do
+// formulário — lá a pessoa nem escolhe cor.
+$modelo = uniformeModeloDoProduto($produto, $modelo);
+
 if ($nomeCamisa === '') {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Informe o nome que vai na camiseta.']);

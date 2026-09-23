@@ -59,6 +59,12 @@
     var fieldShorts   = document.getElementById('fieldTamShorts');
     var notaProduto   = document.getElementById('uniformProductNote');
     var submitValor   = document.getElementById('uniformSubmitValor');
+    var boxModelos    = form.querySelector('.uniformOrder__models');
+    var boxUnico      = document.getElementById('uniformProdutoUnico');
+
+    // Corte do cadastro do aluno. Produto de peça única (regata) não pergunta corte nenhum,
+    // mas o pedido ainda grava um: é ele que define o balde da numeração da turma.
+    var generoPadrao  = (document.getElementById('uniformGeneroPadrao') || {}).value || 'masculino';
 
     function moeda(v) {
         return 'R$ ' + Number(v).toFixed(2).replace('.', ',');
@@ -83,12 +89,21 @@
         return fichaProduto().pecas.indexOf('shorts') !== -1;
     }
 
+    /** Peça única (regata): sem masculino/feminino/infantil pra escolher. */
+    function corteUnico() {
+        return !!fichaProduto().corte_unico;
+    }
+
     /**
      * Um produto não existe em todo corte — a regata tem grade única de adulto. Os cartões
      * fora do catálogo somem, e se o corte escolhido era um deles, cai pro primeiro válido.
      */
     function aplicarProduto() {
         var cortes = fichaProduto().cortes;
+
+        // Peça única troca os cartões de corte por um card explicando o que é a peça.
+        if (boxModelos) boxModelos.hidden = corteUnico();
+        if (boxUnico)   boxUnico.hidden   = !corteUnico();
 
         form.querySelectorAll('[data-genero-card]').forEach(function (card) {
             var vale = cortes.indexOf(card.getAttribute('data-genero-card')) !== -1;
@@ -109,8 +124,8 @@
         if (resumo.total) resumo.total.textContent = moeda(valor);
 
         if (notaProduto) {
-            notaProduto.textContent = produtoAtual() === 'regata'
-                ? 'A regata tem corte unissex e grade única (PP ao XG3) — o modelo escolhido aqui define a cor e a numeração da sua turma.'
+            notaProduto.textContent = corteUnico()
+                ? 'O número continua sendo o seu, controlado pela sua turma como nas outras peças.'
                 : 'O corte define a modelagem e a grade de tamanhos da sua peça.';
         }
 
@@ -133,6 +148,9 @@
     }
 
     function generoAtual() {
+        // Na regata ninguém escolhe corte: vale o do cadastro, só pra numeração.
+        if (corteUnico()) return generoPadrao;
+
         var m = modeloSelecionado();
         return m ? m.getAttribute('data-genero') : 'masculino';
     }
@@ -228,7 +246,9 @@
         if (resumo.produto) resumo.produto.textContent = ficha.nome;
 
         var m = modeloSelecionado();
-        if (m) {
+        if (corteUnico()) {
+            resumo.modelo.textContent = 'Peça única, unissex';
+        } else if (m) {
             var genero = m.getAttribute('data-genero');
             var modelo = m.getAttribute('data-modelo');
             resumo.modelo.textContent =
@@ -401,7 +421,7 @@
 
         var m = modeloSelecionado();
 
-        if (!m)                    return erro('Escolha o modelo do uniforme.');
+        if (!m && !corteUnico())   return erro('Escolha o modelo do uniforme.');
         if (!elNome.value.trim())  return erro('Informe o nome que vai na camiseta.');
         if (!elNumero.value)       return erro('Escolha o número da camiseta.');
         if (!pecas.camisa.input.value) {
@@ -418,8 +438,10 @@
         var body = new URLSearchParams({
             produto:        produtoAtual(),
             turma_id:       elTurma.value,
-            genero:         m.getAttribute('data-genero'),
-            modelo:         m.getAttribute('data-modelo'),
+            // Peça única não tem corte nem cor escolhidos na tela — o servidor grava o
+            // modelo fixo do produto de qualquer jeito (uniformeModeloDoProduto).
+            genero:         corteUnico() ? generoPadrao : m.getAttribute('data-genero'),
+            modelo:         corteUnico() ? 'padrao'     : m.getAttribute('data-modelo'),
             nome_camisa:    elNome.value.trim(),
             numero:         elNumero.value,
             // A regata é gravada no campo da camisa — ver uniformeValidarTamanhos().

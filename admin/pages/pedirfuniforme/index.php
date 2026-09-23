@@ -166,7 +166,20 @@ $valor    = $valores['completo'];
                         <small id="produtoHint"></small>
                     </div>
 
-                    <div class="pedirUniforme__models">
+                    <?php
+                    // A regata não tem corte: é peça única, unissex. Aqui ela troca os
+                    // cartões de modelo por este aviso — o corte gravado no pedido vem do
+                    // cadastro do aluno e serve só pro balde da numeração.
+                    ?>
+                    <div class="pedirUniforme__unico" id="produtoUnicoAviso" hidden>
+                        <img src="<?= BASE_URL ?>/images/uniformes/camisetaRegata.png" alt="Camiseta regata">
+                        <div>
+                            <strong>Peça única, unissex</strong>
+                            <p>A regata não tem versão masculina, feminina ou infantil — é um modelo só, na arte preta. Escolha o nome, o número e o tamanho (PP ao XG3).</p>
+                        </div>
+                    </div>
+
+                    <div class="pedirUniforme__models" id="modelosBox">
                         <?php
                         $modelos = [
                             ['genero' => 'masculino', 'modelo' => 'padrao', 'img' => 'uniformeMasculinoPadrao.jpg', 'tag' => 'Masculino', 'nome' => 'Modelo padrão'],
