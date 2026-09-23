@@ -33,7 +33,7 @@
         }
     };
 
-    var produtoSelect = document.getElementById('produtoSelect');
+    var produtoRadios = document.querySelectorAll('input[name="produto"]');
     var produtoHint   = document.getElementById('produtoHint');
     var fieldShorts   = document.getElementById('fieldTamShorts');
     var valorProduto  = document.getElementById('resumoValorProduto');
@@ -188,7 +188,8 @@
     // O produto (uniforme completo, só a camisa, regata) decide o preço, quais tamanhos
     // aparecem e em que cortes ele existe — a regata tem grade única de adulto.
     function produtoAtual() {
-        return produtoSelect ? produtoSelect.value : 'completo';
+        var escolhido = document.querySelector('input[name="produto"]:checked');
+        return escolhido ? escolhido.value : 'completo';
     }
 
     function fichaProduto() {
@@ -245,7 +246,9 @@
         return 'R$ ' + Number(v).toFixed(2).replace('.', ',');
     }
 
-    if (produtoSelect) produtoSelect.addEventListener('change', aplicarProduto);
+    produtoRadios.forEach(function (radio) {
+        radio.addEventListener('change', aplicarProduto);
+    });
 
     // O bloco de equipe (script na própria página) mexe nos mesmos campos ao trocar o
     // destino; reaplicar depois devolve o formulário ao estado do produto escolhido.

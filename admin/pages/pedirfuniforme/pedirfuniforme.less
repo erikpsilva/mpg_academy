@@ -225,6 +225,15 @@
         gap: 12px;
     }
 
+    // Cartões de produto (uniforme completo, só a camisa, regata) — a primeira escolha
+    // da tela, com foto e preço à vista.
+    &__produtos {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 8px;
+    }
+
     // ── Número ──────────────────────────────────────────────────────────────────
     &__numberPick {
         display: flex;
@@ -384,9 +393,73 @@
     }
 }
 
+// ── Card de produto (uniforme completo / só a camisa / regata) ─────────────────
+.pedirUniformeProduto {
+    position: relative;
+    display: block;
+    cursor: pointer;
+
+    input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    &__box {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        padding: 10px 10px 12px;
+        border: 2px solid @borderColor;
+        border-radius: 6px;
+        background: #0c0d0f;
+        transition: 0.15s all;
+    }
+
+    img {
+        width: 100%;
+        // As fotos da camisa avulsa e da regata vêm com frente e costas na mesma imagem e
+        // fundo branco: `contain` mostra a peça inteira em vez de cortar as costas.
+        aspect-ratio: 4 / 3;
+        display: block;
+        border-radius: 4px;
+        background: #f4f4f4;
+        object-fit: contain;
+    }
+
+    strong {
+        display: block;
+        margin-top: 10px;
+        color: @white;
+        font-size: 13px;
+        font-weight: @bold;
+    }
+
+    em {
+        display: block;
+        margin-top: auto;
+        padding-top: 6px;
+        color: @alert;
+        font-size: 14px;
+        font-style: normal;
+        font-weight: @bold;
+    }
+
+    &:hover &__box { border-color: rgba(255, 213, 0, 0.45); }
+
+    input:checked + &__box {
+        border-color: @alert;
+        background: rgba(255, 213, 0, 0.08);
+    }
+}
+
 @media @tabletSM {
     .pedirUniforme__models {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .pedirUniforme__produtos {
+        grid-template-columns: minmax(0, 1fr);
     }
 }
 

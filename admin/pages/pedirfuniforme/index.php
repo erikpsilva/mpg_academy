@@ -136,16 +136,33 @@ $valor    = $valores['completo'];
                 <div class="pedirUniforme__block" id="modeloBlock">
                     <h3><span>3</span> Produto e modelo</h3>
 
-                    <?php // O produto define o preço, as peças e os cortes disponíveis. ?>
+                    <?php
+                    // O produto define o preço, as peças e os cortes disponíveis. Em cartão
+                    // com foto, e não num <select>: é a primeira escolha da tela e some num
+                    // campo pequeno no meio do formulário.
+                    $capaProduto = [
+                        'completo' => 'images/uniformes/uniformeMasculinoPadrao.jpg',
+                        'camisa'   => 'images/uniformes/socamisa.png',
+                        'regata'   => 'images/uniformes/camisetaRegata.png',
+                    ];
+                    ?>
                     <div class="pedirUniforme__field" id="produtoField">
                         <span>Produto</span>
-                        <select id="produtoSelect">
+
+                        <div class="pedirUniforme__produtos">
                             <?php foreach ($produtos as $tipo => $prod): ?>
-                            <option value="<?= $tipo ?>" data-cortes="<?= htmlspecialchars(implode(',', $prod['cortes'])) ?>">
-                                <?= htmlspecialchars($prod['nome']) ?> — R$ <?= number_format($valores[$tipo], 2, ',', '.') ?>
-                            </option>
+                            <label class="pedirUniformeProduto">
+                                <input type="radio" name="produto" value="<?= $tipo ?>" <?= $tipo === 'completo' ? 'checked' : '' ?>>
+                                <span class="pedirUniformeProduto__box">
+                                    <img src="<?= BASE_URL ?>/<?= $capaProduto[$tipo] ?? $prod['imagem'] ?>"
+                                         alt="<?= htmlspecialchars($prod['nome']) ?>">
+                                    <strong><?= htmlspecialchars($prod['nome']) ?></strong>
+                                    <em>R$ <?= number_format($valores[$tipo], 2, ',', '.') ?></em>
+                                </span>
+                            </label>
                             <?php endforeach; ?>
-                        </select>
+                        </div>
+
                         <small id="produtoHint"></small>
                     </div>
 
@@ -265,7 +282,7 @@ $valor    = $valores['completo'];
                     <div>
                         <span>Uniformes MPG Academy</span>
                         <h2 id="adminMeasuresTitle">Tabela de medidas</h2>
-                        <p>As quatro grades do fabricante — camisa e shorts, masculino e feminino.</p>
+                        <p>Todas as grades do fabricante — camisa, calção e bermuda em masculino, feminino e infantil, mais a regata.</p>
                     </div>
                     <button type="button" class="adminUniformMeasures__close js-admin-measures-close" aria-label="Fechar">&times;</button>
                 </div>
