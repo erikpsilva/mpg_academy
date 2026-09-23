@@ -23,7 +23,8 @@ try {
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
 
     $tipo      = $input['type'] ?? $input['topic'] ?? ($_GET['type'] ?? $_GET['topic'] ?? '');
-    $dataIdGet = $_GET['data.id'] ?? $_GET['id'] ?? '';
+    // PHP troca "." por "_" nos nomes da query string: `?data.id=123` chega como data_id.
+    $dataIdGet = $_GET['data_id'] ?? $_GET['id'] ?? '';
     $paymentId = $input['data']['id'] ?? ($dataIdGet ?: null);
 
     if ($tipo === 'payment' && !empty($paymentId)) {

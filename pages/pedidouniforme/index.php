@@ -18,7 +18,11 @@ $pdo   = getDbConnection();
 $aluno = $_SESSION['aluno'];
 
 $turmas = uniformeTurmasDoAluno($pdo, (int) $aluno['id']);
-$valor  = uniformeValor($pdo);
+
+// Um preço por produto (uniforme completo, só a camisa, regata) — todos editáveis no painel.
+$produtos = uniformeProdutosDoAluno();
+$valores  = uniformeValoresProdutos($pdo);
+$valor    = $valores['completo'];
 
 // Pré-seleciona o gênero do uniforme pelo cadastro do aluno (ele pode trocar no formulário).
 // `sexo` não vive na sessão — e pode ser 'outro', daí o fallback.
@@ -94,27 +98,31 @@ $generoPadrao = in_array($sexoAluno, UNIFORME_GENEROS, true) ? $sexoAluno : 'mas
                 </section>
 
                 <section class="uniformOrder__block">
-                    <h2><span>2</span> Modelo do uniforme</h2>
+                    <h2><span>2</span> O que você quer pedir</h2>
 
-                    <div class="uniformOrder__models">
+                    <div class="uniformOrder__products">
                         <?php
-                        $modelos = [
-                            ['genero' => 'masculino', 'modelo' => 'padrao', 'img' => 'uniformeMasculinoPadrao.jpg', 'tag' => 'Masculino', 'nome' => 'Modelo padrão'],
-                            ['genero' => 'masculino', 'modelo' => 'libero', 'img' => 'uniformeMasculinoLibero.jpg', 'tag' => 'Masculino', 'nome' => 'Modelo líbero'],
-                            ['genero' => 'feminino',  'modelo' => 'padrao', 'img' => 'uniformeFemininoPadrao.jpg',  'tag' => 'Feminino',  'nome' => 'Modelo padrão'],
-                            ['genero' => 'feminino',  'modelo' => 'libero', 'img' => 'uniformeFemininoLibero.jpg',  'tag' => 'Feminino',  'nome' => 'Modelo líbero'],
+                        // Vitrine dos produtos à venda (config/uniformes.php). O uniforme
+                        // completo não tem foto própria: quem mostra o conjunto são os
+                        // modelos do passo seguinte.
+                        $capaProduto = [
+                            'completo' => 'images/uniformes/uniformeMasculinoPadrao.jpg',
+                            'camisa'   => 'images/uniformes/socamisa.png',
+                            'regata'   => 'images/uniformes/camisetaRegata.png',
                         ];
-                        foreach ($modelos as $i => $m):
-                            $checked = ($m['genero'] === $generoPadrao && $m['modelo'] === 'padrao');
+                        foreach ($produtos as $tipo => $prod):
                         ?>
-                        <label class="uniformOrderModel">
-                            <input type="radio" name="modelo_completo" value="<?= $m['genero'] ?>|<?= $m['modelo'] ?>"
-                                   data-genero="<?= $m['genero'] ?>" data-modelo="<?= $m['modelo'] ?>"
-                                   <?= $checked ? 'checked' : '' ?>>
-                            <span class="uniformOrderModel__box">
-                                <span class="uniformOrderModel__tag"><?= $m['tag'] ?></span>
-                                <img src="<?= BASE_URL ?>/images/uniformes/<?= $m['img'] ?>" alt="Uniforme <?= strtolower($m['tag']) ?> <?= $m['nome'] ?>">
-                                <span class="uniformOrderModel__name"><?= $m['nome'] ?></span>
+                        <label class="uniformOrderProduct">
+                            <input type="radio" name="produto" value="<?= $tipo ?>"
+                                   data-cortes="<?= htmlspecialchars(implode(',', $prod['cortes'])) ?>"
+                                   data-valor="<?= $valores[$tipo] ?>"
+                                   <?= $tipo === 'completo' ? 'checked' : '' ?>>
+                            <span class="uniformOrderProduct__box">
+                                <img src="<?= BASE_URL ?>/<?= $capaProduto[$tipo] ?? $prod['imagem'] ?>"
+                                     alt="<?= htmlspecialchars($prod['nome']) ?>">
+                                <strong><?= htmlspecialchars($prod['nome']) ?></strong>
+                                <small><?= htmlspecialchars($prod['descricao']) ?></small>
+                                <em>R$ <?= number_format($valores[$tipo], 2, ',', '.') ?></em>
                             </span>
                         </label>
                         <?php endforeach; ?>
@@ -122,7 +130,45 @@ $generoPadrao = in_array($sexoAluno, UNIFORME_GENEROS, true) ? $sexoAluno : 'mas
                 </section>
 
                 <section class="uniformOrder__block">
-                    <h2><span>3</span> Personalização</h2>
+                    <h2><span>3</span> Modelo e tamanho do corte</h2>
+
+                    <div class="uniformOrder__models">
+                        <?php
+                        // O corte (masculino, feminino, infantil) define a grade de tamanhos e
+                        // também o balde da numeração. A arte infantil é a mesma do uniforme
+                        // adulto — muda a modelagem, por isso ela reaproveita a mesma foto.
+                        $modelos = [
+                            ['genero' => 'masculino', 'modelo' => 'padrao', 'img' => 'uniformeMasculinoPadrao.jpg', 'tag' => 'Masculino', 'nome' => 'Modelo padrão'],
+                            ['genero' => 'masculino', 'modelo' => 'libero', 'img' => 'uniformeMasculinoLibero.jpg', 'tag' => 'Masculino', 'nome' => 'Modelo líbero'],
+                            ['genero' => 'feminino',  'modelo' => 'padrao', 'img' => 'uniformeFemininoPadrao.jpg',  'tag' => 'Feminino',  'nome' => 'Modelo padrão'],
+                            ['genero' => 'feminino',  'modelo' => 'libero', 'img' => 'uniformeFemininoLibero.jpg',  'tag' => 'Feminino',  'nome' => 'Modelo líbero'],
+                            ['genero' => 'infantil',  'modelo' => 'padrao', 'img' => 'uniformeMasculinoPadrao.jpg', 'tag' => 'Infantil',  'nome' => 'Modelo padrão'],
+                            ['genero' => 'infantil',  'modelo' => 'libero', 'img' => 'uniformeMasculinoLibero.jpg', 'tag' => 'Infantil',  'nome' => 'Modelo líbero'],
+                        ];
+                        foreach ($modelos as $i => $m):
+                            $checked = ($m['genero'] === $generoPadrao && $m['modelo'] === 'padrao');
+                        ?>
+                        <label class="uniformOrderModel" data-genero-card="<?= $m['genero'] ?>">
+                            <input type="radio" name="modelo_completo" value="<?= $m['genero'] ?>|<?= $m['modelo'] ?>"
+                                   data-genero="<?= $m['genero'] ?>" data-modelo="<?= $m['modelo'] ?>"
+                                   <?= $checked ? 'checked' : '' ?>>
+                            <span class="uniformOrderModel__box">
+                                <span class="uniformOrderModel__tag"><?= $m['tag'] ?></span>
+                                <img src="<?= BASE_URL ?>/images/uniformes/<?= $m['img'] ?>" alt="Uniforme <?= strtolower($m['tag']) ?> <?= $m['nome'] ?>">
+                                <span class="uniformOrderModel__name"><?= $m['nome'] ?></span>
+                                <?php if ($m['genero'] === 'infantil'): ?>
+                                    <span class="uniformOrderModel__hint">Mesma arte, modelagem infantil (2 a 14 anos)</span>
+                                <?php endif; ?>
+                            </span>
+                        </label>
+                        <?php endforeach; ?>
+                    </div>
+
+                    <p class="uniformOrder__productNote" id="uniformProductNote"></p>
+                </section>
+
+                <section class="uniformOrder__block">
+                    <h2><span>4</span> Personalização</h2>
 
                     <label class="uniformOrder__field">
                         <span>Nome na camiseta</span>
@@ -151,7 +197,8 @@ $generoPadrao = in_array($sexoAluno, UNIFORME_GENEROS, true) ? $sexoAluno : 'mas
                         </small>
                     </div>
 
-                    <div class="uniformOrder__field">
+                    <?php // Some quando o produto não tem calção (só a camisa, regata). ?>
+                    <div class="uniformOrder__field" id="fieldTamShorts">
                         <span id="labelTamShorts">Tamanho do shorts</span>
                         <div class="uniformOrder__sizes" id="uniformSizesShorts"></div>
                         <input type="hidden" id="uniformTamanhoShorts" name="tamanho_shorts" value="">
@@ -162,17 +209,18 @@ $generoPadrao = in_array($sexoAluno, UNIFORME_GENEROS, true) ? $sexoAluno : 'mas
                 </section>
 
                 <section class="uniformOrder__block uniformOrder__block--summary">
-                    <h2><span>4</span> Resumo e pagamento</h2>
+                    <h2><span>5</span> Resumo e pagamento</h2>
 
                     <dl class="uniformOrder__summary">
+                        <div><dt>Produto</dt><dd id="resumoProduto">—</dd></div>
                         <div><dt>Modelo</dt><dd id="resumoModelo">—</dd></div>
                         <div><dt>Nome</dt><dd id="resumoNome">—</dd></div>
                         <div><dt>Número</dt><dd id="resumoNumero">—</dd></div>
-                        <div><dt>Tam. camisa</dt><dd id="resumoTamCamisa">—</dd></div>
-                        <div><dt id="resumoLabelShorts">Tam. shorts</dt><dd id="resumoTamShorts">—</dd></div>
+                        <div><dt id="resumoLabelCamisa">Tam. camisa</dt><dd id="resumoTamCamisa">—</dd></div>
+                        <div id="resumoLinhaShorts"><dt id="resumoLabelShorts">Tam. shorts</dt><dd id="resumoTamShorts">—</dd></div>
                         <div class="uniformOrder__summaryTotal">
                             <dt>Total</dt>
-                            <dd>R$ <?= number_format($valor, 2, ',', '.') ?></dd>
+                            <dd id="resumoTotal">R$ <?= number_format($valor, 2, ',', '.') ?></dd>
                         </div>
                     </dl>
 
@@ -186,7 +234,7 @@ $generoPadrao = in_array($sexoAluno, UNIFORME_GENEROS, true) ? $sexoAluno : 'mas
                     <p class="uniformOrder__error" id="uniformError" role="alert"></p>
 
                     <button type="submit" class="uniformOrder__submit" id="uniformSubmit">
-                        Ir para o pagamento — R$ <?= number_format($valor, 2, ',', '.') ?>
+                        Ir para o pagamento — <span id="uniformSubmitValor">R$ <?= number_format($valor, 2, ',', '.') ?></span>
                     </button>
                 </section>
 
@@ -247,6 +295,10 @@ var BASE_URL               = "<?= BASE_URL ?>";
 var UNIFORME_MEDIDAS       = <?= json_encode(UNIFORME_MEDIDAS, JSON_UNESCAPED_UNICODE) ?>;
 var UNIFORME_AVISO_MEDIDAS = <?= json_encode(UNIFORME_AVISO_MEDIDAS, JSON_UNESCAPED_UNICODE) ?>;
 var UNIFORME_MODELOS_LABEL = <?= json_encode(UNIFORME_MODELO_LABEL, JSON_UNESCAPED_UNICODE) ?>;
+var UNIFORME_GENERO_LABEL  = <?= json_encode(UNIFORME_GENERO_LABEL, JSON_UNESCAPED_UNICODE) ?>;
+// Catálogo e preços: quais peças cada produto tem e em que cortes ele é vendido.
+var UNIFORME_PRODUTOS      = <?= json_encode($produtos, JSON_UNESCAPED_UNICODE) ?>;
+var UNIFORME_VALORES       = <?= json_encode($valores, JSON_UNESCAPED_UNICODE) ?>;
 </script>
 <script src="<?= BASE_URL ?>/pages/pedidouniforme/pedidouniforme.js?v=<?= time() ?>"></script>
 

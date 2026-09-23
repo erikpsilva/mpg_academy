@@ -9,6 +9,8 @@ $modoTeste = mpModoTeste($pdo);
 require_once ROOT . '/config/uniformes.php';
 $valorUniforme       = uniformeValor($pdo);
 $valorUniformeEquipe = uniformeValorEquipe($pdo);
+$valorUniformeCamisa = uniformeValorProduto($pdo, 'camisa');
+$valorUniformeRegata = uniformeValorProduto($pdo, 'regata');
 
 // Cobrança de teste: uma avulsa, de valor baixo, do aluno de teste. Serve pra validar o
 // fluxo de pagamento em produção sem tocar na mensalidade de ninguém.
@@ -105,6 +107,36 @@ $emailsNotificacao = $stEmails->fetchAll();
                             <button class="btn btn--primary btn--sm" id="btnSalvarUniforme">Salvar</button>
                         </div>
                         <div id="uniformeMsg" class="configMsg" style="margin-top:8px;"></div>
+                    </div>
+
+                    <div class="configRow configRow--stack">
+                        <div class="configRow__info">
+                            <strong>Só a camisa do uniforme</strong>
+                            <p>A camisa vendida sozinha, sem o calção. Vale para os cortes masculino, feminino e infantil.</p>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
+                            <span style="color:#aaa;font-size:14px;">R$</span>
+                            <input type="number" id="inputValorUniformeCamisa" min="0" step="0.01"
+                                   value="<?= number_format($valorUniformeCamisa, 2, '.', '') ?>"
+                                   style="background:#1a1a1a;border:1px solid #333;border-radius:6px;color:#ddd;font-size:14px;padding:9px 12px;width:130px;">
+                            <button class="btn btn--primary btn--sm" id="btnSalvarUniformeCamisa">Salvar</button>
+                        </div>
+                        <div id="uniformeCamisaMsg" class="configMsg" style="margin-top:8px;"></div>
+                    </div>
+
+                    <div class="configRow configRow--stack">
+                        <div class="configRow__info">
+                            <strong>Camiseta regata</strong>
+                            <p>Regata sem manga, corte unissex (grade PP ao XG3). Cobrada do aluno no pedido pelo site.</p>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
+                            <span style="color:#aaa;font-size:14px;">R$</span>
+                            <input type="number" id="inputValorUniformeRegata" min="0" step="0.01"
+                                   value="<?= number_format($valorUniformeRegata, 2, '.', '') ?>"
+                                   style="background:#1a1a1a;border:1px solid #333;border-radius:6px;color:#ddd;font-size:14px;padding:9px 12px;width:130px;">
+                            <button class="btn btn--primary btn--sm" id="btnSalvarUniformeRegata">Salvar</button>
+                        </div>
+                        <div id="uniformeRegataMsg" class="configMsg" style="margin-top:8px;"></div>
                     </div>
 
                     <div class="configRow configRow--stack">
@@ -613,6 +645,8 @@ var PK_PROD = "<?= substr(MP_PUBLIC_KEY_PROD, 0, 24) ?>";
     }
 
     ligarPreco('inputValorUniforme',       'btnSalvarUniforme',       'uniformeMsg',       'valor_uniforme',        'Uniforme completo');
+    ligarPreco('inputValorUniformeCamisa', 'btnSalvarUniformeCamisa', 'uniformeCamisaMsg', 'valor_uniforme_camisa', 'Só a camisa');
+    ligarPreco('inputValorUniformeRegata', 'btnSalvarUniformeRegata', 'uniformeRegataMsg', 'valor_uniforme_regata', 'Camiseta regata');
     ligarPreco('inputValorUniformeEquipe', 'btnSalvarUniformeEquipe', 'uniformeEquipeMsg', 'valor_uniforme_equipe', 'Camisa da equipe técnica');
 }());
 </script>

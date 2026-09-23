@@ -33,6 +33,7 @@ require_once dirname(__FILE__, 3) . '/config/uniformes.php';
 $pdo = getDbConnection();
 
 $alunoId    = (int) ($_POST['aluno_id'] ?? 0);
+$produto    = trim($_POST['produto'] ?? 'completo');
 $turmaId    = (int) ($_POST['turma_id'] ?? 0);
 $genero     = trim($_POST['genero']  ?? '');
 $modelo     = trim($_POST['modelo']  ?? '');
@@ -44,6 +45,13 @@ $tamanhoShorts = strtoupper(trim($_POST['tamanho_shorts'] ?? ''));
 if ($alunoId <= 0) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Selecione o aluno.']);
+    exit;
+}
+
+// Aluno só recebe o que está na vitrine — camisa da equipe técnica tem serviço próprio.
+if (!array_key_exists($produto, uniformeProdutosDoAluno())) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Selecione um produto válido.']);
     exit;
 }
 
@@ -68,7 +76,7 @@ if (!in_array($turmaId, $turmaIds, true)) {
     exit;
 }
 
-$valor = uniformeValor($pdo);
+$valor = uniformeValorProduto($pdo, $produto);
 
 $resultado = uniformeCriarPedidoManual(
     $pdo,
@@ -81,7 +89,8 @@ $resultado = uniformeCriarPedidoManual(
     $tamanhoCamisa,
     $tamanhoShorts,
     $valor,
-    (int) $_SESSION['usuario']['id']
+    (int) $_SESSION['usuario']['id'],
+    $produto
 );
 
 if (!$resultado['success']) {

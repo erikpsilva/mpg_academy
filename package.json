@@ -4,13 +4,19 @@
   "version": "1.0.0",
   "description": "MPG Academy",
   "scripts": {
-    "dev": "gulp"
+    "dev": "gulp",
+    "build": "gulp styleRoot styleAdmin",
+    "deploy": "gulp styleRoot styleAdmin && node --use-system-ca scripts/deploy.mjs",
+    "deploy:check": "node --use-system-ca scripts/deploy.mjs --check",
+    "deploy:secrets": "node --use-system-ca scripts/deploy.mjs --secrets",
+    "deploy:limpeza": "node --use-system-ca scripts/deploy.mjs --limpar"
   },
   "devDependencies": {
+    "basic-ftp": "^6.2.1",
     "browser-sync": "^3.0.3",
     "gulp": "^5.0.0",
-    "gulp-less": "^5.0.0",
     "gulp-clean-css": "^4.3.0",
+    "gulp-less": "^5.0.0",
     "gulp-rename": "^2.0.0"
   }
 }

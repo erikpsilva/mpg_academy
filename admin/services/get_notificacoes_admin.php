@@ -84,7 +84,7 @@ try {
             'id'           => (int) $u['id'],
             'aluno_nome'   => $u['aluno_nome'],
             'turma_nome'   => $u['turma_nome'],
-            'genero_label' => $u['genero'] === 'feminino' ? 'Feminino' : 'Masculino',
+            'genero_label' => uniformeGeneroLabel($u['genero']),
             'modelo_label' => UNIFORME_MODELO_LABEL[$u['modelo']] ?? $u['modelo'],
             'nome_camisa'  => $u['nome_camisa'],
             'numero'       => (int) $u['numero'],

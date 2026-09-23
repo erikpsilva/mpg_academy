@@ -37,7 +37,7 @@ if (substr($__mudancaHora, -2) === '00') {
             <?php endif; ?>
         </strong>
         <span>
-            A lista abre toda <b>segunda-feira às 06h</b> e fecha na <b>sexta-feira às 23h59</b>.
+            A lista abre toda <b>segunda-feira às 06h</b> e fecha no <b>sábado às 18h</b>.
             O pagamento precisa ser feito dentro dessa janela pra valer a vaga no domingo.
         </span>
     </div>

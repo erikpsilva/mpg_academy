@@ -1,14 +1,18 @@
 <?php
 
 require_once __DIR__ . '/mensalidades.php';
+require_once __DIR__ . '/segredos.php';
 
-// ─── Credenciais de Produção ──────────────────────────────────────────────────
-define('MP_PUBLIC_KEY_PROD',   'APP_USR-497a2b32-3066-4547-aa73-d0df2ae8cbbc');
-define('MP_ACCESS_TOKEN_PROD', 'APP_USR-4134788022840522-081916-6ce126f8c99d36be892e4409af96fffb-3629082884');
+// ─── Credenciais ──────────────────────────────────────────────────────────────
+//
+// Nenhum token real mora neste arquivo: ele é público (repositório aberto) e fica dentro
+// da pasta servida pela web. Os valores vêm de mpg_secrets.php, FORA do /www — ver
+// config/segredos.php. Token faltando vira log explícito, não cobrança silenciosa errada.
+define('MP_PUBLIC_KEY_PROD',   mpgSegredoObrigatorio('MP_PUBLIC_KEY_PROD'));
+define('MP_ACCESS_TOKEN_PROD', mpgSegredoObrigatorio('MP_ACCESS_TOKEN_PROD'));
 
-// ─── Credenciais de Teste ─────────────────────────────────────────────────────
-define('MP_PUBLIC_KEY_TEST',   'TEST-13eed63f-902c-4298-bc56-8d3e296a51d7');
-define('MP_ACCESS_TOKEN_TEST', 'TEST-4134788022840522-081916-dd4de08a42a18d566e72580f1602783d-3629082884');
+define('MP_PUBLIC_KEY_TEST',   segredo('MP_PUBLIC_KEY_TEST', ''));
+define('MP_ACCESS_TOKEN_TEST', segredo('MP_ACCESS_TOKEN_TEST', ''));
 
 // ─── Assinatura secreta dos Webhooks (valida que a notificação veio do MP) ────
 // Assinatura secreta do webhook da aplicação 4134788022840522 (conta CNPJ).
@@ -19,8 +23,8 @@ define('MP_ACCESS_TOKEN_TEST', 'TEST-4134788022840522-081916-dd4de08a42a18d566e7
 // Mercado Pago e parados em 'pendente' no sistema.
 //
 // Trocar aqui exige trocar junto no painel (Notificações → Webhooks → Redefinir), e vice-versa.
-define('MP_WEBHOOK_SECRET_PROD', '309d851d1ecfa52bb912f823f07ea0440624642381dd19625e39be712165422a');
-define('MP_WEBHOOK_SECRET_TEST', '');
+define('MP_WEBHOOK_SECRET_PROD', segredo('MP_WEBHOOK_SECRET_PROD', ''));
+define('MP_WEBHOOK_SECRET_TEST', segredo('MP_WEBHOOK_SECRET_TEST', ''));
 
 /**
  * Liga/desliga a seção de pagamento automático no cartão salvo em /meuperfil.
@@ -269,6 +273,14 @@ function mpValidarAssinaturaWebhook(string $secret, string $xSignature, string $
  */
 function mpCriarPagamento(string $accessToken, array $dados): array
 {
+    // Endereço do webhook vai em TODA cobrança. Sem ele, o aviso de "pago" só chega se o
+    // webhook estiver cadastrado no painel do MP da conta certa — e depois da troca pra conta
+    // CNPJ o sistema só ficava sabendo do PIX pago se a pessoa continuasse com a tela de
+    // pagamento aberta. Em local não manda (o MP não alcança localhost).
+    if (!APP_IS_LOCAL && empty($dados['notification_url'])) {
+        $dados['notification_url'] = BASE_URL . '/services/site/mp_webhook.php';
+    }
+
     $ch = curl_init('https://api.mercadopago.com/v1/payments');
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,

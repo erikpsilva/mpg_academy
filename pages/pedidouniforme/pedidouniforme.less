@@ -211,6 +211,20 @@
         gap: 14px;
     }
 
+    // ── Produtos à venda ────────────────────────────────────────────────────────
+    &__products {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+    }
+
+    &__productNote {
+        margin: 14px 0 0;
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 12px;
+        line-height: 1.6;
+    }
+
     // ── Número ──────────────────────────────────────────────────────────────────
     &__numberPick {
         display: flex;
@@ -447,6 +461,92 @@
         font-size: 13px;
         font-weight: 700;
         text-align: center;
+    }
+
+    // Só os cartões infantis usam: a foto é a do uniforme adulto, então a diferença
+    // (modelagem de criança) precisa estar escrita.
+    &__hint {
+        display: block;
+        margin-top: 4px;
+        color: rgba(255, 255, 255, 0.55);
+        font-size: 11px;
+        line-height: 1.4;
+        text-align: center;
+    }
+
+    &:hover &__box {
+        border-color: rgba(255, 213, 0, 0.45);
+    }
+
+    input:checked + &__box {
+        border-color: @yellow;
+        background: rgba(255, 213, 0, 0.1);
+    }
+
+    input:focus-visible + &__box {
+        outline: 2px solid @yellow;
+        outline-offset: 2px;
+    }
+}
+
+// ── Card de produto (uniforme completo, só a camisa, regata) ────────────────────
+.uniformOrderProduct {
+    position: relative;
+    display: block;
+    cursor: pointer;
+
+    input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    &__box {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        padding: 12px 12px 16px;
+        border: 2px solid rgba(255, 255, 255, 0.12);
+        border-radius: 8px;
+        background: rgba(0, 0, 0, 0.28);
+        .transition(0.15s all);
+    }
+
+    img {
+        width: 100%;
+        // A regata e a camisa avulsa vêm com fundo branco e frente+costas na mesma imagem:
+        // `contain` mostra a peça inteira, sem cortar as costas com o número.
+        aspect-ratio: 4 / 3;
+        display: block;
+        border-radius: 6px;
+        background: #f4f4f4;
+        object-fit: contain;
+    }
+
+    strong {
+        display: block;
+        margin-top: 12px;
+        color: @white;
+        font-size: 14px;
+        font-weight: 800;
+    }
+
+    small {
+        display: block;
+        margin-top: 4px;
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 12px;
+        line-height: 1.5;
+    }
+
+    em {
+        display: block;
+        margin-top: auto;
+        padding-top: 10px;
+        color: @yellow;
+        font-size: 15px;
+        font-style: normal;
+        font-weight: 900;
     }
 
     &:hover &__box {
@@ -776,6 +876,10 @@
         &__models {
             grid-template-columns: repeat(2, minmax(0, 1fr));
         }
+
+        &__products {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
     }
 }
 
@@ -862,6 +966,11 @@
             // A ordem do HTML mantém os masculinos na primeira linha e os
             // femininos na segunda, com dois modelos por linha.
             grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        &__products {
+            grid-template-columns: minmax(0, 1fr);
             gap: 10px;
         }
 

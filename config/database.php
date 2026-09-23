@@ -1,27 +1,31 @@
 <?php
 
 require_once __DIR__ . '/app.php';
+require_once __DIR__ . '/segredos.php';
 
+// Nenhuma credencial de produção mora aqui: este arquivo é servido pela web e vive num
+// repositório público. Os valores reais ficam em mpg_secrets.php, FORA do /www — ver
+// config/segredos.php. Os padrões abaixo são só o XAMPP da máquina de desenvolvimento.
 $dbConfig = APP_IS_LOCAL
     ? [
-        'host' => 'localhost',
-        'name' => 'mpgacademy_mpg_db',
-        'user' => 'root',
-        'pass' => '',
+        'host' => segredo('DB_HOST', 'localhost'),
+        'name' => segredo('DB_NAME', 'mpgacademy_mpg_db'),
+        'user' => segredo('DB_USER', 'root'),
+        'pass' => segredo('DB_PASS', ''),
     ]
     : [
         // KingHost nao aceita 'localhost': o MySQL roda em outro servidor.
         // Host alternativo, caso o principal falhe: mysql65-farm2.uni5.net
-        'host' => 'mysql.mpgacademy.com.br',
-        'name' => 'mpgacademy',
-        'user' => 'mpgacademy',
-        'pass' => 'Theking389518',
+        'host' => segredo('DB_HOST', 'mysql.mpgacademy.com.br'),
+        'name' => segredo('DB_NAME', 'mpgacademy'),
+        'user' => segredo('DB_USER', 'mpgacademy'),
+        'pass' => mpgSegredoObrigatorio('DB_PASS'),
     ];
 
-define('DB_HOST', getenv('MPG_DB_HOST') ?: $dbConfig['host']);
-define('DB_NAME', getenv('MPG_DB_NAME') ?: $dbConfig['name']);
-define('DB_USER', getenv('MPG_DB_USER') ?: $dbConfig['user']);
-define('DB_PASS', getenv('MPG_DB_PASS') ?: $dbConfig['pass']);
+define('DB_HOST', $dbConfig['host']);
+define('DB_NAME', $dbConfig['name']);
+define('DB_USER', $dbConfig['user']);
+define('DB_PASS', $dbConfig['pass']);
 
 function getDbConnection() {
     try {

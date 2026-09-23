@@ -8,6 +8,11 @@ require_once ROOT . '/config/database.php';
 require_once ROOT . '/config/batebola.php';
 
 $pdo        = getDbConnection();
+
+// Confirma PIX do Bate Bola pagos que o webhook não avisou (no máximo 1x por minuto).
+require_once ROOT . '/config/conciliacao_mp.php';
+mpConciliarPendentes($pdo, ['batebola']);
+
 $jogadorId  = (int) $_SESSION['jogador']['id'];
 $dataEvento = batebolaProximoDomingo($pdo);
 $valor      = batebolaValorEvento($pdo, $dataEvento);
@@ -99,7 +104,7 @@ $dataFmtCurta   = $dtEvento->format('d/m/Y');
         <div class="bbPayClosed">
             <div class="bbPayClosed__icon">🗓️</div>
             <h2>Lista fechada no momento</h2>
-            <p>As inscrições e pagamentos do Bate Bola abrem toda segunda-feira às 06h e fecham sexta-feira às 23h59. Volta na segunda pra garantir sua vaga!</p>
+            <p>As inscrições e pagamentos do Bate Bola abrem toda segunda-feira às 06h e fecham no sábado às 18h. Volta na segunda pra garantir sua vaga!</p>
         </div>
 
         <?php else: ?>

@@ -3,6 +3,11 @@
  *
  * O modal de números busca a disponibilidade no servidor a cada abertura (e sempre que
  * muda turma ou gênero), porque o balde de numeração é por TURMA + GÊNERO.
+ *
+ * O produto escolhido (uniforme completo, só a camisa, regata) manda no resto da tela:
+ * decide quais tamanhos aparecem, quais cortes são possíveis e qual é o preço. Tudo isso
+ * vem do PHP em UNIFORME_PRODUTOS/UNIFORME_VALORES, pra nunca divergir de
+ * config/uniformes.php.
  */
 (function () {
     var form = document.getElementById('uniformOrderForm');
@@ -41,11 +46,77 @@
     var measuresSub   = document.getElementById('uniformMeasuresSub');
 
     var resumo = {
+        produto: document.getElementById('resumoProduto'),
         modelo: document.getElementById('resumoModelo'),
         nome:   document.getElementById('resumoNome'),
         numero: document.getElementById('resumoNumero'),
-        labelShorts: document.getElementById('resumoLabelShorts')
+        labelCamisa: document.getElementById('resumoLabelCamisa'),
+        labelShorts: document.getElementById('resumoLabelShorts'),
+        linhaShorts: document.getElementById('resumoLinhaShorts'),
+        total:  document.getElementById('resumoTotal')
     };
+
+    var fieldShorts   = document.getElementById('fieldTamShorts');
+    var notaProduto   = document.getElementById('uniformProductNote');
+    var submitValor   = document.getElementById('uniformSubmitValor');
+
+    function moeda(v) {
+        return 'R$ ' + Number(v).toFixed(2).replace('.', ',');
+    }
+
+    // ── Produto ─────────────────────────────────────────────────────────────────
+    function produtoAtual() {
+        var r = form.querySelector('input[name="produto"]:checked');
+        return r ? r.value : 'completo';
+    }
+
+    function fichaProduto() {
+        return UNIFORME_PRODUTOS[produtoAtual()] || UNIFORME_PRODUTOS.completo;
+    }
+
+    /** Peça de cima do produto: a regata tem grade própria, os demais usam a da camisa. */
+    function pecaDeCima() {
+        return produtoAtual() === 'regata' ? 'regata' : 'camisa';
+    }
+
+    function temShorts() {
+        return fichaProduto().pecas.indexOf('shorts') !== -1;
+    }
+
+    /**
+     * Um produto não existe em todo corte — a regata tem grade única de adulto. Os cartões
+     * fora do catálogo somem, e se o corte escolhido era um deles, cai pro primeiro válido.
+     */
+    function aplicarProduto() {
+        var cortes = fichaProduto().cortes;
+
+        form.querySelectorAll('[data-genero-card]').forEach(function (card) {
+            var vale = cortes.indexOf(card.getAttribute('data-genero-card')) !== -1;
+            card.style.display = vale ? '' : 'none';
+            if (!vale) card.querySelector('input').checked = false;
+        });
+
+        if (!modeloSelecionado() && cortes.length) {
+            var primeiro = form.querySelector('[data-genero-card="' + cortes[0] + '"] input');
+            if (primeiro) primeiro.checked = true;
+        }
+
+        if (fieldShorts) fieldShorts.style.display = temShorts() ? '' : 'none';
+        if (resumo.linhaShorts) resumo.linhaShorts.style.display = temShorts() ? '' : 'none';
+
+        var valor = UNIFORME_VALORES[produtoAtual()];
+        if (submitValor) submitValor.textContent = moeda(valor);
+        if (resumo.total) resumo.total.textContent = moeda(valor);
+
+        if (notaProduto) {
+            notaProduto.textContent = produtoAtual() === 'regata'
+                ? 'A regata tem corte unissex e grade única (PP ao XG3) — o modelo escolhido aqui define a cor e a numeração da sua turma.'
+                : 'O corte define a modelagem e a grade de tamanhos da sua peça.';
+        }
+
+        renderTamanhos();
+        atualizarResumo();
+    }
 
     function escapar(txt) {
         var d = document.createElement('div');
@@ -73,9 +144,12 @@
     function renderTamanhos() {
         var genero = generoAtual();
 
-        Object.keys(pecas).forEach(function (peca) {
-            var ref = pecas[peca];
-            var t   = tabela(genero, peca);
+        Object.keys(pecas).forEach(function (slot) {
+            var ref = pecas[slot];
+            // O campo de cima mostra a grade da peça do produto: camisa no uniforme e na
+            // camisa avulsa, regata quando o pedido é de regata.
+            var peca = slot === 'camisa' ? pecaDeCima() : slot;
+            var t   = (slot === 'shorts' && !temShorts()) ? null : tabela(genero, peca);
             var anterior = ref.input.value;
 
             ref.box.innerHTML = '';
@@ -83,7 +157,10 @@
             if (!t) return;
 
             ref.label.textContent = 'Tamanho — ' + t.label;
-            if (peca === 'shorts' && resumo.labelShorts) {
+            if (slot === 'camisa' && resumo.labelCamisa) {
+                resumo.labelCamisa.textContent = 'Tam. ' + t.label.split(' ')[0].toLowerCase();
+            }
+            if (slot === 'shorts' && resumo.labelShorts) {
                 resumo.labelShorts.textContent = 'Tam. ' + t.label.split(' ')[0].toLowerCase();
             }
 
@@ -120,6 +197,7 @@
     // ── Tabela de medidas (modal) ───────────────────────────────────────────────
     function renderMedidas(peca) {
         var genero = generoAtual();
+        if (peca === 'camisa') peca = pecaDeCima();
         var t = tabela(genero, peca);
         if (!t || !measuresBody) return;
 
@@ -146,12 +224,15 @@
 
     // ── Resumo ──────────────────────────────────────────────────────────────────
     function atualizarResumo() {
+        var ficha = fichaProduto();
+        if (resumo.produto) resumo.produto.textContent = ficha.nome;
+
         var m = modeloSelecionado();
         if (m) {
             var genero = m.getAttribute('data-genero');
             var modelo = m.getAttribute('data-modelo');
             resumo.modelo.textContent =
-                (genero === 'feminino' ? 'Feminino' : 'Masculino') + ' — ' +
+                (UNIFORME_GENERO_LABEL[genero] || genero) + ' — ' +
                 (UNIFORME_MODELOS_LABEL[modelo] || modelo);
         } else {
             resumo.modelo.textContent = '—';
@@ -184,7 +265,7 @@
         var genero = generoAtual();
         modalGrid.innerHTML = '<p class="uniformNumbers__loading">Carregando números...</p>';
         modalSub.textContent = 'Disponibilidade do uniforme ' +
-            (genero === 'feminino' ? 'feminino' : 'masculino') + ' na sua turma.';
+            (UNIFORME_GENERO_LABEL[genero] || genero).toLowerCase() + ' na sua turma.';
 
         var url = BASE_URL + '/services/site/get_numeros_uniforme.php'
                 + '?turma_id=' + encodeURIComponent(elTurma.value)
@@ -245,6 +326,17 @@
     }
 
     // ── Eventos ─────────────────────────────────────────────────────────────────
+    form.querySelectorAll('input[name="produto"]').forEach(function (radio) {
+        radio.addEventListener('change', function () {
+            // Trocar de produto pode trocar o corte (a regata não tem infantil), e o corte
+            // é o balde da numeração — por isso o número volta a zero junto.
+            elNumero.value = '';
+            elNumberLbl.textContent = 'Escolher número';
+            elNumberBtn.classList.remove('is-filled');
+            aplicarProduto();
+        });
+    });
+
     form.querySelectorAll('input[name="modelo_completo"]').forEach(function (radio) {
         radio.addEventListener('change', function () {
             // Trocar de gênero muda o balde de numeração: o número escolhido pode não
@@ -312,8 +404,10 @@
         if (!m)                    return erro('Escolha o modelo do uniforme.');
         if (!elNome.value.trim())  return erro('Informe o nome que vai na camiseta.');
         if (!elNumero.value)       return erro('Escolha o número da camiseta.');
-        if (!pecas.camisa.input.value) return erro('Escolha o tamanho da camisa.');
-        if (!pecas.shorts.input.value) {
+        if (!pecas.camisa.input.value) {
+            return erro('Escolha o tamanho ' + (pecaDeCima() === 'regata' ? 'da regata' : 'da camisa') + '.');
+        }
+        if (temShorts() && !pecas.shorts.input.value) {
             var t = tabela(generoAtual(), 'shorts');
             return erro('Escolha o tamanho ' + (t ? 'd' + (t.label.indexOf('Bermuda') === 0 ? 'a bermuda' : 'o calção') : 'do shorts') + '.');
         }
@@ -322,13 +416,15 @@
         elSubmit.textContent = 'Criando seu pedido...';
 
         var body = new URLSearchParams({
+            produto:        produtoAtual(),
             turma_id:       elTurma.value,
             genero:         m.getAttribute('data-genero'),
             modelo:         m.getAttribute('data-modelo'),
             nome_camisa:    elNome.value.trim(),
             numero:         elNumero.value,
+            // A regata é gravada no campo da camisa — ver uniformeValidarTamanhos().
             tamanho_camisa: pecas.camisa.input.value,
-            tamanho_shorts: pecas.shorts.input.value
+            tamanho_shorts: temShorts() ? pecas.shorts.input.value : ''
         });
 
         fetch(BASE_URL + '/services/site/criar_pedido_uniforme.php', {
@@ -367,13 +463,15 @@
         elError.classList.add('is-visible');
     }
 
+    // Monta o botão de novo em vez de só devolver o texto: o valor vive num <span> dentro
+    // dele, e escrever textContent no botão apagaria esse span pra sempre.
     function restaurarBotao() {
-        elSubmit.disabled    = false;
-        elSubmit.textContent = elSubmit.getAttribute('data-label') || 'Ir para o pagamento';
+        elSubmit.disabled  = false;
+        elSubmit.innerHTML = 'Ir para o pagamento — <span id="uniformSubmitValor"></span>';
+        submitValor = document.getElementById('uniformSubmitValor');
+        submitValor.textContent = moeda(UNIFORME_VALORES[produtoAtual()]);
     }
 
-    elSubmit.setAttribute('data-label', elSubmit.textContent.trim());
-
-    renderTamanhos();
-    atualizarResumo();
+    // aplicarProduto() já chama renderTamanhos() e atualizarResumo().
+    aplicarProduto();
 }());

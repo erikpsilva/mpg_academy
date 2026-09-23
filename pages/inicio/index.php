@@ -128,6 +128,21 @@
                         </button>
                     </div>
                 </article>
+
+                <?php // Vendidos à parte do conjunto: a camisa sozinha e a regata. ?>
+                <article class="homeUniformGroup">
+                    <header><span>03</span><h3>Avulsos</h3></header>
+                    <div class="homeUniformGroup__images">
+                        <button type="button" class="homeUniformGroup__preview js-home-uniform-preview" data-image="<?= BASE_URL ?>/images/uniformes/socamisa.png" data-title="Camisa do uniforme vendida sozinha">
+                            <img src="<?= BASE_URL ?>/images/uniformes/socamisa.png" alt="Camisa do uniforme MPG Academy vendida sozinha" loading="lazy">
+                            <span>Só a camisa</span>
+                        </button>
+                        <button type="button" class="homeUniformGroup__preview js-home-uniform-preview" data-image="<?= BASE_URL ?>/images/uniformes/camisetaRegata.png" data-title="Camiseta regata">
+                            <img src="<?= BASE_URL ?>/images/uniformes/camisetaRegata.png" alt="Camiseta regata MPG Academy" loading="lazy">
+                            <span>Regata</span>
+                        </button>
+                    </div>
+                </article>
             </div>
         </div>
     </section>

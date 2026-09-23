@@ -12,11 +12,15 @@ require_once ROOT . '/config/database.php';
 require_once ROOT . '/config/uniformes.php';
 $pdo = getDbConnection();
 
+// Preços da vitrine — um por produto, editáveis no painel (config/uniformes.php).
+$valoresUniforme = uniformeValoresProdutos($pdo);
+
 // Pedidos de uniforme do aluno (só os pagos — os demais são reservas que expiram)
 $meusUniformes = [];
 try {
     $stUni = $pdo->prepare("
-        SELECT p.id, p.genero, p.modelo, p.nome_camisa, p.numero, p.tamanho_camisa, p.tamanho_shorts, p.valor,
+        SELECT p.id, p.tipo_uniforme, p.genero, p.modelo, p.nome_camisa, p.numero,
+               p.tamanho_camisa, p.tamanho_shorts, p.valor,
                p.status_pedido, p.pago_em
         FROM pedidos_uniforme p
         WHERE p.aluno_id = ? AND p.status_pagamento = 'pago'
@@ -172,15 +176,28 @@ function tempoRelativo(string $data): string {
                         <p>Você pode escolher o nome e um número de <b>1 a 99</b> para personalizar sua camiseta.</p>
                         <ul>
                             <li>O número escolhido precisa estar disponível na sua turma.</li>
-                            <li>A disponibilidade é separada por turma e por uniforme masculino ou feminino.</li>
+                            <li>A disponibilidade é separada por turma e por corte (masculino, feminino ou infantil).</li>
                             <li>Por isso, alunos de turmas diferentes podem usar o mesmo número.</li>
                             <li>Na mesma turma, uma aluna e um aluno também podem escolher números iguais.</li>
                         </ul>
                     </div>
-                    <div class="studentUniforms__price">
-                        <span>Conjunto completo</span>
-                        <strong>R$ 115,00</strong>
-                        <small>Camisa + shorts + meião</small>
+                    <?php // Um preço por produto — o que está à venda hoje, direto do catálogo. ?>
+                    <div class="studentUniforms__prices">
+                        <div class="studentUniforms__price">
+                            <span>Conjunto completo</span>
+                            <strong>R$ <?= number_format($valoresUniforme['completo'], 2, ',', '.') ?></strong>
+                            <small>Camisa + shorts + meião</small>
+                        </div>
+                        <div class="studentUniforms__price">
+                            <span>Só a camisa</span>
+                            <strong>R$ <?= number_format($valoresUniforme['camisa'], 2, ',', '.') ?></strong>
+                            <small>A camisa do uniforme, sem o calção</small>
+                        </div>
+                        <div class="studentUniforms__price">
+                            <span>Camiseta regata</span>
+                            <strong>R$ <?= number_format($valoresUniforme['regata'], 2, ',', '.') ?></strong>
+                            <small>Corte unissex, grade PP ao XG3</small>
+                        </div>
                     </div>
                 </div>
 
@@ -222,13 +239,32 @@ function tempoRelativo(string $data): string {
                         </button>
                         <h3>Modelo líbero</h3>
                     </article>
+
+                    <?php // Vendidos à parte do conjunto — mesma arte, produtos diferentes. ?>
+                    <article class="studentUniformCard">
+                        <div class="studentUniformCard__category">Avulso</div>
+                        <button type="button" class="studentUniformCard__image js-uniform-preview" data-image="<?= BASE_URL ?>/images/uniformes/socamisa.png" data-title="Camisa do uniforme (vendida sozinha)">
+                            <img src="<?= BASE_URL ?>/images/uniformes/socamisa.png" alt="Camisa do uniforme vendida sozinha">
+                            <span>Ver ampliado</span>
+                        </button>
+                        <h3>Só a camisa</h3>
+                    </article>
+
+                    <article class="studentUniformCard">
+                        <div class="studentUniformCard__category">Avulso</div>
+                        <button type="button" class="studentUniformCard__image js-uniform-preview" data-image="<?= BASE_URL ?>/images/uniformes/camisetaRegata.png" data-title="Camiseta regata">
+                            <img src="<?= BASE_URL ?>/images/uniformes/camisetaRegata.png" alt="Camiseta regata">
+                            <span>Ver ampliado</span>
+                        </button>
+                        <h3>Camiseta regata</h3>
+                    </article>
                 </div>
 
                 <div class="studentUniformSizes">
                     <div class="studentUniformSizes__head">
                         <span>Encontre o tamanho ideal</span>
                         <h3>Tabelas de medidas</h3>
-                        <p>Camisa e shorts têm grades diferentes — e as medidas mudam entre o modelo masculino e o feminino. Confira a sua antes de pedir.</p>
+                        <p>Cada peça tem sua grade: camisa, calção/bermuda e regata medem diferente, e a modelagem muda entre masculino, feminino e infantil. Confira a sua antes de pedir.</p>
                     </div>
 
                     <?php
@@ -253,21 +289,43 @@ function tempoRelativo(string $data): string {
                 <?php foreach ($meusUniformes as $p):
                     $indice      = array_search($p['status_pedido'], UNIFORME_STATUS_FLUXO, true);
                     $indice      = $indice === false ? 0 : $indice;
-                    $generoLabel = $p['genero'] === 'feminino' ? 'Feminino' : 'Masculino';
+                    $generoLabel = uniformeGeneroLabel($p['genero']);
                     $modeloLabel = UNIFORME_MODELO_LABEL[$p['modelo']] ?? $p['modelo'];
-                    $imgNome     = 'uniforme' . ucfirst($p['genero']) . ($p['modelo'] === 'libero' ? 'Libero' : 'Padrao') . '.jpg';
+                    $produto     = $p['tipo_uniforme'];
+                    $pecasPedido = uniformeProdutoPecas($produto);
+                    $temShorts   = in_array('shorts', $pecasPedido, true);
+                    $pecaDeCima  = in_array('regata', $pecasPedido, true) ? 'regata' : 'camisa';
+                    // "Tam. regata", não "Tam. camiseta" — o rótulo da tabela começa com "Camiseta".
+                    $labelDeCima = $pecaDeCima === 'regata'
+                        ? 'Regata'
+                        : (uniformeTabelaMedidas($p['genero'], $pecaDeCima)['label'] ?? 'Camisa');
+
+                    // Cada produto mostra a própria foto; o conjunto completo mostra o modelo
+                    // pedido. Infantil usa a arte masculina — é a mesma estampa, só a
+                    // modelagem muda, e não existe foto infantil.
+                    if ($produto === 'regata') {
+                        $imgNome = 'camisetaRegata.png';
+                    } elseif ($produto === 'camisa') {
+                        $imgNome = 'socamisa.png';
+                    } else {
+                        $generoImg = $p['genero'] === 'feminino' ? 'Feminino' : 'Masculino';
+                        $imgNome   = 'uniforme' . $generoImg . ($p['modelo'] === 'libero' ? 'Libero' : 'Padrao') . '.jpg';
+                    }
                 ?>
                 <article class="studentUniformOrder">
                     <div class="studentUniformOrder__top">
-                        <img src="<?= BASE_URL ?>/images/uniformes/<?= $imgNome ?>" alt="Uniforme <?= strtolower($generoLabel) ?> <?= htmlspecialchars($modeloLabel) ?>">
+                        <img src="<?= BASE_URL ?>/images/uniformes/<?= $imgNome ?>" alt="<?= htmlspecialchars(uniformeDescricaoCurta($produto, $p['genero'])) ?>">
 
                         <div class="studentUniformOrder__info">
-                            <h3><?= $generoLabel ?> — <?= htmlspecialchars($modeloLabel) ?></h3>
+                            <h3><?= htmlspecialchars(uniformeDescricaoCurta($produto, $p['genero'])) ?> — <?= htmlspecialchars($modeloLabel) ?></h3>
                             <dl>
+                                <div><dt>Produto</dt><dd><?= htmlspecialchars(uniformeProduto($produto)['nome']) ?></dd></div>
                                 <div><dt>Nome</dt><dd><?= htmlspecialchars($p['nome_camisa']) ?></dd></div>
                                 <div><dt>Número</dt><dd>#<?= (int) $p['numero'] ?></dd></div>
-                                <div><dt>Tam. camisa</dt><dd><?= htmlspecialchars($p['tamanho_camisa']) ?></dd></div>
+                                <div><dt>Tam. <?= htmlspecialchars(mb_strtolower(explode(' ', $labelDeCima)[0])) ?></dt><dd><?= htmlspecialchars($p['tamanho_camisa']) ?></dd></div>
+                                <?php if ($temShorts): ?>
                                 <div><dt>Tam. <?= htmlspecialchars(mb_strtolower(explode(' ', uniformeLabelPeca($p['genero'], 'shorts'))[0])) ?></dt><dd><?= htmlspecialchars($p['tamanho_shorts']) ?></dd></div>
+                                <?php endif; ?>
                                 <div><dt>Valor pago</dt><dd>R$ <?= number_format((float) $p['valor'], 2, ',', '.') ?></dd></div>
                                 <?php if (!empty($p['pago_em'])): ?>
                                 <div><dt>Pedido em</dt><dd><?= (new DateTime($p['pago_em']))->format('d/m/Y') ?></dd></div>

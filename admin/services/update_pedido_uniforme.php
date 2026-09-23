@@ -46,7 +46,8 @@ if ($pedidoId <= 0) {
 }
 
 $st = $pdo->prepare("
-    SELECT id, aluno_id, turma_id, genero, numero, nome_camisa, tamanho_camisa, tamanho_shorts, status_pagamento
+    SELECT id, aluno_id, turma_id, tipo_uniforme, genero, numero, nome_camisa,
+           tamanho_camisa, tamanho_shorts, status_pagamento
     FROM pedidos_uniforme WHERE id = ?
 ");
 $st->execute([$pedidoId]);
@@ -66,7 +67,8 @@ if ($pedido['status_pagamento'] !== 'pago') {
     exit;
 }
 
-$genero = $pedido['genero'];
+$genero  = $pedido['genero'];
+$produto = $pedido['tipo_uniforme'];
 
 // ── Entrada ───────────────────────────────────────────────────────────────────
 $nomeCamisa    = uniformeNormalizarNome((string) ($_POST['nome_camisa'] ?? ''));
@@ -77,15 +79,23 @@ $tamanhoShorts = trim($_POST['tamanho_shorts'] ?? '');
 // ── Validação ─────────────────────────────────────────────────────────────────
 $erro = null;
 
+// A grade válida sai do produto do pedido: a regata tem a dela, e pedido de só camisa não
+// tem calção nenhum pra conferir.
+$tam = uniformeValidarTamanhos($produto, $genero, [
+    'camisa' => $tamanhoCamisa,
+    'regata' => $tamanhoCamisa,
+    'shorts' => $tamanhoShorts,
+]);
+
 if ($nomeCamisa === '') {
     $erro = 'Informe o nome que vai na camisa.';
 } elseif ($numero < UNIFORME_NUMERO_MIN || $numero > UNIFORME_NUMERO_MAX) {
     $erro = 'Escolha um número de ' . UNIFORME_NUMERO_MIN . ' a ' . UNIFORME_NUMERO_MAX . '.';
-} elseif (!in_array($tamanhoCamisa, uniformeTamanhos($genero, 'camisa'), true)) {
-    $erro = 'Tamanho da camisa inválido para esse uniforme.';
-} elseif (!in_array($tamanhoShorts, uniformeTamanhos($genero, 'shorts'), true)) {
-    // "a bermuda" (fem) x "o calção" (masc) — o artigo muda com a peça.
-    $erro = 'Tamanho ' . ($genero === 'feminino' ? 'da bermuda' : 'do calção') . ' inválido para esse uniforme.';
+} elseif (!$tam['ok']) {
+    $erro = $tam['message'];
+} else {
+    $tamanhoCamisa = $tam['camisa'];
+    $tamanhoShorts = $tam['shorts'];
 }
 
 if ($erro) {

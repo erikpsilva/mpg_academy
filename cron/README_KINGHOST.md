@@ -83,6 +83,16 @@ atraso.
 > `cobranca_automatica_log` impede cobrar a mesma mensalidade duas vezes com sucesso no
 > mesmo dia.
 
+### Conciliação de pagamentos (Mercado Pago)
+
+| Quando | URL |
+|---|---|
+| A cada **10 minutos** | `https://www.mpgacademy.com.br/cron/conciliar_pagamentos.php` |
+
+> Confirma PIX/cartão aprovados no MP cujo aviso (webhook) não chegou — ex.: a pessoa pagou
+> o PIX do Bate Bola e fechou a tela. Sem ele, o pagamento fica pendente e o jogador fora da
+> lista. Termina em até ~40s e é seguro repetir: só confirma o que o MP diz que está aprovado.
+
 ### Lembrete de treino
 
 | Quando | URL |
@@ -132,6 +142,7 @@ O que acontece se estourar:
 | `wpp_mensalidade.php` | Seguro. Grava em `notificacoes_log` a cada envio, então a retentativa continua de onde parou. |
 | `wpp_lembrete_3dias` / `2dias` / `amanha` / `dia_aula` | Seguros. Mesma proteção, via `lembrete_teste_log`. |
 | `cobranca_automatica.php` | Seguro contra cobrança dupla, via `cobranca_automatica_log`. |
+| `conciliar_pagamentos.php` | Seguro. Só confirma o que ainda está em aberto; o que já foi confirmado é ignorado. |
 | **`wpp_lembrete_treino.php`** | ⚠️ **Não tem log de controle.** Se estourar e a KingHost repetir, quem já recebeu **recebe de novo** — até 4 vezes. |
 
 **Recomendação:** agende o lembrete de treino por último e acompanhe a primeira semana. Se

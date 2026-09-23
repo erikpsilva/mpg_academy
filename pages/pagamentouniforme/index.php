@@ -31,7 +31,8 @@ uniformeExpirarReservas($pdo);
 // Os segundos restantes vêm do próprio MySQL (TIMESTAMPDIFF sobre NOW()) — o fuso do PHP
 // pode não bater com o do banco, e aí o contador mostraria horas a mais ou já zerado.
 $stPedido = $pdo->prepare("
-    SELECT p.id, p.genero, p.modelo, p.nome_camisa, p.numero, p.tamanho_camisa, p.tamanho_shorts, p.valor,
+    SELECT p.id, p.tipo_uniforme, p.genero, p.modelo, p.nome_camisa, p.numero,
+           p.tamanho_camisa, p.tamanho_shorts, p.valor,
            p.status_pagamento, p.reserva_expira_em,
            TIMESTAMPDIFF(SECOND, NOW(), p.reserva_expira_em) AS segundos_restantes,
            COALESCE(t.nome, '') AS turma_nome
@@ -51,8 +52,20 @@ $jaPago   = $pedido['status_pagamento'] === 'pago';
 $expirado = in_array($pedido['status_pagamento'], ['expirado', 'cancelado'], true);
 
 $total       = (float) $pedido['valor'];
-$generoLabel = $pedido['genero'] === 'feminino' ? 'Feminino' : 'Masculino';
+$generoLabel = uniformeGeneroLabel($pedido['genero']);
 $modeloLabel = UNIFORME_MODELO_LABEL[$pedido['modelo']] ?? $pedido['modelo'];
+
+// O que o aluno está comprando: uniforme completo, só a camisa ou regata. Cada produto tem
+// peças diferentes, então a tela mostra só os tamanhos que existem naquele pedido.
+$produto      = $pedido['tipo_uniforme'];
+$produtoNome  = uniformeProduto($produto)['nome'];
+$pecasPedido  = uniformeProdutoPecas($produto);
+$temShorts    = in_array('shorts', $pecasPedido, true);
+$pecaDeCima   = in_array('regata', $pecasPedido, true) ? 'regata' : 'camisa';
+// "Tam. regata" em vez de "Tam. camiseta": o rótulo da tabela começa com "Camiseta".
+$labelDeCima  = $pecaDeCima === 'regata'
+    ? 'Regata'
+    : (uniformeTabelaMedidas($pedido['genero'], $pecaDeCima)['label'] ?? 'Camisa');
 
 $publicKey = mpPublicKey($pdo);
 $modoTeste = mpModoTeste($pdo);
@@ -104,18 +117,24 @@ if (!$jaPago && !$expirado && $pedido['segundos_restantes'] !== null) {
                 <div class="uniformPay__testBadge">MODO DE TESTE — nenhum valor real será cobrado</div>
                 <?php endif; ?>
 
-                <h1 class="uniformPay__title">Pagar uniforme</h1>
-                <p class="uniformPay__sub"><?= $generoLabel ?> — <?= htmlspecialchars($modeloLabel) ?></p>
+                <h1 class="uniformPay__title">Pagar <?= $produto === 'completo' ? 'uniforme' : mb_strtolower($produtoNome, 'UTF-8') ?></h1>
+                <p class="uniformPay__sub"><?= htmlspecialchars($produtoNome) ?> &middot; <?= $generoLabel ?> — <?= htmlspecialchars($modeloLabel) ?></p>
 
                 <div class="uniformPay__summary">
+                    <div class="uniformPay__row"><span>Produto</span><span><?= htmlspecialchars(uniformeDescricaoCurta($produto, $pedido['genero'])) ?></span></div>
                     <div class="uniformPay__row"><span>Nome na camiseta</span><span><?= htmlspecialchars($pedido['nome_camisa']) ?></span></div>
                     <div class="uniformPay__row"><span>Número</span><span>#<?= (int) $pedido['numero'] ?></span></div>
-                    <div class="uniformPay__row"><span>Tam. camisa</span><span><?= htmlspecialchars($pedido['tamanho_camisa']) ?></span></div>
+                    <div class="uniformPay__row"><span>Tam. <?= htmlspecialchars(mb_strtolower(explode(' ', $labelDeCima)[0])) ?></span><span><?= htmlspecialchars($pedido['tamanho_camisa']) ?></span></div>
+                    <?php if ($temShorts): ?>
                     <div class="uniformPay__row"><span>Tam. <?= htmlspecialchars(mb_strtolower(explode(' ', uniformeLabelPeca($pedido['genero'], 'shorts'))[0])) ?></span><span><?= htmlspecialchars($pedido['tamanho_shorts']) ?></span></div>
+                    <?php endif; ?>
                     <?php if (!empty($pedido['turma_nome'])): ?>
                     <div class="uniformPay__row"><span>Turma</span><span><?= htmlspecialchars($pedido['turma_nome']) ?></span></div>
                     <?php endif; ?>
-                    <div class="uniformPay__row"><span>Conjunto</span><span>Camisa + shorts + meião</span></div>
+                    <?php // O conjunto completo sai com meião; os produtos avulsos, só a peça. ?>
+                    <div class="uniformPay__row"><span>O que vem</span><span><?= $produto === 'completo'
+                        ? 'Camisa + calção + meião'
+                        : htmlspecialchars(uniformeDescricaoProduto($produto, $pedido['genero'])) ?></span></div>
                     <div class="uniformPay__row uniformPay__row--total">
                         <span>Total à vista</span><span>R$ <?= number_format($total, 2, ',', '.') ?></span>
                     </div>

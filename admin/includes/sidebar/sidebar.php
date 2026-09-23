@@ -37,6 +37,12 @@
                 </a>
             </li>
             <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/prof-presenca"
+                   class="sidebar__link <?= ($subRoute === 'prof-presenca') ? 'sidebar__link--active' : '' ?>">
+                    Presença Aula Experimental
+                </a>
+            </li>
+            <li class="sidebar__item">
                 <a href="<?= BASE_URL ?>/admin/meu-contrato"
                    class="sidebar__link <?= ($subRoute === 'meu-contrato') ? 'sidebar__link--active' : '' ?>">
                     Contrato
@@ -160,6 +166,13 @@
                 <a href="<?= BASE_URL ?>/admin/alunosteste"
                    class="sidebar__link <?= ($subRoute === 'alunosteste') ? 'sidebar__link--active' : '' ?>">
                     Agendar Aula Experimental
+                </a>
+            </li>
+
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/presencateste"
+                   class="sidebar__link <?= ($subRoute === 'presencateste') ? 'sidebar__link--active' : '' ?>">
+                    Lista de Presença Aula Experimental
                 </a>
             </li>
 

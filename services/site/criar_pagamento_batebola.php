@@ -28,7 +28,7 @@ if (!batebolaInscricoesAbertas()) {
     echo json_encode([
         'success' => false,
         'fechado' => true,
-        'message' => 'A lista do Bate Bola está fechada agora. Abre toda segunda-feira às 06h e fecha sexta-feira às 23h59.',
+        'message' => 'A lista do Bate Bola está fechada agora. Abre toda segunda-feira às 06h e fecha no sábado às 18h.',
     ]);
     exit;
 }

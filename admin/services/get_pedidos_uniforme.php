@@ -56,6 +56,11 @@ foreach ($st->fetchAll() as $r) {
 
     $ehEquipe = $r['tipo_uniforme'] === 'equipe_tecnica';
 
+    // Peças do produto: é o que diz se aquele pedido tem calção, e se o tamanho de cima é
+    // de camisa ou de regata (a regata é gravada na coluna da camisa).
+    $pecasProduto = uniformeProdutoPecas($r['tipo_uniforme']);
+    $pecaDeCima   = in_array('regata', $pecasProduto, true) ? 'regata' : 'camisa';
+
     $pedidos[] = [
         'id'              => (int) $r['id'],
         'pessoa_tipo'     => $r['pessoa_tipo'],
@@ -63,6 +68,13 @@ foreach ($st->fetchAll() as $r) {
         'pessoa_label'    => UNIFORME_PESSOA_LABEL[$r['pessoa_tipo']] ?? $r['pessoa_tipo'],
         'tipo_uniforme'   => $r['tipo_uniforme'],
         'tipo_label'      => UNIFORME_TIPO_LABEL[$r['tipo_uniforme']] ?? $r['tipo_uniforme'],
+        // O que a confecção precisa ler: produto + corte, sem ambiguidade. O curto é pra
+        // tela; o completo nomeia cada peça e é o que vai na lista impressa.
+        'produto_nome'    => uniformeProduto($r['tipo_uniforme'])['nome'],
+        'produto_curto'   => uniformeDescricaoCurta($r['tipo_uniforme'], $r['genero']),
+        'produto_completo' => uniformeDescricaoProduto($r['tipo_uniforme'], $r['genero']),
+        'pecas'           => $pecasProduto,
+        'peca_de_cima'    => $pecaDeCima,
         // Na camisa da equipe técnica o que vai estampado é o cargo + nome, não um número.
         'texto_camisa'    => $ehEquipe
                                 ? uniformeTextoEquipe($r['equipe_cargo'], $r['nome_camisa'])
@@ -74,7 +86,7 @@ foreach ($st->fetchAll() as $r) {
         'aluno_celular'   => $r['pessoa_celular'],
         'turma_nome'      => $r['pessoa_tipo'] === 'aluno' ? $r['turma_nome'] : (UNIFORME_PESSOA_LABEL[$r['pessoa_tipo']] ?? '—'),
         'genero'          => $r['genero'],
-        'genero_label'    => $r['genero'] === 'feminino' ? 'Feminino' : 'Masculino',
+        'genero_label'    => uniformeGeneroLabel($r['genero']),
         'modelo'          => $r['modelo'],
         'modelo_label'    => UNIFORME_MODELO_LABEL[$r['modelo']] ?? $r['modelo'],
         'cor_label'       => uniformeCor($r['modelo']),
@@ -88,7 +100,9 @@ foreach ($st->fetchAll() as $r) {
         // dizer sem ambiguidade o que é cada peça — camisa feminina é baby look, e o corte
         // da bermuda não é o mesmo do calção.
         'label_shorts'    => explode(' ', uniformeLabelPeca($r['genero'], 'shorts'))[0],
-        'peca_camisa'     => uniformeLabelPeca($r['genero'], 'camisa'),
+        // peca_camisa é o nome da peça de CIMA daquele pedido — camisa, baby look, camiseta
+        // infantil ou regata. É o rótulo que sai impresso junto do tamanho.
+        'peca_camisa'     => uniformeLabelPeca($r['genero'], $pecaDeCima),
         'peca_shorts'     => uniformeLabelPeca($r['genero'], 'shorts'),
         'valor'           => (float) $r['valor'],
         'status'          => $status,
@@ -118,10 +132,16 @@ echo json_encode([
         'masculino' => [
             'camisa' => uniformeTamanhos('masculino', 'camisa'),
             'shorts' => uniformeTamanhos('masculino', 'shorts'),
+            'regata' => uniformeTamanhos('masculino', 'regata'),
         ],
         'feminino' => [
             'camisa' => uniformeTamanhos('feminino', 'camisa'),
             'shorts' => uniformeTamanhos('feminino', 'shorts'),
+            'regata' => uniformeTamanhos('feminino', 'regata'),
+        ],
+        'infantil' => [
+            'camisa' => uniformeTamanhos('infantil', 'camisa'),
+            'shorts' => uniformeTamanhos('infantil', 'shorts'),
         ],
     ],
     'numero_min' => UNIFORME_NUMERO_MIN,

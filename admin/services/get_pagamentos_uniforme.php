@@ -59,7 +59,7 @@ if ($mes !== '') {
 }
 
 $st = $pdo->prepare("
-    SELECT p.id, p.aluno_id, p.genero, p.modelo, p.nome_camisa, p.numero,
+    SELECT p.id, p.aluno_id, p.tipo_uniforme, p.genero, p.modelo, p.nome_camisa, p.numero,
            p.tamanho_camisa, p.tamanho_shorts, p.valor, p.status_pedido,
            p.mp_payment_id, p.mp_payment_method, p.mp_taxa_valor, p.mp_valor_liquido,
            p.criado_por_usuario_id, p.pago_em, p.criado_em,
@@ -97,6 +97,10 @@ foreach ($st->fetchAll() as $r) {
         'aluno_email'    => $r['aluno_email'],
         'turma'          => $r['turma_nome'],
         'genero'         => $r['genero'],
+        // Qual produto foi vendido — sem isso a lista de pagamentos não distingue o
+        // conjunto de R$ 115 da regata de R$ 55.
+        'produto'        => uniformeDescricaoCurta($r['tipo_uniforme'], $r['genero']),
+        'peca_de_cima'   => in_array('regata', uniformeProdutoPecas($r['tipo_uniforme']), true) ? 'regata' : 'camisa',
         'modelo'         => $r['modelo'],
         'nome_camisa'    => $r['nome_camisa'],
         'numero'         => $r['numero'] !== null ? (int) $r['numero'] : null,

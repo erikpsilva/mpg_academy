@@ -326,6 +326,7 @@
 // Cabeçalho que só existe no papel — na tela esses dados já estão no topo.
 .uniformes__printHead { display: none; }
 .uniformes__printName,
+.uniformes__printProduct,
 .uniformes__printSize { display: none; }
 
 // ── Impressão / PDF ───────────────────────────────────────────────────────────
@@ -430,15 +431,28 @@
         thead { display: table-header-group; }
         tr    { page-break-inside: avoid; }
 
-        // Cinco colunas fixas e largas o suficiente para leitura rapida.
-        th:nth-child(1), td:nth-child(1) { width: 7%; text-align: center; }
-        th:nth-child(5), td:nth-child(5) { width: 39%; }
-        th:nth-child(6), td:nth-child(6) { width: 12%; text-align: center; }
-        th:nth-child(7), td:nth-child(7) { width: 27%; }
-        th:nth-child(8), td:nth-child(8) { width: 15%; text-align: right; }
+        // Colunas fixas e largas o suficiente para leitura rapida. A contagem inclui as
+        // colunas de tela escondidas na impressao (2, 3 e 4), por isso os indices pulam.
+        th:nth-child(1),  td:nth-child(1)  { width: 6%;  text-align: center; }
+        th:nth-child(5),  td:nth-child(5)  { width: 24%; }  // Produto
+        th:nth-child(6),  td:nth-child(6)  { width: 26%; }  // Nome
+        th:nth-child(7),  td:nth-child(7)  { width: 8%;  text-align: center; }  // Numero
+        th:nth-child(8),  td:nth-child(8)  { width: 10%; }  // Cor
+        th:nth-child(9),  td:nth-child(9)  { width: 17%; }  // Tamanho
+        th:nth-child(10), td:nth-child(10) { width: 9%;  text-align: right; }   // Valor
     }
 
     .uniformes__screenValue { display: none !important; }
+
+    // Produto por extenso: e o que diz a confeccao o que costurar (gola V masculina,
+    // baby look feminina, bermuda infantil, regata unissex).
+    .uniformes__printProduct {
+        display: block;
+        color: #000 !important;
+        font-size: 9pt;
+        font-weight: 700;
+        line-height: 1.25;
+    }
 
     .uniformes__printName {
         display: flex;
@@ -529,9 +543,11 @@
 }
 
 // ── Quanto custou, por produto ────────────────────────────────────────────────
+// Um card por produto vendido + o total. São até cinco, e o número muda com o filtro,
+// por isso auto-fit em vez de três colunas fixas.
 .uniformes__valores {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
     gap: 12px;
     margin-bottom: 22px;
 

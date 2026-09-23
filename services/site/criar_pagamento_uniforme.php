@@ -80,7 +80,7 @@ $alunoId = (int) $_SESSION['aluno']['id'];
 uniformeExpirarReservas($pdo);
 
 $stPedido = $pdo->prepare("
-    SELECT p.id, p.genero, p.modelo, p.nome_camisa, p.numero, p.tamanho_camisa, p.tamanho_shorts, p.valor,
+    SELECT p.id, p.tipo_uniforme, p.genero, p.modelo, p.nome_camisa, p.numero, p.tamanho_camisa, p.tamanho_shorts, p.valor,
            p.status_pagamento, p.pix_qr_code, p.pix_qr_code_base64,
            a.email AS aluno_email, a.nome AS aluno_nome, a.cpf AS aluno_cpf
     FROM pedidos_uniforme p
@@ -112,7 +112,10 @@ if ($pedido['status_pagamento'] !== 'aguardando') {
 }
 
 $total       = (float) $pedido['valor'];
-$descricao   = 'MPG Academy — Uniforme ' . $pedido['nome_camisa'] . ' #' . $pedido['numero'];
+// A fatura precisa dizer QUAL produto foi comprado: o extrato do cartão é onde o aluno
+// confere, e "Uniforme" sozinho não distingue o conjunto de R$ 115 da regata de R$ 55.
+$descricao   = 'MPG Academy — ' . uniformeDescricaoCurta($pedido['tipo_uniforme'], $pedido['genero'])
+             . ' ' . $pedido['nome_camisa'] . ' #' . $pedido['numero'];
 $accessToken = mpAccessToken($pdo);
 
 // PIX já gerado pra esse pedido: reaproveita o QR em vez de criar outra cobrança.

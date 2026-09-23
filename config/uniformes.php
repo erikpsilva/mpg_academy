@@ -24,6 +24,8 @@ const UNIFORMES_VISIVEL_ALUNO = true;
 
 const UNIFORME_VALOR_PADRAO     = 115.00;  // uniforme completo (camisa + calção)
 const UNIFORME_VALOR_EQUIPE_PADRAO = 49.90;  // camisa da equipe técnica, vendida sozinha
+const UNIFORME_VALOR_CAMISA_PADRAO = 55.00;  // só a camisa do uniforme, sem o calção
+const UNIFORME_VALOR_REGATA_PADRAO = 55.00;  // camiseta regata
 const UNIFORME_NUMERO_MIN       = 1;
 const UNIFORME_NUMERO_MAX       = 99;
 const UNIFORME_NOME_MAX         = 14;   // caracteres que cabem nas costas da camisa
@@ -39,27 +41,95 @@ const UNIFORME_RESERVA_MINUTOS  = 30;   // quanto tempo o número fica preso agu
  */
 const UNIFORME_PARCELAS_MAX = 12;
 
-const UNIFORME_GENEROS = ['masculino', 'feminino'];
+/**
+ * Corte da peça. Não é o sexo da pessoa: é a modelagem que o fabricante corta, e cada uma
+ * tem grade própria (a camisa masculina é gola V, a feminina é baby look, a infantil segue
+ * idade de 2 a 14). É também o balde da numeração — ver o topo do arquivo.
+ */
+const UNIFORME_GENEROS = ['masculino', 'feminino', 'infantil'];
+
+const UNIFORME_GENERO_LABEL = [
+    'masculino' => 'Masculino',
+    'feminino'  => 'Feminino',
+    'infantil'  => 'Infantil',
+];
+
 const UNIFORME_MODELOS = ['padrao', 'libero'];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Uniforme da equipe técnica
 // ─────────────────────────────────────────────────────────────────────────────
 //
-// Dois produtos diferentes convivem na mesma tabela de pedidos:
+// Quatro produtos diferentes convivem na mesma tabela de pedidos:
 //   completo       — camisa + calção, com número e nome. É o do aluno, e também o que
 //                    professor/admin podem pedir.
+//   camisa         — SÓ a camisa do uniforme, mesma arte e mesma grade do completo.
+//   regata         — camiseta regata, grade própria (unissex, PP ao XG3).
 //   equipe_tecnica — SÓ a camisa, sem número, com um texto de cargo no lugar (Equipe
 //                    Técnica ou Técnico) seguido do nome da pessoa.
 //
 // Equipe técnica é exclusivo de quem trabalha na academia: professor (tabela `professores`)
 // ou usuário do painel (tabela `admin_usuarios`). Aluno nunca pode pedir — é o que separa
 // a camisa da comissão da camisa de quem joga.
-const UNIFORME_TIPOS = ['completo', 'equipe_tecnica'];
+const UNIFORME_TIPOS = ['completo', 'camisa', 'regata', 'equipe_tecnica'];
 
 const UNIFORME_TIPO_LABEL = [
     'completo'       => 'Uniforme completo (camisa + calção)',
+    'camisa'         => 'Só a camisa do uniforme',
+    'regata'         => 'Camiseta regata',
     'equipe_tecnica' => 'Equipe técnica (só camisa)',
+];
+
+/**
+ * Catálogo dos produtos à venda — a fonte da verdade de quem vende o quê.
+ *
+ * `pecas` é o que manda no sistema inteiro: define quais tamanhos o formulário pede, o que
+ * a confecção recebe na lista e o que a área do aluno mostra. Produto de uma peça só nunca
+ * grava tamanho de calção.
+ *
+ * `valor_chave` é a linha de `configuracoes` com o preço — cada produto tem o seu, editável
+ * no painel sem deploy.
+ *
+ * `cortes` limita a grade: a regata tem uma grade só (a do fabricante vai do PP ao XG3),
+ * então ela não existe em versão infantil.
+ */
+const UNIFORME_PRODUTOS = [
+    'completo' => [
+        'nome'        => 'Uniforme completo',
+        'descricao'   => 'Camisa + calção, com nome e número.',
+        'pecas'       => ['camisa', 'shorts'],
+        'cortes'      => ['masculino', 'feminino', 'infantil'],
+        'valor_chave' => 'valor_uniforme',
+        'imagem'      => null,   // usa as fotos de cada modelo (padrão/líbero)
+        'venda_aluno' => true,
+    ],
+    'camisa' => [
+        'nome'        => 'Só a camisa',
+        'descricao'   => 'A camisa do uniforme vendida sozinha, com nome e número.',
+        'pecas'       => ['camisa'],
+        'cortes'      => ['masculino', 'feminino', 'infantil'],
+        'valor_chave' => 'valor_uniforme_camisa',
+        'imagem'      => 'images/uniformes/socamisa.png',
+        'venda_aluno' => true,
+    ],
+    'regata' => [
+        'nome'        => 'Camiseta regata',
+        'descricao'   => 'Regata sem manga, com nome e número. Corte unissex.',
+        'pecas'       => ['regata'],
+        'cortes'      => ['masculino', 'feminino'],
+        'valor_chave' => 'valor_uniforme_regata',
+        'imagem'      => 'images/uniformes/camisetaRegata.png',
+        'venda_aluno' => true,
+    ],
+    'equipe_tecnica' => [
+        'nome'        => 'Camisa da equipe técnica',
+        'descricao'   => 'Só a camisa, com o cargo no lugar do número.',
+        'pecas'       => ['camisa'],
+        'cortes'      => ['masculino', 'feminino'],
+        'valor_chave' => 'valor_uniforme_equipe',
+        'imagem'      => 'images/uniformes/equipetecnica.png',
+        'venda_aluno' => false,   // interno: professor e equipe MPG
+    ],
 ];
 
 /** Quem pode receber um pedido. Aluno não entra em equipe técnica. */
@@ -82,8 +152,13 @@ const UNIFORME_CARGO_LABEL = [
 /** Imagem de referência da camisa da equipe técnica. */
 const UNIFORME_EQUIPE_IMAGEM = 'images/uniformes/equipetecnica.png';
 
-/** As duas peças que o aluno escolhe tamanho separadamente. */
-const UNIFORME_PECAS = ['camisa', 'shorts'];
+/**
+ * As peças que têm grade própria e tamanho escolhido separadamente.
+ *
+ * Quais delas entram em cada pedido vem do produto (UNIFORME_PRODUTOS['...']['pecas']), não
+ * daqui: o uniforme completo usa camisa + shorts, a regata usa só a dela.
+ */
+const UNIFORME_PECAS = ['camisa', 'shorts', 'regata'];
 
 /** Aviso do fabricante, exibido junto de toda tabela de medidas. */
 const UNIFORME_AVISO_MEDIDAS = 'As medidas podem variar cerca de 3% por conta da costura.';
@@ -101,8 +176,25 @@ const UNIFORME_AVISO_MEDIDAS = 'As medidas podem variar cerca de 3% por conta da
 const UNIFORME_CONVERSAO_AVISO = 'Equivalência aproximada, só pra orientar. Na dúvida entre dois tamanhos, '
                                . 'confira as medidas em centímetros acima — e, pra um caimento mais folgado, prefira o maior.';
 
+/** A regata usa a mesma escala da camisa masculina — grade única, então fica à parte. */
+const UNIFORME_CONVERSAO_REGATA = [
+    'coluna' => 'Equivalência aproximada',
+    'linhas' => [
+        ['PP',  'PP / 34-36'],
+        ['P',   'P / 36-38'],
+        ['M',   'M / 40-42'],
+        ['G',   'G / 44-46'],
+        ['GG',  'GG / 48-50'],
+        ['XG',  'XG / 52-54'],
+        ['XG1', 'XGG / 56'],
+        ['XG2', '3G / 58-60'],
+        ['XG3', '4G / 62+'],
+    ],
+];
+
 const UNIFORME_CONVERSAO = [
     'masculino' => [
+        'regata' => UNIFORME_CONVERSAO_REGATA,
         'camisa' => [
             'coluna' => 'Equivalência aproximada',
             'linhas' => [
@@ -131,6 +223,7 @@ const UNIFORME_CONVERSAO = [
         ],
     ],
     'feminino' => [
+        'regata' => UNIFORME_CONVERSAO_REGATA,
         'camisa' => [
             'coluna' => 'Equivalência aproximada',
             'linhas' => [
@@ -166,10 +259,31 @@ const UNIFORME_CONVERSAO = [
  * Os tamanhos disponíveis saem da primeira coluna de `linhas`, então basta editar a tabela
  * aqui pra mudar a grade em todo o sistema (formulário, área do aluno e admin).
  */
+/**
+ * A regata tem uma grade só, igual pra todo mundo — por isso mora numa constante à parte e
+ * é referenciada dentro de cada corte abaixo, em vez de ser copiada três vezes.
+ */
+const UNIFORME_TABELA_REGATA = [
+    'label'   => 'Camiseta regata',
+    'colunas' => ['Tamanho', 'Altura', 'Largura'],
+    'linhas'  => [
+        ['PP',  '72 cm', '43 cm'],
+        ['P',   '74 cm', '45 cm'],
+        ['M',   '76 cm', '47 cm'],
+        ['G',   '78 cm', '50 cm'],
+        ['GG',  '80 cm', '53 cm'],
+        ['XG',  '81 cm', '56 cm'],
+        ['XG1', '83 cm', '59 cm'],
+        ['XG2', '84 cm', '62 cm'],
+        ['XG3', '85 cm', '65 cm'],
+    ],
+];
+
 const UNIFORME_MEDIDAS = [
     'masculino' => [
+        'regata' => UNIFORME_TABELA_REGATA,
         'camisa' => [
-            'label'   => 'Camisa masculina',
+            'label'   => 'Camisa masculina gola V',
             'colunas' => ['Tamanho', 'Altura', 'Largura'],
             'linhas'  => [
                 ['PP',  '65 cm', '43 cm'],
@@ -198,6 +312,7 @@ const UNIFORME_MEDIDAS = [
         ],
     ],
     'feminino' => [
+        'regata' => UNIFORME_TABELA_REGATA,
         'camisa' => [
             'label'   => 'Camisa feminina baby look',
             'colunas' => ['Tamanho', 'Altura', 'Largura'],
@@ -218,6 +333,37 @@ const UNIFORME_MEDIDAS = [
                 ['M',  '48 cm', '26,5 cm', '65 cm'],
                 ['G',  '49 cm', '27 cm',   '69 cm'],
                 ['GG', '51 cm', '29 cm',   '72 cm'],
+            ],
+        ],
+    ],
+    // A grade infantil é por IDADE (2 a 14 anos), não por P/M/G — é assim que o fabricante
+    // entrega e é assim que os pais procuram. Os tamanhos ficam com o zero à frente ('02')
+    // pra ordenar certo e não se confundirem com o número da camisa.
+    'infantil' => [
+        'camisa' => [
+            'label'   => 'Camiseta infantil',
+            'colunas' => ['Tamanho (idade)', 'Altura', 'Largura'],
+            'linhas'  => [
+                ['02', '45 cm', '33 cm'],
+                ['04', '49 cm', '35 cm'],
+                ['06', '51 cm', '37 cm'],
+                ['08', '55 cm', '40 cm'],
+                ['10', '59 cm', '43 cm'],
+                ['12', '67 cm', '45 cm'],
+                ['14', '70 cm', '47 cm'],
+            ],
+        ],
+        'shorts' => [
+            'label'   => 'Bermuda infantil',
+            'colunas' => ['Tamanho (idade)', 'Largura', 'Altura'],
+            'linhas'  => [
+                ['02', '34 cm', '23 cm'],
+                ['04', '36 cm', '26 cm'],
+                ['06', '38 cm', '29 cm'],
+                ['08', '40 cm', '32 cm'],
+                ['10', '42 cm', '35 cm'],
+                ['12', '44 cm', '38 cm'],
+                ['14', '46 cm', '41 cm'],
             ],
         ],
     ],
@@ -259,11 +405,7 @@ const UNIFORME_MODELO_LABEL = [
 /** Valor do conjunto (camisa + shorts + meião). Editável em admin/configuracoes. */
 function uniformeValor(PDO $pdo): float
 {
-    $st = $pdo->prepare("SELECT valor FROM configuracoes WHERE chave = 'valor_uniforme'");
-    $st->execute();
-    $row = $st->fetch();
-
-    return $row ? (float) $row['valor'] : UNIFORME_VALOR_PADRAO;
+    return uniformeValorProduto($pdo, 'completo');
 }
 
 /** A tabela de medidas de uma peça (camisa/shorts) num gênero. */
@@ -281,11 +423,156 @@ function uniformeTabelaMedidas(string $genero, string $peca): array
  */
 function uniformeValorEquipe(PDO $pdo): float
 {
-    $st = $pdo->prepare("SELECT valor FROM configuracoes WHERE chave = 'valor_uniforme_equipe'");
-    $st->execute();
+    return uniformeValorProduto($pdo, 'equipe_tecnica');
+}
+
+/**
+ * Preço de um produto do catálogo (uniforme completo, só a camisa, regata, equipe técnica).
+ *
+ * Cada um tem sua linha em `configuracoes`, editável no painel. O valor do código só entra
+ * enquanto ninguém tiver mexido no painel.
+ */
+function uniformeValorProduto(PDO $pdo, string $tipo): float
+{
+    $padroes = [
+        'completo'       => UNIFORME_VALOR_PADRAO,
+        'camisa'         => UNIFORME_VALOR_CAMISA_PADRAO,
+        'regata'         => UNIFORME_VALOR_REGATA_PADRAO,
+        'equipe_tecnica' => UNIFORME_VALOR_EQUIPE_PADRAO,
+    ];
+
+    $chave = UNIFORME_PRODUTOS[$tipo]['valor_chave'] ?? 'valor_uniforme';
+
+    $st = $pdo->prepare("SELECT valor FROM configuracoes WHERE chave = ?");
+    $st->execute([$chave]);
     $row = $st->fetch();
 
-    return $row ? (float) $row["valor"] : UNIFORME_VALOR_EQUIPE_PADRAO;
+    return $row ? (float) $row['valor'] : ($padroes[$tipo] ?? UNIFORME_VALOR_PADRAO);
+}
+
+/** Preços de todos os produtos de uma vez — pras telas que mostram a vitrine. */
+function uniformeValoresProdutos(PDO $pdo): array
+{
+    $valores = [];
+    foreach (array_keys(UNIFORME_PRODUTOS) as $tipo) {
+        $valores[$tipo] = uniformeValorProduto($pdo, $tipo);
+    }
+    return $valores;
+}
+
+/** Ficha de um produto do catálogo — cai no uniforme completo se vier tipo desconhecido. */
+function uniformeProduto(string $tipo): array
+{
+    return UNIFORME_PRODUTOS[$tipo] ?? UNIFORME_PRODUTOS['completo'];
+}
+
+/** Peças de um produto: é isso que define quais tamanhos existem no pedido. */
+function uniformeProdutoPecas(string $tipo): array
+{
+    return uniformeProduto($tipo)['pecas'];
+}
+
+/** Cortes em que o produto é vendido (a regata só existe em grade adulta). */
+function uniformeProdutoCortes(string $tipo): array
+{
+    return uniformeProduto($tipo)['cortes'];
+}
+
+/** Produtos que o aluno pode comprar sozinho — equipe técnica fica de fora. */
+function uniformeProdutosDoAluno(): array
+{
+    return array_filter(UNIFORME_PRODUTOS, fn($p) => $p['venda_aluno']);
+}
+
+/** Todo produto leva número, menos a camisa da equipe técnica (que leva o cargo). */
+function uniformeTemNumero(string $tipo): bool
+{
+    return $tipo !== 'equipe_tecnica';
+}
+
+function uniformeGeneroLabel(?string $genero): string
+{
+    return UNIFORME_GENERO_LABEL[$genero] ?? 'Masculino';
+}
+
+/**
+ * O que a confecção precisa ler: produto + corte, sem ambiguidade.
+ *
+ * "Uniforme completo" sozinho não diz o que cortar — camisa gola V não é baby look, e a
+ * bermuda infantil não é o calção masculino. Por isso a descrição nomeia as peças de
+ * verdade: "Uniforme completo — camisa masculina gola V + calção masculino".
+ */
+function uniformeDescricaoProduto(string $tipo, ?string $genero): string
+{
+    $genero = in_array($genero, UNIFORME_GENEROS, true) ? $genero : 'masculino';
+    $nome   = uniformeProduto($tipo)['nome'];
+
+    if ($tipo === 'equipe_tecnica') {
+        return $nome . ' — corte ' . mb_strtolower(uniformeGeneroLabel($genero), 'UTF-8');
+    }
+
+    // A regata tem grade única: dizer "regata masculina" seria inventar uma modelagem que
+    // não existe no fabricante.
+    if ($tipo === 'regata') {
+        return $nome . ' unissex';
+    }
+
+    // Só a primeira letra vira minúscula: "gola V" tem que continuar com o V maiúsculo.
+    $pecas = array_map(
+        function ($peca) use ($genero) {
+            $label = uniformeLabelPeca($genero, $peca);
+            return mb_strtolower(mb_substr($label, 0, 1), 'UTF-8') . mb_substr($label, 1);
+        },
+        uniformeProdutoPecas($tipo)
+    );
+
+    return $nome . ' — ' . implode(' + ', $pecas);
+}
+
+/** Versão curta pra tela e pra lista impressa: "Camisa infantil", "Regata unissex". */
+function uniformeDescricaoCurta(string $tipo, ?string $genero): string
+{
+    $genero = in_array($genero, UNIFORME_GENEROS, true) ? $genero : 'masculino';
+
+    if ($tipo === 'regata')         return 'Regata unissex';
+    if ($tipo === 'equipe_tecnica') return 'Camisa equipe técnica';
+    if ($tipo === 'camisa')         return uniformeLabelPeca($genero, 'camisa');
+
+    return 'Uniforme completo ' . mb_strtolower(uniformeGeneroLabel($genero), 'UTF-8');
+}
+
+/**
+ * Confere os tamanhos escolhidos contra a grade do produto e devolve o que vai pro banco.
+ *
+ * A regata é gravada em `tamanho_camisa`: é uma camisa, e criar uma coluna só pra ela
+ * deixaria todas as telas com mais um campo quase sempre vazio. Quem diz que aquele tamanho
+ * é de regata é o `tipo_uniforme` do pedido, e é assim que as telas leem.
+ *
+ * @param  array $escolhidos tamanhos por peça: ['camisa' => 'M', 'shorts' => 'G', ...]
+ * @return array{ok: bool, message?: string, camisa?: ?string, shorts?: ?string}
+ */
+function uniformeValidarTamanhos(string $tipo, string $genero, array $escolhidos): array
+{
+    $artigos = ['camisa' => 'da camisa', 'shorts' => 'do calção', 'regata' => 'da regata'];
+    if ($genero === 'feminino')  $artigos['shorts'] = 'da bermuda';
+    if ($genero === 'infantil')  $artigos['shorts'] = 'da bermuda';
+
+    $saida = ['ok' => true, 'camisa' => null, 'shorts' => null];
+
+    foreach (uniformeProdutoPecas($tipo) as $peca) {
+        $tamanho = strtoupper(trim((string) ($escolhidos[$peca] ?? '')));
+
+        if (!in_array($tamanho, uniformeTamanhos($genero, $peca), true)) {
+            return [
+                'ok'      => false,
+                'message' => 'Selecione um tamanho válido ' . ($artigos[$peca] ?? 'da peça') . '.',
+            ];
+        }
+
+        $saida[$peca === 'shorts' ? 'shorts' : 'camisa'] = $tamanho;
+    }
+
+    return $saida;
 }
 
 /** Equivalência com a numeração tradicional de uma peça — vazio se não houver. */
@@ -515,26 +802,39 @@ function uniformeCriarPedidoManual(
     string $tamanhoCamisa,
     string $tamanhoShorts,
     float $valor,
-    int $criadoPorUsuarioId
+    int $criadoPorUsuarioId,
+    string $tipoUniforme = 'completo'
 ): array {
     if (!in_array($genero, UNIFORME_GENEROS, true) || !in_array($modelo, UNIFORME_MODELOS, true)) {
         return ['success' => false, 'message' => 'Modelo de uniforme inválido.'];
+    }
+
+    if (!in_array($tipoUniforme, UNIFORME_TIPOS, true) || $tipoUniforme === 'equipe_tecnica') {
+        return ['success' => false, 'message' => 'Produto inválido para pedido de aluno.'];
+    }
+
+    if (!in_array($genero, uniformeProdutoCortes($tipoUniforme), true)) {
+        return ['success' => false, 'message' => 'Esse produto não é vendido no corte ' . mb_strtolower(uniformeGeneroLabel($genero), 'UTF-8') . '.'];
     }
 
     if ($numero < UNIFORME_NUMERO_MIN || $numero > UNIFORME_NUMERO_MAX) {
         return ['success' => false, 'message' => 'Escolha um número de 1 a 99.'];
     }
 
-    // Cada peça tem sua própria grade — a do shorts não bate com a da camisa.
-    if (!in_array($tamanhoCamisa, uniformeTamanhos($genero, 'camisa'), true)) {
-        return ['success' => false, 'message' => 'Tamanho da camisa inválido para esse uniforme.'];
+    // Cada peça tem sua própria grade, e o produto diz quais peças existem — pedido de só
+    // camisa não tem calção, e a regata tem grade própria.
+    $tam = uniformeValidarTamanhos($tipoUniforme, $genero, [
+        'camisa' => $tamanhoCamisa,
+        'regata' => $tamanhoCamisa,
+        'shorts' => $tamanhoShorts,
+    ]);
+
+    if (!$tam['ok']) {
+        return ['success' => false, 'message' => $tam['message']];
     }
 
-    if (!in_array($tamanhoShorts, uniformeTamanhos($genero, 'shorts'), true)) {
-        // "a bermuda" (fem) x "o calção" (masc) — o artigo muda com a peça.
-        $peca = $genero === 'feminino' ? 'da bermuda' : 'do calção';
-        return ['success' => false, 'message' => 'Tamanho ' . $peca . ' inválido para esse uniforme.'];
-    }
+    $tamanhoCamisa = $tam['camisa'];
+    $tamanhoShorts = $tam['shorts'];
 
     try {
         $pdo->beginTransaction();
@@ -575,8 +875,8 @@ function uniformeCriarPedidoManual(
                  aluno_id, turma_id, genero, modelo, nome_camisa, numero,
                  tamanho_camisa, tamanho_shorts, valor,
                  status_pagamento, status_pedido, pago_em, criado_por_usuario_id, visto_admin)
-            VALUES ('aluno', ?, 'completo', ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pago', 'pendente', NOW(), ?, 1)
-        ")->execute([$alunoId, $alunoId, $turmaId, $genero, $modelo, $nomeCamisa, $numero,
+            VALUES ('aluno', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pago', 'pendente', NOW(), ?, 1)
+        ")->execute([$alunoId, $tipoUniforme, $alunoId, $turmaId, $genero, $modelo, $nomeCamisa, $numero,
                      $tamanhoCamisa, $tamanhoShorts, $valor, $criadoPorUsuarioId]);
 
         $pedidoId = (int) $pdo->lastInsertId();

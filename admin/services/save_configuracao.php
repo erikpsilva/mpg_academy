@@ -28,7 +28,8 @@ require_once dirname(__FILE__, 3) . '/config/avisos.php';
 // config/avisos.php, para que aviso novo não precise ser lembrado aqui também.
 $chavesAvisos     = avisosChaves();
 $chavesPermitidas = array_merge(
-    ['pagamento_modo_teste', 'valor_matricula', 'matricula_ativa', 'valor_batebola', 'valor_uniforme', 'valor_uniforme_equipe'],
+    ['pagamento_modo_teste', 'valor_matricula', 'matricula_ativa', 'valor_batebola', 'valor_uniforme',
+     'valor_uniforme_camisa', 'valor_uniforme_regata', 'valor_uniforme_equipe'],
     $chavesAvisos
 );
 if (!in_array($chave, $chavesPermitidas, true)) {

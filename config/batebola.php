@@ -11,6 +11,11 @@
  */
 
 const BATEBOLA_MAX_VAGAS  = 24;
+
+// Fuso de todas as contas de data do Bate Bola (janela de inscrição, próximo domingo).
+// Explícito de propósito: o projeto não define fuso padrão, e num servidor em UTC o
+// "sábado 18h" viraria 15h de Brasília.
+const BATEBOLA_FUSO = 'America/Sao_Paulo';
 const BATEBOLA_TIME_CORES = ['Azul', 'Vermelho', 'Amarelo', 'Verde'];
 const BATEBOLA_LOCAL_NOME = 'Quadra Orion';
 const BATEBOLA_LOCAL_ENDERECO = 'Rua André Domingues, 40 – Jardim Paraíso, São Paulo/SP – CEP 02417-080';
@@ -102,7 +107,7 @@ function batebolaDataBloqueada(PDO $pdo, string $dataEvento): bool
  */
 function batebolaProximoDomingo(PDO $pdo): string
 {
-    $data = new DateTime('today');
+    $data = new DateTime('today', new DateTimeZone(BATEBOLA_FUSO));
     if ((int) $data->format('w') !== 0) {
         $data->modify('next sunday');
     }
@@ -120,18 +125,19 @@ function batebolaProximoDomingo(PDO $pdo): string
 
 /**
  * Janela em que a lista do Bate Bola fica aberta pra pagamento/inscrição: abre toda
- * segunda-feira às 06h00 e fecha sexta-feira às 23h59:59 (sábado e domingo, e a
- * madrugada de segunda antes das 06h, ficam fechados).
+ * segunda-feira às 06h00 e fecha sábado às 18h00 (sábado depois das 18h, o domingo e a
+ * madrugada de segunda antes das 06h ficam fechados). Até 18/09/2026 fechava na sexta
+ * às 23h59; o sábado foi liberado pra quem só decide na véspera.
  *
  * @return DateTime[] [$abre, $fecha] da semana da data de referência.
  */
 function batebolaJanelaInscricao(?DateTime $referencia = null): array
 {
-    $ref = $referencia ? clone $referencia : new DateTime('now');
+    $ref = $referencia ? clone $referencia : new DateTime('now', new DateTimeZone(BATEBOLA_FUSO));
     $diaSemana = (int) $ref->format('N'); // 1 = segunda ... 7 = domingo
 
     $abre = (clone $ref)->modify('-' . ($diaSemana - 1) . ' days')->setTime(6, 0, 0);
-    $fecha = (clone $abre)->modify('+4 days')->setTime(23, 59, 59);
+    $fecha = (clone $abre)->modify('+5 days')->setTime(18, 0, 0);
 
     return [$abre, $fecha];
 }
@@ -139,7 +145,7 @@ function batebolaJanelaInscricao(?DateTime $referencia = null): array
 /** Se a lista do Bate Bola está aberta pra pagamento/inscrição agora. */
 function batebolaInscricoesAbertas(?DateTime $referencia = null): bool
 {
-    $ref = $referencia ? clone $referencia : new DateTime('now');
+    $ref = $referencia ? clone $referencia : new DateTime('now', new DateTimeZone(BATEBOLA_FUSO));
     [$abre, $fecha] = batebolaJanelaInscricao($ref);
     return $ref >= $abre && $ref <= $fecha;
 }
@@ -147,7 +153,7 @@ function batebolaInscricoesAbertas(?DateTime $referencia = null): bool
 /**
  * Estado da janela de inscrição agora, pronto pra exibir na tela.
  *
- * A regra em si (abre segunda 06h, fecha sexta 23h59) vive em batebolaJanelaInscricao().
+ * A regra em si (abre segunda 06h, fecha sábado 18h) vive em batebolaJanelaInscricao().
  * Aqui traduzimos pra "está aberta?" + "quando muda", pra que o aviso na home nunca
  * fique desencontrado da regra real — as duas telas usam este mesmo cálculo.
  *
@@ -155,7 +161,7 @@ function batebolaInscricoesAbertas(?DateTime $referencia = null): bool
  */
 function batebolaEstadoJanela(?DateTime $referencia = null): array
 {
-    $ref = $referencia ? clone $referencia : new DateTime('now');
+    $ref = $referencia ? clone $referencia : new DateTime('now', new DateTimeZone(BATEBOLA_FUSO));
     [$abre, $fecha] = batebolaJanelaInscricao($ref);
 
     $aberta = ($ref >= $abre && $ref <= $fecha);
@@ -167,7 +173,7 @@ function batebolaEstadoJanela(?DateTime $referencia = null): array
         // Madrugada de segunda, antes das 06h — abre hoje mesmo.
         $proxima = $abre;
     } else {
-        // Sábado/domingo: já fechou nesta semana, reabre na segunda que vem.
+        // Sábado depois das 18h ou domingo: já fechou nesta semana, reabre na segunda.
         $proxima = (clone $abre)->modify('+7 days');
     }
 

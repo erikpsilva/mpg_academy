@@ -9,8 +9,10 @@ if (!in_array($nivel, ['admin', 'editor'], true)) {
 require_once ROOT . '/config/database.php';
 require_once ROOT . '/config/uniformes.php';
 
-$pdo   = getDbConnection();
-$valor = uniformeValor($pdo);
+$pdo      = getDbConnection();
+$produtos = uniformeProdutosDoAluno();          // completo, só a camisa, regata
+$valores  = uniformeValoresProdutos($pdo);
+$valor    = $valores['completo'];
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -132,7 +134,20 @@ $valor = uniformeValor($pdo);
                 </div>
 
                 <div class="pedirUniforme__block" id="modeloBlock">
-                    <h3><span>3</span> Modelo do uniforme</h3>
+                    <h3><span>3</span> Produto e modelo</h3>
+
+                    <?php // O produto define o preço, as peças e os cortes disponíveis. ?>
+                    <div class="pedirUniforme__field" id="produtoField">
+                        <span>Produto</span>
+                        <select id="produtoSelect">
+                            <?php foreach ($produtos as $tipo => $prod): ?>
+                            <option value="<?= $tipo ?>" data-cortes="<?= htmlspecialchars(implode(',', $prod['cortes'])) ?>">
+                                <?= htmlspecialchars($prod['nome']) ?> — R$ <?= number_format($valores[$tipo], 2, ',', '.') ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <small id="produtoHint"></small>
+                    </div>
 
                     <div class="pedirUniforme__models">
                         <?php
@@ -141,10 +156,13 @@ $valor = uniformeValor($pdo);
                             ['genero' => 'masculino', 'modelo' => 'libero', 'img' => 'uniformeMasculinoLibero.jpg', 'tag' => 'Masculino', 'nome' => 'Modelo líbero'],
                             ['genero' => 'feminino',  'modelo' => 'padrao', 'img' => 'uniformeFemininoPadrao.jpg',  'tag' => 'Feminino',  'nome' => 'Modelo padrão'],
                             ['genero' => 'feminino',  'modelo' => 'libero', 'img' => 'uniformeFemininoLibero.jpg',  'tag' => 'Feminino',  'nome' => 'Modelo líbero'],
+                            // Infantil usa a arte masculina: a estampa é a mesma, muda a modelagem.
+                            ['genero' => 'infantil',  'modelo' => 'padrao', 'img' => 'uniformeMasculinoPadrao.jpg', 'tag' => 'Infantil',  'nome' => 'Modelo padrão'],
+                            ['genero' => 'infantil',  'modelo' => 'libero', 'img' => 'uniformeMasculinoLibero.jpg', 'tag' => 'Infantil',  'nome' => 'Modelo líbero'],
                         ];
                         foreach ($modelos as $m):
                         ?>
-                        <label class="pedirUniformeModel">
+                        <label class="pedirUniformeModel" data-genero-card="<?= $m['genero'] ?>">
                             <input type="radio" name="modelo_completo" value="<?= $m['genero'] ?>|<?= $m['modelo'] ?>"
                                    data-genero="<?= $m['genero'] ?>" data-modelo="<?= $m['modelo'] ?>">
                             <span class="pedirUniformeModel__box">
@@ -191,7 +209,7 @@ $valor = uniformeValor($pdo);
                         <input type="hidden" id="tamanhoCamisaInput" name="tamanho_camisa" value="">
                     </div>
 
-                    <div class="pedirUniforme__field" data-so-completo>
+                    <div class="pedirUniforme__field" data-so-completo id="fieldTamShorts">
                         <span id="labelTamShorts">Tamanho do shorts</span>
                         <div class="pedirUniforme__sizes" id="sizesBoxShorts"></div>
                         <input type="hidden" id="tamanhoShortsInput" name="tamanho_shorts" value="">
@@ -203,7 +221,7 @@ $valor = uniformeValor($pdo);
                     <h3><span>5</span> Confirmar pedido</h3>
 
                     <div class="pedirUniforme__notice">
-                        Esse pedido nasce com pagamento já <strong>confirmado</strong> (valor R$ <?= number_format($valor, 2, ',', '.') ?>), sem passar pela cobrança do sistema — use apenas quando o pagamento já foi coletado por fora.
+                        Esse pedido nasce com pagamento já <strong>confirmado</strong> (valor <strong id="resumoValorProduto">R$ <?= number_format($valor, 2, ',', '.') ?></strong>), sem passar pela cobrança do sistema — use apenas quando o pagamento já foi coletado por fora.
                     </div>
 
                     <p class="pedirUniforme__error" id="pedirUniformeError" role="alert"></p>
@@ -281,6 +299,9 @@ $valor = uniformeValor($pdo);
     var ADMIN_BASE_URL    = "<?= ADMIN_BASE_URL ?>";
     var BASE_URL          = "<?= BASE_URL ?>";
     var UNIFORME_MEDIDAS = <?= json_encode(UNIFORME_MEDIDAS, JSON_UNESCAPED_UNICODE) ?>;
+    var UNIFORME_GENERO_LABEL = <?= json_encode(UNIFORME_GENERO_LABEL, JSON_UNESCAPED_UNICODE) ?>;
+    var UNIFORME_PRODUTOS     = <?= json_encode($produtos, JSON_UNESCAPED_UNICODE) ?>;
+    var UNIFORME_VALORES      = <?= json_encode($valores, JSON_UNESCAPED_UNICODE) ?>;
 </script>
 
 <?php echo '<script src="' . ADMIN_BASE_URL . '/pages/pedirfuniforme/pedirfuniforme.js?v=' . time() . '"></script>'; ?>

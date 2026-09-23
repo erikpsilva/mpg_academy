@@ -52,3 +52,10 @@ Thumbs.db
 *.sql
 /nul
 
+
+# Deploy por FTP: credenciais e estado local do que ja foi publicado.
+.env.deploy
+.deploy-state.json
+
+# Arquivo de segredos (mora FORA do projeto; a regra existe caso alguem copie pra dentro).
+mpg_secrets*.php

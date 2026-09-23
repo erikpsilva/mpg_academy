@@ -17,7 +17,8 @@ $_naAreaProfessor = (
     strpos($_uri, '/prof-turmas')      !== false ||
     strpos($_uri, '/meu-contrato')     !== false ||
     strpos($_uri, '/minhas-aulas')     !== false ||
-    strpos($_uri, '/minha-frequencia') !== false
+    strpos($_uri, '/minha-frequencia') !== false ||
+    strpos($_uri, '/prof-presenca')    !== false
 );
 
 $_naAreaBatebola = strpos($_uri, '/batebola') !== false || strpos($_uri, '/meusdados') !== false;

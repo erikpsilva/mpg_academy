@@ -72,6 +72,12 @@ foreach ($semId as $m) {
     }
 }
 
+// Bate Bola e uniformes também — e pega PIX pago de uma tentativa anterior (mesma referência,
+// id diferente do salvo), que a checagem acima não enxerga. Ver config/conciliacao_mp.php.
+require_once dirname(__FILE__, 3) . '/config/conciliacao_mp.php';
+$conc = mpConciliarPendentes($pdo, ['batebola', 'uniforme'], true, 25);
+$atualizadas += count($conc['batebola']) + count($conc['uniforme']);
+
 // Atualiza status para 'atrasado' onde vencimento < hoje e ainda está 'pendente'
 $pdo->exec("
     UPDATE mensalidades
@@ -84,6 +90,6 @@ echo json_encode([
     'success'     => true,
     'atualizadas' => $atualizadas,
     'mensagem'    => $atualizadas > 0
-        ? "{$atualizadas} mensalidade(s) marcada(s) como pagas."
+        ? "{$atualizadas} pagamento(s) confirmado(s) com o Mercado Pago."
         : 'Nenhum pagamento novo encontrado no Mercado Pago.',
 ]);

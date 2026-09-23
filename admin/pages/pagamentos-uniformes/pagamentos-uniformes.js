@@ -37,8 +37,10 @@
 
     function linha(p) {
         var tamanhos = [];
-        if (p.tamanho_camisa) tamanhos.push('camisa ' + escapar(p.tamanho_camisa));
-        if (p.tamanho_shorts) tamanhos.push((p.genero === 'feminino' ? 'bermuda ' : 'calção ') + escapar(p.tamanho_shorts));
+        if (p.tamanho_camisa) {
+            tamanhos.push((p.peca_de_cima === 'regata' ? 'regata ' : 'camisa ') + escapar(p.tamanho_camisa));
+        }
+        if (p.tamanho_shorts) tamanhos.push((p.genero === 'masculino' ? 'calção ' : 'bermuda ') + escapar(p.tamanho_shorts));
 
         var badgeManual = p.manual
             ? '<span class="pagUniformes__tag pagUniformes__tag--manual" title="Registrado pelo admin, pago por fora">Externo</span>'
@@ -49,6 +51,7 @@
           +   '<div class="pagUniformes__itemMain">'
           +     '<h3>' + escapar(p.aluno_nome) + ' ' + badgeManual + '</h3>'
           +     '<p class="pagUniformes__meta">'
+          +       (p.produto ? '<strong>' + escapar(p.produto) + '</strong> &middot; ' : '')
           +       (p.turma ? escapar(p.turma) + ' &middot; ' : '')
           +       (p.numero !== null ? 'nº ' + p.numero + ' &middot; ' : '')
           +       (p.nome_camisa ? '“' + escapar(p.nome_camisa) + '” &middot; ' : '')

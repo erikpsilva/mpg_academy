@@ -32,9 +32,11 @@
             text-transform: uppercase;
         }
 
-        // Faixa lateral distingue masculino de feminino de relance.
+        // Faixa lateral distingue os cortes de relance.
         &--masculino { border-left: 3px solid rgba(74, 155, 255, 0.7); }
         &--feminino  { border-left: 3px solid rgba(255, 120, 190, 0.7); }
+        &--infantil  { border-left: 3px solid rgba(120, 220, 160, 0.7); }
+        &--regata    { border-left: 3px solid rgba(255, 213, 0, 0.7); }
     }
 
     // Tabela larga não pode empurrar a página — rola dentro do próprio bloco.
@@ -78,6 +80,15 @@
         tr:nth-child(odd) {
             background: rgba(255, 255, 255, 0.035);
         }
+    }
+
+    // A regata tem grade única — a nota ocupa a coluna ao lado da tabela.
+    &__nota {
+        align-self: center;
+        margin: 0;
+        color: rgba(255, 255, 255, 0.55);
+        font-size: 12px;
+        line-height: 1.6;
     }
 
     &__aviso {

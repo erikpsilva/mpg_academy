@@ -1,9 +1,13 @@
 <?php
 
-// Z-API credentials
-define('ZAPI_INSTANCE',     '3F440D9CACDF51785B317A94F00847F6');
-define('ZAPI_TOKEN',        '5E43617F1326762958BEE1D6');
-define('ZAPI_CLIENT_TOKEN', 'F457c946dd7db4b0e81d6297315f7f5c7S');
+// Credenciais da Z-API — guardadas fora da pasta pública (ver config/segredos.php).
+// Com a instância e o token qualquer um manda WhatsApp pelo número da academia, então eles
+// não podem ficar num arquivo servido pela web nem num repositório aberto.
+require_once dirname(__FILE__, 3) . '/config/segredos.php';
+
+define('ZAPI_INSTANCE',     mpgSegredoObrigatorio('ZAPI_INSTANCE'));
+define('ZAPI_TOKEN',        mpgSegredoObrigatorio('ZAPI_TOKEN'));
+define('ZAPI_CLIENT_TOKEN', mpgSegredoObrigatorio('ZAPI_CLIENT_TOKEN'));
 define('ZAPI_BASE',         'https://api.z-api.io/instances/' . ZAPI_INSTANCE . '/token/' . ZAPI_TOKEN);
 
 /**

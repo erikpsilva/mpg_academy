@@ -7,6 +7,11 @@ if (empty($_SESSION['jogador'])) {
 require_once ROOT . '/config/database.php';
 require_once ROOT . '/config/batebola.php';
 $pdo = getDbConnection();
+
+// Confirma PIX do Bate Bola pagos que o webhook não avisou (no máximo 1x por minuto).
+require_once ROOT . '/config/conciliacao_mp.php';
+mpConciliarPendentes($pdo, ['batebola']);
+
 $stmt = $pdo->prepare("SELECT nome, email, celular, foto, nivel FROM jogadores_batebola WHERE id = ?");
 $stmt->execute([$_SESSION['jogador']['id']]);
 $perfil = $stmt->fetch();
@@ -117,7 +122,7 @@ $dataFmtExtenso = $dtEvento->format('d') . ' de ' . $meses[(int) $dtEvento->form
             <div>
                 <span class="bateBolaInicio__ctaTag">🗓️ Lista fechada</span>
                 <h2>As inscrições pro Bate Bola de <?= $dataFmtExtenso ?> estão fechadas agora.</h2>
-                <p>A lista reabre na segunda-feira às 06h e fecha na sexta-feira às 23h59.</p>
+                <p>A lista reabre na segunda-feira às 06h e fecha no sábado às 18h.</p>
             </div>
         </section>
         <?php else: ?>

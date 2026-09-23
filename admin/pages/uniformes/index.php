@@ -73,6 +73,8 @@ $podeEditar = in_array($_SESSION['usuario']['nivel_acesso'] ?? '', ['admin', 'ed
                                     <th class="uniformes__printExclude">Aluno</th>
                                     <th class="uniformes__printExclude">Turma</th>
                                     <th class="uniformes__printExclude">Uniforme</th>
+                                    <?php // Sai no papel: é o que diz à confecção o que costurar. ?>
+                                    <th>Produto</th>
                                     <th>Nome</th>
                                     <th>Nº</th>
                                     <th>Cor</th>
@@ -85,7 +87,7 @@ $podeEditar = in_array($_SESSION['usuario']['nivel_acesso'] ?? '', ['admin', 'ed
                             </thead>
                             <tbody id="uniformesTableBody">
                                 <tr>
-                                    <td colspan="<?= $podeEditar ? 11 : 10 ?>" class="interessados__loading">Carregando...</td>
+                                    <td colspan="<?= $podeEditar ? 12 : 11 ?>" class="interessados__loading">Carregando...</td>
                                 </tr>
                             </tbody>
                         </table>

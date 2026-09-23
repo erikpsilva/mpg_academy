@@ -352,9 +352,10 @@
         }
     }
 
+    // Três grupos: masculino, feminino e os avulsos (só a camisa + regata).
     &__groups {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 22px;
     }
 }
@@ -780,6 +781,11 @@
     }
 
     .homeCards {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    // Três grupos de uniforme ficam apertados nessa largura — dois por linha.
+    .homeUniforms__groups {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 

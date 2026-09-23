@@ -36,6 +36,7 @@ $pdo     = getDbConnection();
 $alunoId = (int) $_SESSION['aluno']['id'];
 
 $turmaId    = (int) ($_POST['turma_id'] ?? 0);
+$produto    = trim($_POST['produto'] ?? 'completo');
 $genero     = trim($_POST['genero']  ?? '');
 $modelo     = trim($_POST['modelo']  ?? '');
 $nomeCamisa    = uniformeNormalizarNome($_POST['nome_camisa'] ?? '');
@@ -43,9 +44,28 @@ $numero        = (int) ($_POST['numero'] ?? 0);
 $tamanhoCamisa = strtoupper(trim($_POST['tamanho_camisa'] ?? ''));
 $tamanhoShorts = strtoupper(trim($_POST['tamanho_shorts'] ?? ''));
 
+// Aluno compra o que está na vitrine: uniforme completo, só a camisa ou regata. A camisa da
+// equipe técnica é interna e só o admin registra.
+if (!array_key_exists($produto, uniformeProdutosDoAluno())) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Selecione um produto válido.']);
+    exit;
+}
+
 if (!in_array($genero, UNIFORME_GENEROS, true)) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Selecione o uniforme masculino ou feminino.']);
+    echo json_encode(['success' => false, 'message' => 'Selecione o corte do uniforme.']);
+    exit;
+}
+
+// A regata tem grade única de adulto — não existe em infantil.
+if (!in_array($genero, uniformeProdutoCortes($produto), true)) {
+    http_response_code(400);
+    echo json_encode([
+        'success' => false,
+        'message' => uniformeProduto($produto)['nome'] . ' não é vendida no corte '
+                   . mb_strtolower(uniformeGeneroLabel($genero), 'UTF-8') . '.',
+    ]);
     exit;
 }
 
@@ -61,21 +81,22 @@ if ($nomeCamisa === '') {
     exit;
 }
 
-// Cada peça tem sua grade — a do shorts não bate com a da camisa, nem entre gêneros.
-if (!in_array($tamanhoCamisa, uniformeTamanhos($genero, 'camisa'), true)) {
+// Cada peça tem sua grade — a do shorts não bate com a da camisa, nem entre cortes — e o
+// produto diz quais peças existem: pedido de só camisa não grava tamanho de calção.
+$tam = uniformeValidarTamanhos($produto, $genero, [
+    'camisa' => $tamanhoCamisa,
+    'regata' => $tamanhoCamisa,
+    'shorts' => $tamanhoShorts,
+]);
+
+if (!$tam['ok']) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Selecione um tamanho válido para a camisa.']);
+    echo json_encode(['success' => false, 'message' => $tam['message']]);
     exit;
 }
 
-if (!in_array($tamanhoShorts, uniformeTamanhos($genero, 'shorts'), true)) {
-    http_response_code(400);
-    echo json_encode([
-        'success' => false,
-        'message' => 'Selecione um tamanho válido para ' . ($genero === 'feminino' ? 'a bermuda' : 'o calção') . '.',
-    ]);
-    exit;
-}
+$tamanhoCamisa = $tam['camisa'];
+$tamanhoShorts = $tam['shorts'];
 
 if ($numero < UNIFORME_NUMERO_MIN || $numero > UNIFORME_NUMERO_MAX) {
     http_response_code(400);
@@ -106,7 +127,7 @@ if (!in_array($turmaId, $turmaIds, true)) {
     exit;
 }
 
-$valor = uniformeValor($pdo);
+$valor = uniformeValorProduto($pdo, $produto);
 
 try {
     // Transação + lock: dois alunos clicando no mesmo número ao mesmo tempo não podem
@@ -156,8 +177,8 @@ try {
             (pessoa_tipo, pessoa_id, tipo_uniforme,
              aluno_id, turma_id, genero, modelo, nome_camisa, numero, tamanho_camisa, tamanho_shorts, valor,
              status_pagamento, status_pedido, reserva_expira_em)
-        VALUES ('aluno', ?, 'completo', ?, ?, ?, ?, ?, ?, ?, ?, ?, 'aguardando', 'pendente', DATE_ADD(NOW(), INTERVAL ? MINUTE))
-    ")->execute([$alunoId, $alunoId, $turmaId, $genero, $modelo, $nomeCamisa, $numero,
+        VALUES ('aluno', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'aguardando', 'pendente', DATE_ADD(NOW(), INTERVAL ? MINUTE))
+    ")->execute([$alunoId, $produto, $alunoId, $turmaId, $genero, $modelo, $nomeCamisa, $numero,
                  $tamanhoCamisa, $tamanhoShorts, $valor, UNIFORME_RESERVA_MINUTOS]);
 
     $pedidoId = (int) $pdo->lastInsertId();

@@ -4,6 +4,10 @@ require_once ROOT . '/config/database.php';
 require_once ROOT . '/config/batebola.php';
 $pdo = getDbConnection();
 
+// Confirma PIX do Bate Bola pagos que o webhook não avisou (no máximo 1x por minuto).
+require_once ROOT . '/config/conciliacao_mp.php';
+mpConciliarPendentes($pdo, ['batebola']);
+
 $proximoDomingo = batebolaProximoDomingo($pdo);
 
 $baseDomingo = new DateTime('today');

@@ -18,7 +18,7 @@
     // Limite do nome e faixa do número também vêm do servidor, pelo mesmo motivo.
     var limites       = { nomeMax: 14, numeroMin: 1, numeroMax: 99 };
     var filtroAtivo   = 'todos';
-    var colspan       = PODE_EDITAR ? 11 : 10;
+    var colspan       = PODE_EDITAR ? 12 : 11;
 
     function escapar(txt) {
         var d = document.createElement('div');
@@ -28,6 +28,23 @@
 
     function moeda(v) {
         return 'R$ ' + Number(v).toFixed(2).replace('.', ',');
+    }
+
+    /** Quantos pedidos de cada produto, na ordem em que aparecem na lista. */
+    function contarPorProduto(lista) {
+        var ordem = [];
+        var mapa  = {};
+
+        lista.forEach(function (p) {
+            var tipo = p.tipo_uniforme || 'completo';
+            if (!mapa[tipo]) {
+                mapa[tipo] = { nome: p.produto_nome || tipo, qtd: 0 };
+                ordem.push(tipo);
+            }
+            mapa[tipo].qtd += 1;
+        });
+
+        return ordem.map(function (t) { return mapa[t]; });
     }
 
     // No PDF o fornecedor recebe somente o texto que sera estampado. Prefixos de
@@ -117,30 +134,40 @@
     function renderValores(lista) {
         if (!valoresBox) return;
 
-        var totalAluno  = 0;
-        var totalEquipe = 0;
+        // Um card por produto vendido (uniforme completo, só a camisa, regata, comissão),
+        // montado a partir dos próprios pedidos — produto novo no catálogo aparece sozinho.
+        var ordem = [];
+        var porProduto = {};
+        var total = 0;
 
         lista.forEach(function (p) {
+            var tipo = p.tipo_uniforme || 'completo';
+            if (!porProduto[tipo]) {
+                porProduto[tipo] = { nome: p.produto_nome || tipo, valor: 0, qtd: 0 };
+                ordem.push(tipo);
+            }
             var v = Number(p.valor) || 0;
-            if (p.tipo_uniforme === 'equipe_tecnica') totalEquipe += v;
-            else totalAluno += v;
+            porProduto[tipo].valor += v;
+            porProduto[tipo].qtd   += 1;
+            total += v;
         });
 
         var recorte = filtroAtivo === 'todos'
             ? 'todos os pedidos'
             : (labels[filtroAtivo] || filtroAtivo).toLowerCase();
 
-        valoresBox.innerHTML =
-            '<div class="uniformes__valor uniformes__valor--aluno">'
-          +   '<strong>' + moeda(totalAluno) + '</strong>'
-          +   '<span>Uniforme completo</span>'
-          + '</div>'
-          + '<div class="uniformes__valor uniformes__valor--equipe">'
-          +   '<strong>' + moeda(totalEquipe) + '</strong>'
-          +   '<span>Camisa da comissão técnica</span>'
-          + '</div>'
+        var html = '';
+        ordem.forEach(function (tipo) {
+            var d = porProduto[tipo];
+            html += '<div class="uniformes__valor uniformes__valor--' + escapar(tipo) + '">'
+                  +   '<strong>' + moeda(d.valor) + '</strong>'
+                  +   '<span>' + escapar(d.nome) + ' &middot; ' + d.qtd + '</span>'
+                  + '</div>';
+        });
+
+        valoresBox.innerHTML = html
           + '<div class="uniformes__valor uniformes__valor--total">'
-          +   '<strong>' + moeda(totalAluno + totalEquipe) + '</strong>'
+          +   '<strong>' + moeda(total) + '</strong>'
           +   '<span>Total &middot; ' + escapar(recorte) + '</span>'
           + '</div>';
     }
@@ -177,6 +204,12 @@
                   + '</td>'
                   + '<td class="uniformes__printExclude">' + escapar(p.turma_nome) + '</td>'
                   + '<td class="uniformes__printExclude">' + escapar(p.genero_label) + '<small class="uniformes__sub">' + escapar(p.modelo_label) + '</small></td>'
+                  // Coluna de produto: na tela o nome curto; no papel a descrição completa,
+                  // que nomeia cada peça (gola V, baby look, bermuda infantil, regata).
+                  + '<td>'
+                  +   '<span class="uniformes__screenValue">' + escapar(p.produto_curto || p.produto_nome) + '</span>'
+                  +   '<span class="uniformes__printProduct">' + escapar((p.produto_completo || '').toUpperCase()) + '</span>'
+                  + '</td>'
                   + '<td><strong class="uniformes__screenValue">' + escapar(p.texto_camisa || p.nome_camisa) + '</strong>'
                   +   nomeParaImpressao(p.texto_camisa || p.nome_camisa) + '</td>'
                   + '<td>'
@@ -190,11 +223,11 @@
                   + '<td>'
                   +   '<span class="uniformes__screenValue">'
                   +     '<span class="uniformes__tam">' + escapar(p.tamanho_camisa) + '</span>'
-                  +     '<small class="uniformes__sub">camisa</small>'
+                  +     '<small class="uniformes__sub">' + escapar(p.peca_de_cima === 'regata' ? 'regata' : 'camisa') + '</small>'
                   +     (p.tamanho_shorts
                         ? '<span class="uniformes__tam">' + escapar(p.tamanho_shorts) + '</span>'
                           + '<small class="uniformes__sub">' + escapar((p.label_shorts || 'shorts').toLowerCase()) + '</small>'
-                        : '<small class="uniformes__sub">só camisa</small>')
+                        : '<small class="uniformes__sub">peça única</small>')
                   +   '</span>'
                   +   tamanhosParaImpressao(p)
                   + '</td>'
@@ -252,9 +285,12 @@
         if (!p) return;
 
         modalInfo.innerHTML = '<strong>' + escapar(p.aluno_nome) + '</strong> — '
+                            + escapar(p.produto_curto || p.produto_nome) + ' · '
                             + escapar(p.nome_camisa) + ' #' + p.numero
-                            + ' (camisa ' + escapar(p.tamanho_camisa)
-                            + ' / ' + escapar((p.label_shorts || 'shorts').toLowerCase()) + ' ' + escapar(p.tamanho_shorts) + ')';
+                            + ' (' + escapar(p.peca_de_cima === 'regata' ? 'regata ' : 'camisa ') + escapar(p.tamanho_camisa)
+                            + (p.tamanho_shorts
+                                ? ' / ' + escapar((p.label_shorts || 'shorts').toLowerCase()) + ' ' + escapar(p.tamanho_shorts)
+                                : '') + ')';
 
         var html = '';
         fluxo.forEach(function (s) {
@@ -345,15 +381,27 @@
 
         document.getElementById('editarModalInfo').innerHTML =
             '<strong>' + escapar(p.aluno_nome) + '</strong> — ' + escapar(p.turma_nome)
-          + ' &middot; ' + escapar(p.genero_label) + ' ' + escapar(p.modelo_label);
+          + ' &middot; ' + escapar(p.produto_completo || p.produto_nome)
+          + ' &middot; ' + escapar(p.modelo_label);
 
+        // O produto manda nos campos: só quem tem calção mostra o segundo tamanho, e a
+        // grade de cima é a da peça daquele pedido (camisa, baby look, infantil ou regata).
+        var temShorts   = (p.pecas || []).indexOf('shorts') !== -1;
+        var campoShorts = document.getElementById('editarTamanhoShorts');
         var labelShorts = (p.label_shorts || 'Shorts');
-        document.getElementById('editarShortsLabel').textContent = 'Tamanho ' +
-            (p.genero === 'feminino' ? 'da ' : 'do ') + labelShorts.toLowerCase();
 
-        var grade = (tamanhos[p.genero] || { camisa: [], shorts: [] });
-        opcoesTamanho(document.getElementById('editarTamanhoCamisa'), grade.camisa, p.tamanho_camisa);
-        opcoesTamanho(document.getElementById('editarTamanhoShorts'), grade.shorts, p.tamanho_shorts);
+        campoShorts.closest('.uniformes__editField').style.display = temShorts ? '' : 'none';
+        campoShorts.required = temShorts;
+
+        document.getElementById('editarShortsLabel').textContent = 'Tamanho ' +
+            (p.genero === 'masculino' ? 'do ' : 'da ') + labelShorts.toLowerCase();
+
+        document.getElementById('editarCamisaLabel').textContent = 'Tamanho ' +
+            (p.peca_de_cima === 'regata' ? 'da regata' : 'da ' + (p.peca_camisa || 'camisa').toLowerCase());
+
+        var grade = (tamanhos[p.genero] || { camisa: [], shorts: [], regata: [] });
+        opcoesTamanho(document.getElementById('editarTamanhoCamisa'), grade[p.peca_de_cima] || grade.camisa, p.tamanho_camisa);
+        opcoesTamanho(campoShorts, grade.shorts || [], p.tamanho_shorts);
 
         // A confecção pode já ter começado — quem edita precisa saber disso antes de salvar.
         var aviso = document.getElementById('editarModalAviso');
@@ -413,12 +461,16 @@
         var erro = document.getElementById('editarErro');
         erro.style.display = 'none';
 
+        // Produto sem calção manda o campo vazio — mandar um tamanho aqui criaria um
+        // pedido de "só camisa" com bermuda, que a confecção não saberia interpretar.
+        var temShorts = (editarAtual.pecas || []).indexOf('shorts') !== -1;
+
         var body = new URLSearchParams({
             pedido_id:      editarAtual.id,
             nome_camisa:    document.getElementById('editarNome').value,
             numero:         document.getElementById('editarNumero').value,
             tamanho_camisa: document.getElementById('editarTamanhoCamisa').value,
-            tamanho_shorts: document.getElementById('editarTamanhoShorts').value
+            tamanho_shorts: temShorts ? document.getElementById('editarTamanhoShorts').value : ''
         });
 
         btn.disabled = true;
@@ -497,13 +549,10 @@
                 info.textContent = 'Não há pedidos pendentes no momento — tudo já foi enviado.';
                 ok.style.display = 'none';
             } else {
-                var camisas = lista.filter(function (p) { return p.tipo_uniforme === 'equipe_tecnica'; }).length;
-                var completos = lista.length - camisas;
-
                 // Mostra a composição: é o que ele vai conferir contra a lista impressa.
-                var detalhe = [];
-                if (completos) detalhe.push(completos + ' uniforme' + (completos === 1 ? '' : 's') + ' completo' + (completos === 1 ? '' : 's'));
-                if (camisas)   detalhe.push(camisas + ' camisa' + (camisas === 1 ? '' : 's') + ' da comissão técnica');
+                var detalhe = contarPorProduto(lista).map(function (c) {
+                    return c.qtd + ' × ' + c.nome;
+                });
 
                 info.innerHTML = 'Marcar <strong>' + lista.length + ' pedido' + (lista.length === 1 ? '' : 's')
                                + ' pendente' + (lista.length === 1 ? '' : 's') + '</strong> como enviados para confecção?'
@@ -581,13 +630,11 @@
 
         elFiltro.textContent = filtroAtivo === 'todos' ? 'Todos os status' : (labels[filtroAtivo] || filtroAtivo);
 
-        var completos = lista.filter(function (p) { return p.tipo_uniforme !== 'equipe_tecnica'; }).length;
-        var camisas   = lista.length - completos;
+        // O fornecedor precisa saber quantas peças de cada produto, não só o total de linhas.
+        var contagem = contarPorProduto(lista);
+        var partes   = [lista.length + ' pedido' + (lista.length === 1 ? '' : 's')];
 
-        // O fornecedor precisa saber quantas peças de cada tipo, não só o total de linhas.
-        var partes = [lista.length + ' pedido' + (lista.length === 1 ? '' : 's')];
-        if (completos) partes.push(completos + ' uniforme' + (completos === 1 ? '' : 's') + ' completo' + (completos === 1 ? '' : 's'));
-        if (camisas)   partes.push(camisas + ' camisa' + (camisas === 1 ? '' : 's') + ' da comissão técnica');
+        contagem.forEach(function (c) { partes.push(c.qtd + ' × ' + c.nome); });
 
         elTotal.textContent = partes.join(' · ');
     }
