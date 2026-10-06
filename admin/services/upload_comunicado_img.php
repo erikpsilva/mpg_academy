@@ -148,11 +148,18 @@ if (!isset($allowed[$mime])) {
 }
 
 // ── Gravação ──────────────────────────────────────────────────────────────────
+//
+// A pasta vem do formulário, mas só de uma lista fechada: é a mesma rotina de upload usada
+// pelo comunicado e pelo aviso de WhatsApp, e aceitar um caminho livre aqui seria deixar
+// qualquer um escolher onde escrever no servidor.
+$pastas  = ['comunicados' => 'uploads/comunicados/', 'avisos' => 'uploads/avisos/'];
+$destino = $pastas[$_POST['destino'] ?? ''] ?? $pastas['comunicados'];
+
 $ext     = $allowed[$mime];
-$dir     = dirname(__FILE__, 3) . '/uploads/comunicados/';
+$dir     = dirname(__FILE__, 3) . '/' . $destino;
 $name    = date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
 $destAbs = $dir . $name;
-$relPath = 'uploads/comunicados/' . $name;
+$relPath = $destino . $name;
 
 // mkdir() falhando calado era outro caminho pro 500 mudo: sem a pasta, move_uploaded_file()
 // falha depois e ninguém sabe que a causa foi permissão no diretório pai.
@@ -160,7 +167,7 @@ if (!is_dir($dir) && !@mkdir($dir, 0755, true) && !is_dir($dir)) {
     error_log('[upload-comunicado] não foi possível criar ' . $dir);
     responder(500, [
         'success' => false,
-        'message' => 'A pasta de imagens não existe e não pôde ser criada no servidor (uploads/comunicados).',
+        'message' => 'A pasta de imagens não existe e não pôde ser criada no servidor (uploads/).',
     ]);
     exit;
 }
@@ -169,7 +176,7 @@ if (!is_writable($dir)) {
     error_log('[upload-comunicado] sem permissão de escrita em ' . $dir);
     responder(500, [
         'success' => false,
-        'message' => 'Sem permissão de escrita na pasta uploads/comunicados no servidor.',
+        'message' => 'Sem permissão de escrita na pasta de uploads no servidor.',
     ]);
     exit;
 }

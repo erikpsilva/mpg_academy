@@ -4,7 +4,7 @@
  * Quem pode receber pedido de uniforme de equipe (professores e usuários do painel), com os
  * números já ocupados no uniforme completo da equipe.
  *
- * Alimenta o seletor de pessoa em admin/pedirfuniforme. Aluno NÃO entra aqui — o fluxo dele
+ * Alimenta o seletor de pessoa em admin/pediruniforme. Aluno NÃO entra aqui — o fluxo dele
  * continua sendo a busca por nome, com turma e cobrança.
  */
 
@@ -49,14 +49,17 @@ echo json_encode([
     'pessoas'  => uniformeEquipeDisponivel($pdo),
     'tipos'    => UNIFORME_TIPO_LABEL,
     'cargos'   => UNIFORME_CARGO_LABEL,
+    // A regata entra aqui porque a equipe também pode pedir uma: grade própria, unissex.
     'tamanhos' => [
         'masculino' => [
             'camisa' => uniformeTamanhos('masculino', 'camisa'),
             'shorts' => uniformeTamanhos('masculino', 'shorts'),
+            'regata' => uniformeTamanhos('masculino', 'regata'),
         ],
         'feminino' => [
             'camisa' => uniformeTamanhos('feminino', 'camisa'),
             'shorts' => uniformeTamanhos('feminino', 'shorts'),
+            'regata' => uniformeTamanhos('feminino', 'regata'),
         ],
     ],
     'numero_min' => UNIFORME_NUMERO_MIN,

@@ -34,6 +34,9 @@ $pdo = getDbConnection();
 
 $alunoId    = (int) ($_POST['aluno_id'] ?? 0);
 $produto    = trim($_POST['produto'] ?? 'completo');
+// Nasce aguardando pagamento por padrão: o admin marca "já pago" só quando o dinheiro
+// realmente entrou. Antes todo pedido lançado aqui entrava como pago e inflava o caixa.
+$jaPago     = ($_POST['pago'] ?? '') === '1';
 $turmaId    = (int) ($_POST['turma_id'] ?? 0);
 $genero     = trim($_POST['genero']  ?? '');
 $modelo     = trim($_POST['modelo']  ?? '');
@@ -90,7 +93,8 @@ $resultado = uniformeCriarPedidoManual(
     $tamanhoShorts,
     $valor,
     (int) $_SESSION['usuario']['id'],
-    $produto
+    $produto,
+    $jaPago
 );
 
 if (!$resultado['success']) {

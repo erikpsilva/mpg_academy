@@ -24,7 +24,7 @@ $podeEditar = in_array($_SESSION['usuario']['nivel_acesso'] ?? '', ['admin', 'ed
             <div class="row uniformes__header">
                 <div class="col-md-8">
                     <h2>Pedidos de <span>Uniforme</span></h2>
-                    <p>Todos os pedidos com pagamento confirmado. Avance o status conforme a produção anda.</p>
+                    <p>Pedidos com pagamento confirmado, separados por etapa. A impressão sai com o que estiver na aba aberta — em <strong>A pedir</strong> você imprime só o que falta mandar pra confecção.</p>
                 </div>
                 <div class="col-md-4">
                     <div class="interessados__totalCard">
@@ -34,15 +34,54 @@ $podeEditar = in_array($_SESSION['usuario']['nivel_acesso'] ?? '', ['admin', 'ed
                 </div>
             </div>
 
+            <nav class="uniformHubNav" aria-label="Navegação de uniformes">
+                <a class="uniformHubNav__link is-active" href="<?= ADMIN_BASE_URL ?>/uniformes">
+                    <span class="uniformHubNav__icon">01</span>
+                    <span><strong>Pedidos</strong><small>Acompanhar produção</small></span>
+                </a>
+                <a class="uniformHubNav__link" href="<?= ADMIN_BASE_URL ?>/pediruniforme">
+                    <span class="uniformHubNav__icon">02</span>
+                    <span><strong>Novo pedido</strong><small>Aluno ou equipe</small></span>
+                </a>
+                <a class="uniformHubNav__link" href="<?= ADMIN_BASE_URL ?>/pagamentos-uniformes">
+                    <span class="uniformHubNav__icon">03</span>
+                    <span><strong>Pagamentos</strong><small>Valores recebidos</small></span>
+                </a>
+            </nav>
+
             <div class="uniformes__stats" id="uniformesStats"></div>
 
             <!-- Quanto custou, separado por produto. Acompanha o filtro de status. -->
             <div class="uniformes__valores" id="uniformesValores"></div>
 
+            <?php
+            // Abas: o que ainda dá trabalho de um lado, o que já saiu do outro. Os grupos
+            // vivem em config/uniformes.php pra tela e regra nunca divergirem.
+            ?>
+            <div class="uniformes__tabs" role="tablist">
+                <?php foreach (UNIFORME_STATUS_GRUPOS as $chave => $grupo): ?>
+                <?php // A primeira aba é a que abre: "A pedir", que é o trabalho pendente. ?>
+                <button class="uniformes__tab<?= $chave === array_key_first(UNIFORME_STATUS_GRUPOS) ? ' is-active' : '' ?>"
+                        data-grupo="<?= $chave ?>"
+                        data-status="<?= implode(',', $grupo['status']) ?>"
+                        data-vazio="<?= htmlspecialchars($grupo['vazio']) ?>"
+                        title="<?= htmlspecialchars($grupo['resumo']) ?>">
+                    <?= htmlspecialchars($grupo['rotulo']) ?>
+                    <span class="uniformes__tabCount" data-contador="<?= $chave ?>">—</span>
+                </button>
+                <?php endforeach; ?>
+                <button class="uniformes__tab" data-grupo="todos" data-status="<?= implode(',', UNIFORME_STATUS_FLUXO) ?>"
+                        data-vazio="Nenhum pedido confirmado ainda."
+                        title="Todos os pedidos, em qualquer etapa.">
+                    Todos
+                    <span class="uniformes__tabCount" data-contador="todos">—</span>
+                </button>
+            </div>
+
             <div class="uniformes__filters">
                 <button class="uniformes__filter is-active" data-filtro="todos">Todos</button>
                 <?php foreach (UNIFORME_STATUS_FLUXO as $s): ?>
-                    <button class="uniformes__filter" data-filtro="<?= $s ?>"><?= UNIFORME_STATUS_LABEL[$s] ?></button>
+                    <button class="uniformes__filter" data-filtro="<?= $s ?>" data-grupo="<?= uniformeGrupoDoStatus($s) ?>"><?= UNIFORME_STATUS_LABEL[$s] ?></button>
                 <?php endforeach; ?>
                 <?php if ($podeEditar): ?>
                 <button class="btn btn--gray btn--sm uniformes__enviarTodos" id="btnEnviarTodos" type="button">
@@ -79,7 +118,8 @@ $podeEditar = in_array($_SESSION['usuario']['nivel_acesso'] ?? '', ['admin', 'ed
                                     <th>Nº</th>
                                     <th>Cor</th>
                                     <th>Tamanho</th>
-                                    <th>Valor</th>
+                                    <?php // Valor é controle interno: não vai pro papel que a confecção recebe. ?>
+                                    <th class="uniformes__printExclude">Valor</th>
                                     <th class="uniformes__printExclude">Pago em</th>
                                     <th class="uniformes__printExclude">Status</th>
                                     <?php if ($podeEditar): ?><th class="uniformes__printExclude">Ação</th><?php endif; ?>
@@ -149,6 +189,30 @@ $podeEditar = in_array($_SESSION['usuario']['nivel_acesso'] ?? '', ['admin', 'ed
                 <div class="confirmModal__actions">
                     <button class="btn btn--gray" id="enviarTodosCancelar" type="button">Cancelar</button>
                     <button class="btn btn--primary" id="enviarTodosConfirmar" type="button">Sim, enviar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Confirmação da exclusão -->
+        <div class="confirmModal" id="excluirModal">
+            <div class="confirmModal__box">
+                <h3>Excluir pedido</h3>
+                <p>Confira o pedido antes de excluir:</p>
+
+                <div class="uniformes__excluirResumo" id="excluirModalInfo"></div>
+
+                <div class="uniformes__editAviso" id="excluirAviso" style="display:none;"></div>
+
+                <p class="uniformes__excluirNota">
+                    O pedido sai da lista e da tela de pagamentos, e o número volta a ficar livre
+                    na turma. O registro continua no banco, então dá pra recuperar se for engano.
+                </p>
+
+                <p class="uniformes__editErro" id="excluirErro" style="display:none;"></p>
+
+                <div class="confirmModal__actions">
+                    <button class="btn btn--gray" id="excluirCancelar" type="button">Cancelar</button>
+                    <button class="btn btn--error" id="excluirConfirmar" type="button">Sim, excluir</button>
                 </div>
             </div>
         </div>

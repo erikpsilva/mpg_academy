@@ -270,6 +270,12 @@
         return 'R$ ' + Number(v).toFixed(2).replace('.', ',');
     }
 
+    /** '1' quando o admin marcou "já pago"; '0' (padrão) quando o pagamento ainda vai entrar. */
+    function pagamentoEscolhido() {
+        var escolhido = document.querySelector('input[name="pagamento"]:checked');
+        return escolhido ? escolhido.value : '0';
+    }
+
     produtoRadios.forEach(function (radio) {
         radio.addEventListener('change', aplicarProduto);
     });
@@ -452,7 +458,12 @@
         }
         if (temShorts() && !pecas.shorts.input.value) return erro('Escolha o tamanho do shorts.');
 
-        if (!window.confirm('Confirma o pedido já como PAGO? Use só se o pagamento já foi coletado por fora do sistema.')) return;
+        // Só pergunta quando o admin marcou "já pago": é a escolha que entra direto no
+        // relatório de caixa. Registrar aguardando pagamento não precisa de confirmação.
+        if (pagamentoEscolhido() === '1'
+            && !window.confirm('Confirma o pedido já como PAGO? Use só se o dinheiro já foi recebido por fora do sistema.')) {
+            return;
+        }
 
         submitBtn.disabled = true;
         submitBtn.textContent = 'Registrando...';
@@ -460,6 +471,8 @@
         var body = new URLSearchParams({
             aluno_id:    alunoIdInput.value,
             produto:     produtoAtual(),
+            // Pago ou não pago é escolha do admin — o padrão é não pago.
+            pago:        pagamentoEscolhido(),
             turma_id:    turmaSelect.value,
             // Peça única não tem corte nem cor escolhidos na tela: o corte sai do cadastro
             // (só pro balde da numeração) e o modelo é o fixo do produto.

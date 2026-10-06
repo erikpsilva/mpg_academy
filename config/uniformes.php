@@ -32,6 +32,25 @@ const UNIFORME_NOME_MAX         = 14;   // caracteres que cabem nas costas da ca
 const UNIFORME_RESERVA_MINUTOS  = 30;   // quanto tempo o número fica preso aguardando pagamento
 
 /**
+ * Condição (SQL) de quem segura um número no balde da turma.
+ *
+ * São três situações, e as três valem:
+ *   - pedido pago;
+ *   - checkout do aluno em andamento, dentro dos 30 minutos de reserva;
+ *   - pedido lançado pelo admin ainda não pago — esse não tem prazo de reserva
+ *     (`reserva_expira_em` nulo) e não expira sozinho: é um pedido de verdade, combinado
+ *     fora do site, e o número já é de quem pediu.
+ *
+ * Fica numa constante porque a mesma regra aparece na consulta de disponibilidade, na trava
+ * de concorrência e na conferência de duplicados — e três cópias divergindo é como alguém
+ * acabaria com o número de outra pessoa.
+ */
+const UNIFORME_SQL_SEGURA_NUMERO = "(
+    status_pagamento = 'pago'
+    OR (status_pagamento = 'aguardando' AND (reserva_expira_em IS NULL OR reserva_expira_em > NOW()))
+)";
+
+/**
  * Máximo de parcelas oferecido no cartão. O valor de cada parcela (com ou sem juros) é
  * calculado pelo próprio Brick do Mercado Pago a partir do preço à vista — nunca por nós.
  * Enviamos ao criar o pagamento sempre o valor À VISTA (`transaction_amount`) + o número de
@@ -378,6 +397,44 @@ const UNIFORME_MEDIDAS = [
 /** Fluxo de produção do pedido, na ordem em que o admin avança. */
 const UNIFORME_STATUS_FLUXO = ['pendente', 'enviado', 'pronto', 'finalizado', 'entregue'];
 
+/**
+ * Os dois momentos de um pedido, para a tela do admin separar em abas.
+ *
+ * O que está em produção é trabalho a fazer e precisa estar à mão; o que já foi finalizado
+ * ou entregue vira histórico e só atrapalha a leitura do dia a dia — mas não pode sumir,
+ * porque é onde se confere o que já saiu.
+ */
+const UNIFORME_STATUS_GRUPOS = [
+    'a_pedir' => [
+        'rotulo'  => 'A pedir',
+        'resumo'  => 'Pedidos pagos que ainda não foram para a confecção. É esta a lista que se imprime e manda pro fornecedor.',
+        'status'  => ['pendente'],
+        'vazio'   => 'Nenhum pedido esperando ir pra confecção.',
+    ],
+    'producao' => [
+        'rotulo'  => 'Em produção',
+        'resumo'  => 'Já enviados para a confecção ou prontos, aguardando finalizar.',
+        'status'  => ['enviado', 'pronto'],
+        'vazio'   => 'Nenhum pedido em produção no momento.',
+    ],
+    'finalizados' => [
+        'rotulo'  => 'Finalizados',
+        'resumo'  => 'Pedidos já finalizados e entregues — histórico.',
+        'status'  => ['finalizado', 'entregue'],
+        'vazio'   => 'Nenhum pedido finalizado ou entregue ainda.',
+    ],
+];
+
+/** Grupo (aba) a que um status pertence. */
+function uniformeGrupoDoStatus(string $status): string
+{
+    foreach (UNIFORME_STATUS_GRUPOS as $chave => $grupo) {
+        if (in_array($status, $grupo['status'], true)) return $chave;
+    }
+
+    return array_key_first(UNIFORME_STATUS_GRUPOS);
+}
+
 const UNIFORME_STATUS_LABEL = [
     'pendente'   => 'Pendente',
     'enviado'    => 'Enviado para confecção',
@@ -667,6 +724,32 @@ function uniformeExpirarReservas(PDO $pdo): void
 }
 
 /**
+ * Marca (ou desmarca) o alerta de número duplicado de todos os pedidos pagos que usam um
+ * número dentro do balde. Precisa rodar pro número antigo também: ao liberar um número que
+ * estava em conflito (por correção ou exclusão do pedido), quem ficou com ele deixa de
+ * estar duplicado.
+ */
+function uniformeRecalcularConflito(PDO $pdo, int $turmaId, string $genero, int $numero): void
+{
+    $st = $pdo->prepare("
+        SELECT id, aluno_id FROM pedidos_uniforme
+        WHERE turma_id = ? AND genero = ? AND numero = ? AND status_pagamento = 'pago'
+    ");
+    $st->execute([$turmaId, $genero, $numero]);
+    $linhas = $st->fetchAll();
+
+    // Duplicado é o mesmo número em ALUNOS diferentes. O mesmo aluno pedir duas camisas com
+    // o número dele não é conflito nenhum.
+    $donos    = array_unique(array_map(fn($l) => (int) $l['aluno_id'], $linhas));
+    $conflito = count($donos) > 1 ? 1 : 0;
+
+    foreach ($linhas as $l) {
+        $pdo->prepare("UPDATE pedidos_uniforme SET conflito_numero = ? WHERE id = ?")
+            ->execute([$conflito, (int) $l['id']]);
+    }
+}
+
+/**
  * Situação dos 99 números pro balde (turma + gênero) informado.
  *
  * @return array{ocupados: int[], meus: int[]} `ocupados` = travados por OUTROS alunos;
@@ -681,10 +764,7 @@ function uniformeNumerosDoBalde(PDO $pdo, int $turmaId, string $genero, int $alu
         FROM pedidos_uniforme
         WHERE turma_id = ?
           AND genero = ?
-          AND (
-                status_pagamento = 'pago'
-                OR (status_pagamento = 'aguardando' AND reserva_expira_em > NOW())
-              )
+          AND " . UNIFORME_SQL_SEGURA_NUMERO . "
     ");
     $st->execute([$turmaId, $genero]);
 
@@ -700,11 +780,31 @@ function uniformeNumerosDoBalde(PDO $pdo, int $turmaId, string $genero, int $alu
         }
     }
 
-    // Um número que já é do aluno nunca deve aparecer como bloqueado pra ele.
-    $ocupados = array_values(array_diff(array_unique($ocupados), $meus));
+    // O número é do ALUNO, não do corte: quem já comprou a 10 no uniforme masculino pode
+    // pedir a 10 de novo na camisa avulsa, na regata ou em qualquer outro produto. Sem esta
+    // consulta, o número dele aparecia livre pros outros e "não é seu" pra ele sempre que o
+    // pedido novo caísse num corte diferente do primeiro.
+    $stMeus = $pdo->prepare("
+        SELECT DISTINCT numero
+        FROM pedidos_uniforme
+        WHERE turma_id = ?
+          AND aluno_id = ?
+          AND numero IS NOT NULL
+          AND " . UNIFORME_SQL_SEGURA_NUMERO . "
+    ");
+    $stMeus->execute([$turmaId, $alunoId]);
+
+    foreach ($stMeus->fetchAll(PDO::FETCH_COLUMN) as $numero) {
+        $meus[] = (int) $numero;
+    }
+
+    // `ocupados` são os números de OUTROS alunos neste corte — quem manda é o corte do
+    // pedido, então eles continuam bloqueados mesmo que o aluno tenha esse número em outro
+    // corte. Por isso o desconto é do lado de `meus`, e não o contrário.
+    $ocupados = array_values(array_unique($ocupados));
     sort($ocupados);
 
-    $meus = array_values(array_unique($meus));
+    $meus = array_values(array_diff(array_unique($meus), $ocupados));
     sort($meus);
 
     return ['ocupados' => $ocupados, 'meus' => $meus];
@@ -830,7 +930,8 @@ function uniformeCriarPedidoManual(
     string $tamanhoShorts,
     float $valor,
     int $criadoPorUsuarioId,
-    string $tipoUniforme = 'completo'
+    string $tipoUniforme = 'completo',
+    bool $jaPago = false
 ): array {
     if (!in_array($genero, UNIFORME_GENEROS, true) || !in_array($modelo, UNIFORME_MODELOS, true)) {
         return ['success' => false, 'message' => 'Modelo de uniforme inválido.'];
@@ -877,10 +978,7 @@ function uniformeCriarPedidoManual(
             WHERE turma_id = ?
               AND genero = ?
               AND numero = ?
-              AND (
-                    status_pagamento = 'pago'
-                    OR (status_pagamento = 'aguardando' AND reserva_expira_em > NOW())
-                  )
+              AND " . UNIFORME_SQL_SEGURA_NUMERO . "
             FOR UPDATE
         ");
         $stLock->execute([$turmaId, $genero, $numero]);
@@ -905,9 +1003,12 @@ function uniformeCriarPedidoManual(
                  aluno_id, turma_id, genero, modelo, nome_camisa, numero,
                  tamanho_camisa, tamanho_shorts, valor,
                  status_pagamento, status_pedido, pago_em, criado_por_usuario_id, visto_admin)
-            VALUES ('aluno', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pago', 'pendente', NOW(), ?, 1)
+            VALUES ('aluno', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendente', ?, ?, 1)
         ")->execute([$alunoId, $tipoUniforme, $alunoId, $turmaId, $genero, $modelo, $nomeCamisa, $numero,
-                     $tamanhoCamisa, $tamanhoShorts, $valor, $criadoPorUsuarioId]);
+                     $tamanhoCamisa, $tamanhoShorts, $valor,
+                     $jaPago ? 'pago' : 'aguardando',
+                     $jaPago ? date('Y-m-d H:i:s') : null,
+                     $criadoPorUsuarioId]);
 
         $pedidoId = (int) $pdo->lastInsertId();
 
@@ -1027,13 +1128,10 @@ function uniformeNumerosDoBaldeEquipe(PDO $pdo, string $genero, string $pessoaTi
         SELECT DISTINCT numero, pessoa_tipo, pessoa_id
         FROM pedidos_uniforme
         WHERE pessoa_tipo IN ('professor', 'admin')
-          AND tipo_uniforme = 'completo'
+          AND tipo_uniforme <> 'equipe_tecnica'
           AND genero = ?
           AND numero IS NOT NULL
-          AND (
-                status_pagamento = 'pago'
-                OR (status_pagamento = 'aguardando' AND reserva_expira_em > NOW())
-              )
+          AND " . UNIFORME_SQL_SEGURA_NUMERO . "
     ");
     $st->execute([$genero]);
 
@@ -1083,7 +1181,8 @@ function uniformeCriarPedidoEquipe(
     string $tamanhoCamisa,
     ?string $tamanhoShorts,
     ?string $cargo,
-    int $criadoPorUsuarioId
+    int $criadoPorUsuarioId,
+    bool $jaPago = false
 ): array {
     if (!uniformeEhEquipe($pessoaTipo)) {
         return ['success' => false, 'message' => 'Esse pedido é só para professor ou equipe MPG.'];
@@ -1106,15 +1205,31 @@ function uniformeCriarPedidoEquipe(
         return ['success' => false, 'message' => 'Informe o nome que vai na camisa.'];
     }
 
-    if (!in_array($tamanhoCamisa, uniformeTamanhos($genero, 'camisa'), true)) {
-        return ['success' => false, 'message' => 'Tamanho da camisa inválido para esse uniforme.'];
+    if (!in_array($genero, uniformeProdutoCortes($tipoUniforme), true)) {
+        return ['success' => false, 'message' => 'Esse produto não é vendido no corte ' . mb_strtolower(uniformeGeneroLabel($genero), 'UTF-8') . '.'];
     }
 
-    // ── O que é exigido muda com o tipo ──────────────────────────────────────
-    if ($tipoUniforme === 'equipe_tecnica') {
-        // Só camisa: número e calção não existem aqui.
-        $numero        = null;
-        $tamanhoShorts = null;
+    // Produto de arte única (regata) não aceita cor escolhida na tela.
+    $modelo = uniformeModeloDoProduto($tipoUniforme, $modelo);
+
+    // A grade válida sai do produto: a regata tem a dela, e quem é só camisa não tem calção.
+    $tam = uniformeValidarTamanhos($tipoUniforme, $genero, [
+        'camisa' => $tamanhoCamisa,
+        'regata' => $tamanhoCamisa,
+        'shorts' => (string) $tamanhoShorts,
+    ]);
+
+    if (!$tam['ok']) {
+        return ['success' => false, 'message' => $tam['message']];
+    }
+
+    $tamanhoCamisa = $tam['camisa'];
+    $tamanhoShorts = $tam['shorts'];
+
+    // ── O que é exigido muda com o produto ───────────────────────────────────
+    if (!uniformeTemNumero($tipoUniforme)) {
+        // Camisa da equipe técnica: o cargo ocupa o lugar do número.
+        $numero = null;
 
         if (!in_array($cargo, UNIFORME_CARGOS, true)) {
             return ['success' => false, 'message' => 'Escolha o texto da camisa (Equipe Técnica ou Técnico).'];
@@ -1125,38 +1240,30 @@ function uniformeCriarPedidoEquipe(
         if ($numero === null || $numero < UNIFORME_NUMERO_MIN || $numero > UNIFORME_NUMERO_MAX) {
             return ['success' => false, 'message' => 'Escolha um número de ' . UNIFORME_NUMERO_MIN . ' a ' . UNIFORME_NUMERO_MAX . '.'];
         }
-
-        if (!in_array((string) $tamanhoShorts, uniformeTamanhos($genero, 'shorts'), true)) {
-            $peca = $genero === 'feminino' ? 'da bermuda' : 'do calção';
-            return ['success' => false, 'message' => 'Tamanho ' . $peca . ' inválido para esse uniforme.'];
-        }
     }
 
 
-    // Cada produto tem seu preço: a camisa da equipe é vendida sozinha e custa menos que
-    // o uniforme completo. Os dois saem de `configuracoes`, então mudam sem deploy.
-    $valorPeca = $tipoUniforme === 'equipe_tecnica'
-        ? uniformeValorEquipe($pdo)
-        : uniformeValor($pdo);
+    // Cada produto tem seu preço, todos vindos de `configuracoes` (mudam sem deploy). Aqui
+    // o valor não é cobrado de ninguém: fica registrado pra academia saber quanto custou.
+    $valorPeca = uniformeValorProduto($pdo, $tipoUniforme);
 
     try {
         $pdo->beginTransaction();
 
         uniformeExpirarReservas($pdo);
 
-        // Mesma trava do fluxo do aluno, no balde da equipe.
-        if ($tipoUniforme === 'completo') {
+        // Mesma trava do fluxo do aluno, no balde da equipe. Vale pra qualquer produto com
+        // número (uniforme completo, camisa avulsa, regata) — só a camisa da equipe técnica
+        // fica de fora, porque não tem número.
+        if (uniformeTemNumero($tipoUniforme)) {
             $stLock = $pdo->prepare("
                 SELECT pessoa_tipo, pessoa_id
                 FROM pedidos_uniforme
                 WHERE pessoa_tipo IN ('professor', 'admin')
-                  AND tipo_uniforme = 'completo'
+                  AND tipo_uniforme <> 'equipe_tecnica'
                   AND genero = ?
                   AND numero = ?
-                  AND (
-                        status_pagamento = 'pago'
-                        OR (status_pagamento = 'aguardando' AND reserva_expira_em > NOW())
-                      )
+                  AND " . UNIFORME_SQL_SEGURA_NUMERO . "
                 FOR UPDATE
             ");
             $stLock->execute([$genero, $numero]);
@@ -1178,11 +1285,14 @@ function uniformeCriarPedidoEquipe(
                  aluno_id, turma_id, genero, modelo, nome_camisa, numero,
                  tamanho_camisa, tamanho_shorts, valor,
                  status_pagamento, status_pedido, pago_em, criado_por_usuario_id, visto_admin)
-            VALUES (?, ?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, 'pago', 'pendente', NOW(), ?, 1)
+            VALUES (?, ?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?, 'pendente', ?, ?, 1)
         ")->execute([
             $pessoaTipo, $pessoaId, $tipoUniforme, $cargo,
             $genero, $modelo, $nomeCamisa, $numero,
-            $tamanhoCamisa, $tamanhoShorts, $valorPeca, $criadoPorUsuarioId,
+            $tamanhoCamisa, $tamanhoShorts, $valorPeca,
+            $jaPago ? 'pago' : 'aguardando',
+            $jaPago ? date('Y-m-d H:i:s') : null,
+            $criadoPorUsuarioId,
         ]);
 
         $pedidoId = (int) $pdo->lastInsertId();

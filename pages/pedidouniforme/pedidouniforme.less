@@ -209,6 +209,8 @@
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 14px;
+
+        &[hidden] { display: none; }
     }
 
     // ── Produtos à venda ────────────────────────────────────────────────────────
@@ -224,6 +226,10 @@
         display: grid;
         grid-template-columns: 190px minmax(0, 1fr);
         gap: 18px;
+
+        // Sem isto o `hidden` do JS não esconde nada: a classe tem display próprio e vence
+        // a regra padrão do navegador.
+        &[hidden] { display: none; }
         align-items: center;
         padding: 14px;
         border: 2px solid rgba(255, 213, 0, 0.35);

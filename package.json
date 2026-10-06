@@ -9,7 +9,9 @@
     "deploy": "gulp styleRoot styleAdmin && node --use-system-ca scripts/deploy.mjs",
     "deploy:check": "node --use-system-ca scripts/deploy.mjs --check",
     "deploy:secrets": "node --use-system-ca scripts/deploy.mjs --secrets",
-    "deploy:limpeza": "node --use-system-ca scripts/deploy.mjs --limpar"
+    "deploy:limpeza": "node --use-system-ca scripts/deploy.mjs --limpar",
+    "deploy:verificar": "node --use-system-ca scripts/deploy.mjs --verificar",
+    "deploy:tudo": "gulp styleRoot styleAdmin && node --use-system-ca scripts/deploy.mjs --all"
   },
   "devDependencies": {
     "basic-ftp": "^6.2.1",

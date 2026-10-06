@@ -146,10 +146,7 @@ try {
         WHERE turma_id = ?
           AND genero = ?
           AND numero = ?
-          AND (
-                status_pagamento = 'pago'
-                OR (status_pagamento = 'aguardando' AND reserva_expira_em > NOW())
-              )
+          AND " . UNIFORME_SQL_SEGURA_NUMERO . "
         FOR UPDATE
     ");
     $stLock->execute([$turmaId, $genero, $numero]);

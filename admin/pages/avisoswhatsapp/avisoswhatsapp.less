@@ -1,0 +1,267 @@
+// Avisos por WhatsApp — disparo por turma (admin/avisoswhatsapp).
+.avisoWpp {
+    &__header {
+        margin-bottom: 22px;
+
+        h2 {
+            color: @white;
+            span { color: @alert; }
+        }
+
+        p {
+            margin: 6px 0 0;
+            max-width: 760px;
+            color: #a9a9a9;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+    }
+
+    // Mensagem de um lado, destinatários do outro: quem escreve quer ver pra quem vai.
+    &__grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+        align-items: start;
+
+        @media @tablet { grid-template-columns: minmax(0, 1fr); }
+    }
+
+    &__col {
+        display: grid;
+        gap: 18px;
+        min-width: 0;
+    }
+
+    &__card {
+        padding: 20px 22px;
+        border: 1px solid @borderColor;
+        border-radius: 10px;
+        background: @bgPanel;
+
+        h3 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0 0 16px;
+            color: @white;
+            font-size: 16px;
+
+            span {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 24px;
+                height: 24px;
+                border-radius: 50%;
+                background: @alert;
+                color: #050505;
+                font-size: 12px;
+                font-weight: @bold;
+            }
+        }
+    }
+
+    &__field {
+        display: block;
+
+        > span {
+            display: block;
+            margin-bottom: 7px;
+            color: rgba(255, 255, 255, 0.75);
+            font-size: 12px;
+            font-weight: @semiBold;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        select,
+        textarea,
+        input[type="file"] {
+            width: 100%;
+            padding: 11px 13px;
+            border: 1px solid @borderColor;
+            border-radius: 6px;
+            background: #0c0d0f;
+            color: @white;
+            font-family: @font;
+            font-size: 14px;
+        }
+
+        textarea {
+            resize: vertical;
+            line-height: 1.6;
+        }
+
+        > small {
+            display: block;
+            margin-top: 7px;
+            color: #8d8d8d;
+            font-size: 12px;
+            line-height: 1.5;
+
+            strong, em { color: #cfcfcf; }
+        }
+    }
+
+    &__preview {
+        margin-top: 12px;
+
+        img {
+            display: block;
+            max-width: 100%;
+            max-height: 220px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border: 1px solid @borderColor;
+        }
+    }
+
+    // ── Destinatários ───────────────────────────────────────────────────────────
+    &__vazio {
+        margin: 0;
+        color: #8d8d8d;
+        font-size: 13px;
+    }
+
+    &__resumo {
+        margin: 0 0 12px;
+        color: #cfcfcf;
+        font-size: 13px;
+
+        strong { color: @alert; font-size: 16px; }
+    }
+
+    &__lista {
+        max-height: 320px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        overflow-y: auto;
+    }
+
+    &__item {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 9px 2px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+
+        &:last-child { border-bottom: 0; }
+
+        strong {
+            display: block;
+            color: @white;
+            font-size: 13px;
+        }
+
+        small {
+            display: block;
+            margin-top: 2px;
+            color: #8d8d8d;
+            font-size: 12px;
+        }
+
+        // O estado de cada envio aparece na própria linha: quem já foi, quem falhou.
+        &.is-enviando { opacity: 0.7; }
+        &.is-ok    .avisoWpp__status { color: #16a34a; }
+        &.is-erro  .avisoWpp__status { color: @error; }
+        &.is-erro  { background: rgba(255, 77, 77, 0.07); }
+    }
+
+    &__status {
+        width: 16px;
+        color: #666;
+        font-size: 14px;
+        font-weight: @bold;
+        text-align: center;
+    }
+
+    &__semNumero {
+        margin: 12px 0 0;
+        padding-top: 12px;
+        border-top: 1px dashed rgba(255, 255, 255, 0.12);
+        color: #c9a227;
+        font-size: 12px;
+        line-height: 1.6;
+    }
+
+    // ── Envio ───────────────────────────────────────────────────────────────────
+    &__card--envio { position: sticky; top: 16px; }
+
+    &__aviso {
+        margin: 0 0 14px;
+        color: #a9a9a9;
+        font-size: 12px;
+        line-height: 1.6;
+    }
+
+    &__erro {
+        margin: 0 0 12px;
+        padding: 10px 12px;
+        border: 1px solid rgba(255, 77, 77, 0.45);
+        border-radius: 6px;
+        background: rgba(255, 77, 77, 0.1);
+        color: #ff9d9d;
+        font-size: 13px;
+    }
+
+    &__progresso {
+        margin-bottom: 14px;
+
+        small {
+            display: block;
+            margin-top: 7px;
+            color: #cfcfcf;
+            font-size: 12px;
+        }
+    }
+
+    &__barra {
+        height: 6px;
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.1);
+        overflow: hidden;
+
+        span {
+            display: block;
+            width: 0;
+            height: 100%;
+            background: @alert;
+            transition: width 0.25s ease;
+        }
+    }
+
+    &__disparar {
+        width: 100%;
+
+        &:disabled { opacity: 0.5; cursor: default; }
+    }
+
+    // Prévia dentro da confirmação: é a última chance de ver o texto como ele vai chegar.
+    &__previewMsg {
+        margin: 14px 0;
+        padding: 12px 14px;
+        border: 1px solid @borderColor;
+        border-radius: 8px;
+        background: #0c0d0f;
+        max-height: 260px;
+        overflow-y: auto;
+
+        img {
+            display: block;
+            max-width: 100%;
+            max-height: 150px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+        }
+
+        p {
+            margin: 0;
+            color: #e4e4e4;
+            font-size: 13px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+    }
+}

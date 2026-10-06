@@ -26,15 +26,17 @@
     }
 
     &__form {
-        max-width: 720px;
+        max-width: 920px;
+        margin: 0 auto;
     }
 
     &__block {
         margin-bottom: 16px;
         padding: 22px 24px;
         border: 1px solid @borderColor;
-        border-radius: 8px;
-        background: rgba(17, 19, 21, 0.92);
+        border-radius: 10px;
+        background: linear-gradient(145deg, rgba(20, 22, 25, .96), rgba(12, 13, 15, .96));
+        box-shadow: 0 10px 28px rgba(0, 0, 0, .14);
 
         h3 {
             display: flex;
@@ -62,7 +64,14 @@
 
         &--summary {
             border-color: rgba(255, 213, 0, 0.3);
+            background: linear-gradient(145deg, rgba(255, 213, 0, .08), rgba(14, 15, 16, .96));
         }
+    }
+
+    &__submit {
+        width: 100%;
+        min-height: 50px;
+        font-size: 13px;
     }
 
     // ── Busca de aluno ──────────────────────────────────────────────────────────
@@ -223,6 +232,11 @@
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 12px;
+
+        // `display: grid` aqui é mais específico que o `[hidden]` do navegador, então sem
+        // esta linha o JS marca o bloco como escondido e ele continua na tela — foi o que
+        // fez os cartões de corte aparecerem junto com o aviso da regata.
+        &[hidden] { display: none; }
     }
 
     // Peça única (regata): ocupa o lugar dos cartões de corte.
@@ -230,6 +244,8 @@
         display: grid;
         grid-template-columns: 160px minmax(0, 1fr);
         gap: 14px;
+
+        &[hidden] { display: none; }
         align-items: center;
         padding: 12px;
         border: 2px solid rgba(255, 213, 0, 0.32);
@@ -428,6 +444,59 @@
     }
 }
 
+// ── Escolha do pagamento (já pago / ainda não pago) ───────────────────────────
+.pedirUniforme__pagamento {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 8px;
+
+    @media @tabletSM { grid-template-columns: minmax(0, 1fr); }
+}
+
+.pedirUniformePag {
+    display: block;
+    cursor: pointer;
+
+    input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    &__box {
+        display: block;
+        height: 100%;
+        padding: 12px 14px;
+        border: 2px solid @borderColor;
+        border-radius: 6px;
+        background: #0c0d0f;
+        transition: 0.15s all;
+    }
+
+    strong {
+        display: block;
+        color: @white;
+        font-size: 13px;
+        font-weight: @bold;
+    }
+
+    small {
+        display: block;
+        margin-top: 4px;
+        color: #a9a9a9;
+        font-size: 12px;
+        line-height: 1.5;
+    }
+
+    &:hover &__box { border-color: rgba(255, 213, 0, 0.45); }
+
+    input:checked + &__box {
+        border-color: @alert;
+        background: rgba(255, 213, 0, 0.08);
+    }
+}
+
 // ── Card de produto (uniforme completo / só a camisa / regata) ─────────────────
 .pedirUniformeProduto {
     position: relative;
@@ -496,6 +565,12 @@
     .pedirUniforme__produtos {
         grid-template-columns: minmax(0, 1fr);
     }
+
+    .pedirUniforme__header { padding: 18px 16px; }
+    .pedirUniforme__block { padding: 18px 14px; }
+    .pedirUniforme__alunoSelecionado { align-items: flex-start; flex-direction: column; }
+    .pedirUniforme__alunoSelecionado .btn { width: 100%; }
+    .pedirUniforme__unico { grid-template-columns: 1fr; }
 }
 
 // ── Modal de números (mesmo padrão visual do formulário do aluno, com variáveis do admin) ──
@@ -819,6 +894,9 @@
 }
 
 // Equipe técnica é só camisa — número e calção não fazem sentido e somem do formulário.
+// Quem esconde número e calção no fluxo de equipe é o JS (aplicarTipo), porque agora isso
+// depende das peças do produto escolhido — e não só de ser ou não a camisa da equipe
+// técnica. A regra continua aqui apenas pro estado inicial, antes do primeiro clique.
 body[data-uniforme-tipo="equipe_tecnica"][data-destino-uniforme="equipe"] {
     .pedirUniforme__field[data-so-completo] { display: none; }
 }

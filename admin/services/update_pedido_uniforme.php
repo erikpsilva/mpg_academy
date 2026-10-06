@@ -106,31 +106,6 @@ if ($erro) {
 
 $numeroAntigo = (int) $pedido['numero'];
 
-/**
- * Marca (ou desmarca) o alerta de número duplicado de todos os pedidos pagos que usam um
- * número dentro do balde. Precisa rodar pro número antigo também: ao liberar um número que
- * estava em conflito, quem ficou com ele deixa de estar duplicado.
- */
-function uniformeRecalcularConflito(PDO $pdo, int $turmaId, string $genero, int $numero): void
-{
-    $st = $pdo->prepare("
-        SELECT id, aluno_id FROM pedidos_uniforme
-        WHERE turma_id = ? AND genero = ? AND numero = ? AND status_pagamento = 'pago'
-    ");
-    $st->execute([$turmaId, $genero, $numero]);
-    $linhas = $st->fetchAll();
-
-    // Duplicado é o mesmo número em ALUNOS diferentes. O mesmo aluno pedir duas camisas com
-    // o número dele não é conflito nenhum.
-    $donos    = array_unique(array_map(fn($l) => (int) $l['aluno_id'], $linhas));
-    $conflito = count($donos) > 1 ? 1 : 0;
-
-    foreach ($linhas as $l) {
-        $pdo->prepare("UPDATE pedidos_uniforme SET conflito_numero = ? WHERE id = ?")
-            ->execute([$conflito, (int) $l['id']]);
-    }
-}
-
 // ── Gravação ──────────────────────────────────────────────────────────────────
 try {
     $pdo->beginTransaction();

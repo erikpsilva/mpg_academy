@@ -16,6 +16,8 @@ envia para `/www`.
 | `npm run deploy` | Compila o CSS, mostra a lista e publica (com confirmação). |
 | `npm run deploy:check` | Só mostra o que subiria. Não conecta pra escrever nada. |
 | `npm run deploy:secrets` | Envia o arquivo de senhas para **fora** do `/www`. |
+| `npm run deploy:verificar` | Confere o servidor inteiro contra o projeto e marca o que estiver fora de dia. |
+| `npm run deploy:tudo` | Reenvia tudo, sem comparar nada. O martelo, pra quando quiser certeza absoluta. |
 | `npm run build` | Só compila o CSS, sem publicar. |
 
 Opções extras (depois de `--`):
@@ -35,14 +37,27 @@ local — se não estiver, use `--all` uma vez.
 
 ## Como ele sabe o que mudou
 
-Cada arquivo publicado tem o hash guardado em `.deploy-state.json` (fora do Git). Na rodada
-seguinte, só sobe quem tem hash diferente. Se a conexão cair no meio, o que já foi fica
-registrado: rodar de novo continua de onde parou.
+**Quem decide é o servidor.** Antes de enviar qualquer coisa, o script lista o que está
+publicado e compara arquivo por arquivo: o que falta, o que chegou incompleto e o que foi
+editado aqui depois do último envio. O histórico local (`.deploy-state.json`, fora do Git)
+entra só como reforço, pra pegar a edição que não mudou o tamanho do arquivo.
+
+Isso existe porque confiar só no histórico local já deu errado: um upload caiu pela metade,
+o script marcou como publicado, e metade de uma mudança ficou no ar. Hoje:
+
+1. cada arquivo é conferido pelo tamanho logo depois de subir — se não bater, reenvia (até 4 tentativas);
+2. no fim, o servidor inteiro é reconferido. Se sobrar diferença, ela aparece na tela e o comando termina com erro;
+3. se a conexão cair, o que já subiu fica registrado e a rodada seguinte continua de onde parou.
+
+Arquivo enviado pelo FileZilla conta como publicado: o modo automático dele troca CRLF por
+LF, deixando o arquivo alguns bytes menor, e a conferência aceita as duas formas.
 
 ## O que nunca sobe
 
-- `uploads/` e `storage/` — são dados de produção (fotos, contratos, logs). O que está aqui
-  é cópia velha, e sobrescrever apagaria arquivo de gente de verdade.
+- `uploads/`, `storage/`, `images/jogadores/` e `images/alunos/` — são dados de produção
+  (fotos que alunos e jogadores enviaram pelo site, contratos, logs). O que está aqui é cópia
+  velha e incompleta; sobrescrever ou apagar destruiria arquivo de gente de verdade, sem
+  backup. Elas nem entram na comparação.
 - `node_modules/`, `.git/`, `doc/`, `.claude/`
 - `*.sql`, `*.log`, `*.less` (o que vai é o CSS compilado), `error_log`
 - a própria ferramenta de deploy e qualquer `mpg_secrets*.php`

@@ -27,6 +27,7 @@ $pdo = getDbConnection();
 // interno com `alunos` que existia aqui fazia os pedidos de equipe sumirem da lista.
 $st = $pdo->query("
     SELECT p.id, p.pessoa_tipo, p.pessoa_id, p.tipo_uniforme, p.equipe_cargo,
+           p.status_pagamento, p.mp_payment_id, p.criado_em,
            p.aluno_id, p.turma_id,
            p.genero, p.modelo, p.nome_camisa, p.numero, p.tamanho_camisa, p.tamanho_shorts, p.valor,
            p.status_pedido, p.conflito_numero, p.pago_em, p.visto_admin,
@@ -41,8 +42,12 @@ $st = $pdo->query("
     LEFT JOIN professores    pr ON p.pessoa_tipo = 'professor' AND pr.id = p.pessoa_id
     LEFT JOIN admin_usuarios au ON p.pessoa_tipo = 'admin'     AND au.id = p.pessoa_id
     LEFT JOIN turmas t ON t.id = p.turma_id
+    -- Pedido lançado pelo admin entra na fila mesmo sem pagamento: a peça foi combinada e
+    -- precisa ser produzida. Ele se distingue do checkout do aluno em andamento por não ter
+    -- prazo de reserva (`reserva_expira_em` nulo) — aquele é carrinho aberto, não pedido.
     WHERE p.status_pagamento = 'pago'
-    ORDER BY p.pago_em DESC, p.id DESC
+       OR (p.status_pagamento = 'aguardando' AND p.reserva_expira_em IS NULL)
+    ORDER BY COALESCE(p.pago_em, p.criado_em) DESC, p.id DESC
 ");
 
 $pedidos = [];
@@ -114,6 +119,11 @@ foreach ($st->fetchAll() as $r) {
         'novo'            => !$r['visto_admin'],
         'pago_em'         => $r['pago_em'],
         'pago_em_label'   => $r['pago_em'] ? (new DateTime($r['pago_em']))->format('d/m/Y H:i') : '—',
+        // Pedido do admin pode estar aguardando o dinheiro; o do site, não — ali o Mercado
+        // Pago já confirmou, e por isso ele não pode voltar pra "não pago".
+        'pago'            => $r['status_pagamento'] === 'pago',
+        'pode_desmarcar'  => empty($r['mp_payment_id']),
+        'criado_em_label' => $r['criado_em'] ? (new DateTime($r['criado_em']))->format('d/m/Y H:i') : '—',
     ];
 }
 

@@ -69,7 +69,8 @@ $resultado = uniformeCriarPedidoEquipe(
     $tamanhoCamisa,
     $tamanhoShorts,
     $cargo,
-    (int) ($_SESSION['usuario']['id'] ?? 0)
+    (int) ($_SESSION['usuario']['id'] ?? 0),
+    ($_POST['pago'] ?? '') === '1'
 );
 
 if (!$resultado['success']) {

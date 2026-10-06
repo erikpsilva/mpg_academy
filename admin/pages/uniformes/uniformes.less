@@ -1,3 +1,83 @@
+// Navegação compartilhada pelas três áreas de uniforme.
+.uniformHubNav {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 24px;
+
+    &__link {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+        padding: 14px 16px;
+        border: 1px solid @borderColor;
+        border-radius: 10px;
+        background: linear-gradient(145deg, rgba(20, 22, 25, .96), rgba(10, 11, 13, .96));
+        color: rgba(255, 255, 255, .72);
+        transition: .18s ease;
+
+        &:hover {
+            border-color: rgba(255, 213, 0, .45);
+            color: @white;
+            transform: translateY(-1px);
+        }
+
+        &.is-active {
+            border-color: rgba(255, 213, 0, .65);
+            background: linear-gradient(145deg, rgba(255, 213, 0, .13), rgba(18, 18, 12, .96));
+            box-shadow: inset 0 -2px 0 @alert;
+        }
+
+        > span:last-child { min-width: 0; }
+
+        strong,
+        small { display: block; }
+
+        strong {
+            color: @white;
+            font-size: 14px;
+            line-height: 1.25;
+        }
+
+        small {
+            margin-top: 3px;
+            color: rgba(255, 255, 255, .48);
+            font-size: 11px;
+            line-height: 1.25;
+        }
+    }
+
+    &__icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 34px;
+        height: 34px;
+        flex: 0 0 34px;
+        border: 1px solid rgba(255, 213, 0, .28);
+        border-radius: 8px;
+        color: @alert;
+        font-size: 11px;
+        font-weight: @bold;
+    }
+
+    @media @tabletSM {
+        display: flex;
+        gap: 8px;
+        margin-right: -12px;
+        padding-right: 12px;
+        overflow-x: auto;
+        scroll-snap-type: x proximity;
+
+        &__link {
+            flex: 0 0 210px;
+            padding: 12px;
+            scroll-snap-align: start;
+        }
+    }
+}
+
 .uniformes {
 
     &__header {
@@ -63,11 +143,90 @@
     }
 
     // ── Filtros ─────────────────────────────────────────────────────────────────
+    // ── Abas: produção x histórico ──────────────────────────────────────────────
+    //
+    // Separação principal da tela, por isso vem antes dos chips de status e com peso
+    // visual maior: a linha embaixo marca onde se está.
+    &__tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-bottom: 16px;
+        border-bottom: 1px solid @borderColor;
+    }
+
+    &__tab {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: -1px;
+        padding: 11px 18px;
+        border: 0;
+        border-bottom: 2px solid transparent;
+        background: transparent;
+        color: rgba(255, 255, 255, 0.55);
+        cursor: pointer;
+        font-family: @font;
+        font-size: 14px;
+        font-weight: @bold;
+        transition: 0.15s all;
+
+        &:hover { color: @white; }
+
+        &.is-active {
+            border-bottom-color: @alert;
+            color: @alert;
+        }
+    }
+
+    &__tabCount {
+        min-width: 22px;
+        padding: 2px 7px;
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.1);
+        color: inherit;
+        font-size: 11px;
+        font-weight: @bold;
+        text-align: center;
+    }
+
+    &__tab.is-active &__tabCount {
+        background: rgba(255, 213, 0, 0.18);
+    }
+
     &__filters {
         display: flex;
         flex-wrap: wrap;
         gap: 8px;
         margin-bottom: 18px;
+        padding: 12px;
+        border: 1px solid @borderColor;
+        border-radius: 10px;
+        background: rgba(12, 13, 15, .72);
+    }
+
+    // ── Confirmação da exclusão ─────────────────────────────────────────────────
+    //
+    // O pedido inteiro aparece antes do clique: numa lista de dezenas de linhas, errar a
+    // linha é o engano mais provável.
+    &__excluirResumo {
+        margin: 12px 0;
+        padding: 12px 14px;
+        border: 1px solid @borderColor;
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.04);
+        color: rgba(255, 255, 255, 0.85);
+        font-size: 13px;
+        line-height: 1.7;
+
+        strong { color: @white; }
+    }
+
+    &__excluirNota {
+        margin: 0 0 4px;
+        color: rgba(255, 255, 255, 0.55);
+        font-size: 12px;
+        line-height: 1.6;
     }
 
     &__filter {
@@ -96,9 +255,32 @@
 
     // ── Tabela ──────────────────────────────────────────────────────────────────
     &__table {
-        td { vertical-align: middle; }
+        td {
+            padding-top: 16px;
+            padding-bottom: 16px;
+            vertical-align: middle;
+        }
 
         strong { color: @white; }
+    }
+
+    &__actionCell {
+        width: 176px;
+        min-width: 176px;
+    }
+
+    &__actions {
+        display: grid;
+        gap: 7px;
+        width: 100%;
+    }
+
+    &__nextAction {
+        width: 100%;
+        min-height: 38px;
+        padding-left: 10px;
+        padding-right: 10px;
+        white-space: normal;
     }
 
     &__sub {
@@ -209,9 +391,174 @@
     }
 }
 
+// Menu de ações secundárias: evita cinco botões espremidos na última coluna.
+.uniformesActionMenu {
+    position: relative;
+    width: 100%;
+
+    summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        min-height: 38px;
+        padding: 8px 11px;
+        border: 1px solid rgba(255, 255, 255, .18);
+        border-radius: 7px;
+        background: rgba(255, 255, 255, .045);
+        color: rgba(255, 255, 255, .82);
+        cursor: pointer;
+        font-size: 11px;
+        font-weight: @bold;
+        list-style: none;
+        text-transform: uppercase;
+
+        &::-webkit-details-marker { display: none; }
+        &:hover { border-color: rgba(255, 213, 0, .5); color: @alert; }
+        span { color: @alert; font-size: 18px; line-height: 1; }
+    }
+
+    &[open] summary {
+        border-color: rgba(255, 213, 0, .5);
+        background: rgba(255, 213, 0, .08);
+        color: @alert;
+    }
+
+    &__panel {
+        display: grid;
+        gap: 4px;
+        margin-top: 6px;
+        padding: 6px;
+        border: 1px solid @borderColor;
+        border-radius: 8px;
+        background: #17191c;
+        box-shadow: 0 12px 28px rgba(0, 0, 0, .32);
+    }
+
+    &__item {
+        width: 100%;
+        min-height: 36px;
+        padding: 8px 10px;
+        border: 0;
+        border-radius: 6px;
+        background: transparent;
+        color: rgba(255, 255, 255, .78);
+        cursor: pointer;
+        font-family: @font;
+        font-size: 11px;
+        font-weight: @semiBold;
+        text-align: left;
+
+        &:hover { background: rgba(255, 255, 255, .07); color: @white; }
+        &--success { color: #8ddd9a; }
+        &--danger { color: #ff8b8b; }
+        &--danger:hover { background: rgba(255, 77, 77, .12); color: #ffb0b0; }
+    }
+}
+
 @media @notebookSM {
     .uniformes__stats {
         grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+// Notebook/desktop compacto: treze colunas viravam palavras empilhadas. Nesta faixa,
+// dois cartões lado a lado usam melhor o espaço sem esconder nenhuma informação.
+@media only screen and (min-width: 1201px) and (max-width: 1599px) {
+    .uniformes .interessados__tableWrap {
+        overflow: visible;
+        border: 0;
+        background: transparent;
+    }
+
+    .uniformes__table {
+        display: block;
+        width: 100%;
+        border: 0;
+        background: transparent;
+
+        > thead {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+        }
+
+        > tbody {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        > tbody > tr {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            align-content: start;
+            padding: 18px;
+            border: 1px solid @borderColor;
+            border-radius: 11px;
+            background: #111315;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
+        }
+
+        > tbody > tr > td {
+            display: grid;
+            grid-template-columns: minmax(82px, .7fr) minmax(0, 1fr);
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            min-width: 0;
+            height: auto;
+            padding: 10px 0;
+            border: 0;
+            border-bottom: 1px solid rgba(255, 255, 255, .07);
+            text-align: left;
+            overflow-wrap: anywhere;
+
+            &::before {
+                content: attr(data-label);
+                color: rgba(255, 255, 255, .42);
+                font-size: 9px;
+                font-weight: @bold;
+                letter-spacing: .06em;
+                text-transform: uppercase;
+            }
+
+            &:first-child,
+            &.uniformes__actionCell {
+                grid-column: 1 / -1;
+            }
+
+            &:first-child {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                width: 100%;
+                min-width: 0;
+                padding-top: 0;
+                color: @alert;
+                font-weight: @bold;
+
+                &::before { content: 'Pedido'; }
+            }
+
+            &.uniformes__actionCell {
+                display: block;
+                width: 100%;
+                min-width: 0;
+                padding-bottom: 0;
+                border-bottom: 0;
+
+                &::before { display: none; }
+            }
+        }
+    }
+
+    .uniformes__actions {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        align-items: start;
+        max-width: none;
     }
 }
 
@@ -219,6 +566,36 @@
     .uniformes__stats {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+
+    .uniformes__tabs {
+        flex-wrap: nowrap;
+        margin-right: -12px;
+        padding-right: 12px;
+        overflow-x: auto;
+    }
+
+    .uniformes__tab {
+        flex: 0 0 auto;
+        padding-left: 13px;
+        padding-right: 13px;
+    }
+
+    .uniformes__filters {
+        align-items: stretch;
+
+        .uniformes__filter { flex: 1 1 135px; min-height: 42px; }
+        .btn { flex: 1 1 100%; margin-left: 0; }
+    }
+
+    .uniformes__actionCell { width: 100%; min-width: 0; }
+    .uniformes__actions { max-width: 360px; margin: 0 auto; }
+}
+
+@media only screen and (max-width: 420px) {
+    .uniformes__stats { grid-template-columns: 1fr; }
+    .uniformes__stat { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .uniformes__stat strong { margin-bottom: 0; font-size: 24px; }
+    .uniformes__stat span { text-align: right; }
 }
 
 // ── Modal de correção do pedido ───────────────────────────────────────────────
@@ -310,6 +687,26 @@
     }
 }
 
+// ── Pedido ainda não pago ─────────────────────────────────────────────────────
+//
+// Pedido lançado pelo admin entra na produção antes do dinheiro entrar. A faixa lateral
+// deixa isso visível na lista inteira: é o que lembra de cobrar.
+.uniformes__row--naoPago > td {
+    box-shadow: inset 3px 0 0 @error;
+}
+
+.uniformes__naoPago {
+    display: inline-block;
+    padding: 3px 8px;
+    border: 1px solid rgba(255, 77, 77, 0.5);
+    border-radius: 20px;
+    background: rgba(255, 77, 77, 0.12);
+    color: #ff9d9d;
+    font-size: 11px;
+    font-weight: @bold;
+    text-transform: uppercase;
+}
+
 // ── Linha da camisa da comissão técnica ───────────────────────────────────────
 //
 // Produto diferente do uniforme completo: só camisa, sem número, e vai numa contagem
@@ -377,6 +774,7 @@
     .sidebar,
     .footer,
     .uniformes__stats,
+    .uniformes__tabs,
     .uniformes__filters,
     .uniformes__header,
     .confirmModal,
@@ -433,13 +831,13 @@
 
         // Colunas fixas e largas o suficiente para leitura rapida. A contagem inclui as
         // colunas de tela escondidas na impressao (2, 3 e 4), por isso os indices pulam.
-        th:nth-child(1),  td:nth-child(1)  { width: 6%;  text-align: center; }
-        th:nth-child(5),  td:nth-child(5)  { width: 24%; }  // Produto
-        th:nth-child(6),  td:nth-child(6)  { width: 26%; }  // Nome
-        th:nth-child(7),  td:nth-child(7)  { width: 8%;  text-align: center; }  // Numero
-        th:nth-child(8),  td:nth-child(8)  { width: 10%; }  // Cor
-        th:nth-child(9),  td:nth-child(9)  { width: 17%; }  // Tamanho
-        th:nth-child(10), td:nth-child(10) { width: 9%;  text-align: right; }   // Valor
+        // A coluna de valor sai da folha, então a largura dela é redistribuída nas outras.
+        th:nth-child(1), td:nth-child(1) { width: 6%;  text-align: center; }
+        th:nth-child(5), td:nth-child(5) { width: 26%; }  // Produto
+        th:nth-child(6), td:nth-child(6) { width: 28%; }  // Nome
+        th:nth-child(7), td:nth-child(7) { width: 9%;  text-align: center; }  // Numero
+        th:nth-child(8), td:nth-child(8) { width: 11%; }  // Cor
+        th:nth-child(9), td:nth-child(9) { width: 20%; }  // Tamanho
     }
 
     .uniformes__screenValue { display: none !important; }
@@ -590,18 +988,10 @@
 
 // No papel os valores vão junto — é o que o fornecedor confere no fechamento.
 @media print {
+    // Dinheiro não vai pro papel: a folha impressa é a ordem de produção que segue pra
+    // confecção, e quanto a academia pagou por cada peça não é assunto dela. Os totais
+    // continuam na tela, que é onde servem.
     .uniformes__valores {
-        display: flex !important;
-        gap: 14px;
-        margin-bottom: 8px;
-    }
-
-    .uniformes__valor {
-        border: 1px solid #666 !important;
-        background: #fff !important;
-        padding: 5px 9px;
-
-        strong { color: #000 !important; font-size: 11pt; }
-        span   { color: #333 !important; font-size: 7.5pt; }
+        display: none !important;
     }
 }

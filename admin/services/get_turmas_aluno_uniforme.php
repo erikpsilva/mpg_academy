@@ -2,7 +2,7 @@
 
 /**
  * Turmas ativas de um aluno específico — usado no formulário de pedido manual de
- * uniforme (admin/pedirfuniforme) depois que o admin escolhe o aluno.
+ * uniforme (admin/pediruniforme) depois que o admin escolhe o aluno.
  */
 
 if (session_status() === PHP_SESSION_NONE) session_start();

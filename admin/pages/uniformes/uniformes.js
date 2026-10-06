@@ -12,6 +12,7 @@
     var pedidos       = [];
     var fluxo         = [];
     var labels        = {};
+    var contagemStatus = {};
     // Grades de tamanho vêm do servidor (config/uniformes.php) — repetir as opções aqui
     // sairia de sincronia na primeira vez que uma grade mudasse.
     var tamanhos      = {};
@@ -19,6 +20,37 @@
     var limites       = { nomeMax: 14, numeroMin: 1, numeroMax: 99 };
     var filtroAtivo   = 'todos';
     var colspan       = PODE_EDITAR ? 12 : 11;
+
+    // ── Abas ────────────────────────────────────────────────────────────────────
+    //
+    // Pedido em produção e pedido já entregue são duas leituras diferentes: uma é trabalho
+    // a fazer, a outra é histórico. Os grupos vêm do HTML (que os recebe de
+    // config/uniformes.php), então a tela nunca discorda da regra.
+    var abas          = document.querySelectorAll('.uniformes__tab');
+    var statusDoGrupo = {};
+    var vazioDoGrupo  = {};
+
+    abas.forEach(function (aba) {
+        var grupo = aba.getAttribute('data-grupo');
+        statusDoGrupo[grupo] = (aba.getAttribute('data-status') || '').split(',');
+        vazioDoGrupo[grupo]  = aba.getAttribute('data-vazio') || 'Nenhum pedido aqui.';
+    });
+
+    // Qual aba abre é decisão do PHP (a primeira de UNIFORME_STATUS_GRUPOS), não daqui.
+    var abaInicial = document.querySelector('.uniformes__tab.is-active');
+    var grupoAtivo = abaInicial ? abaInicial.getAttribute('data-grupo') : 'todos';
+
+    function noGrupo(p, grupo) {
+        return (statusDoGrupo[grupo] || []).indexOf(p.status) !== -1;
+    }
+
+    /** Os pedidos da aba aberta, já com o filtro de status aplicado. */
+    function listaVisivel() {
+        return pedidos.filter(function (p) {
+            if (!noGrupo(p, grupoAtivo)) return false;
+            return filtroAtivo === 'todos' || p.status === filtroAtivo;
+        });
+    }
 
     function escapar(txt) {
         var d = document.createElement('div');
@@ -101,8 +133,13 @@
                 };
 
                 totalGeral.textContent = data.total;
-                renderStats(data.por_status);
-                render();
+                // Guardado: trocar de aba precisa recontar sem ir ao servidor de novo.
+                contagemStatus = data.por_status || {};
+                renderContadoresAbas(contagemStatus);
+
+                // aplicarAba() deixa visíveis só os chips da aba aberta e já desenha os
+                // contadores e a lista — inclusive na primeira carga.
+                aplicarAba();
 
                 // Abrir a tela já dá o pedido por visto — zera o badge do sino.
                 marcarVistos();
@@ -112,16 +149,34 @@
             });
     }
 
+    /** Contadores de status — só os da aba aberta, pra não misturar as duas leituras. */
     function renderStats(porStatus) {
         if (!porStatus) return;
+
         var html = '';
         fluxo.forEach(function (s) {
+            if ((statusDoGrupo[grupoAtivo] || []).indexOf(s) === -1) return;
+
             html += '<div class="uniformes__stat uniformes__stat--' + s + '">'
                   + '<strong>' + (porStatus[s] || 0) + '</strong>'
                   + '<span>' + escapar(labels[s] || s) + '</span>'
                   + '</div>';
         });
         statsBox.innerHTML = html;
+    }
+
+    /** Número ao lado do nome de cada aba. */
+    function renderContadoresAbas(porStatus) {
+        if (!porStatus) return;
+
+        document.querySelectorAll('[data-contador]').forEach(function (el) {
+            var grupo = el.getAttribute('data-contador');
+            var total = (statusDoGrupo[grupo] || []).reduce(function (soma, s) {
+                return soma + (porStatus[s] || 0);
+            }, 0);
+
+            el.textContent = total;
+        });
     }
 
     /**
@@ -173,14 +228,16 @@
     }
 
     function render() {
-        var lista = filtroAtivo === 'todos'
-            ? pedidos
-            : pedidos.filter(function (p) { return p.status === filtroAtivo; });
+        var lista = listaVisivel();
 
         renderValores(lista);
 
         if (!lista.length) {
-            tbody.innerHTML = '<tr><td colspan="' + colspan + '" class="interessados__loading">Nenhum pedido nesse status.</td></tr>';
+            var vazio = filtroAtivo !== 'todos'
+                ? 'Nenhum pedido nesse status.'
+                : (vazioDoGrupo[grupoAtivo] || 'Nenhum pedido aqui.');
+
+            tbody.innerHTML = '<tr><td colspan="' + colspan + '" class="interessados__loading">' + vazio + '</td></tr>';
             return;
         }
 
@@ -194,6 +251,7 @@
             var classes = [];
             if (p.novo) classes.push('uniformes__row--novo');
             if (p.tipo_uniforme === 'equipe_tecnica') classes.push('uniformes__row--equipe');
+            if (!p.pago) classes.push('uniformes__row--naoPago');
 
             html += '<tr' + (classes.length ? ' class="' + classes.join(' ') + '"' : '') + '>'
                   + '<td title="Pedido #' + p.id + '">' + (i + 1)
@@ -231,26 +289,56 @@
                   +   '</span>'
                   +   tamanhosParaImpressao(p)
                   + '</td>'
-                  + '<td>' + moeda(p.valor) + '</td>'
-                  + '<td class="uniformes__printExclude">' + escapar(p.pago_em_label) + '</td>'
+                  + '<td class="uniformes__printExclude">' + moeda(p.valor) + '</td>'
+                  + '<td class="uniformes__printExclude">'
+                  +   (p.pago
+                        ? escapar(p.pago_em_label)
+                        : '<span class="uniformes__naoPago">não pago</span>'
+                          + '<small class="uniformes__sub">pedido em ' + escapar(p.criado_em_label) + '</small>')
+                  + '</td>'
                   + '<td class="uniformes__printExclude"><span class="uniformes__badge uniformes__badge--' + p.status + '">'
                   +   escapar(p.status_label) + '</span></td>';
 
             if (PODE_EDITAR) {
-                html += '<td class="uniformes__printExclude">';
+                html += '<td class="uniformes__printExclude uniformes__actionCell"><div class="uniformes__actions">';
                 if (p.proximo_status) {
-                    html += '<button class="btn btn--primary btn--sm" data-avancar="' + p.id + '">'
+                    html += '<button class="btn btn--primary btn--sm uniformes__nextAction" data-avancar="' + p.id + '">'
                           + '&rarr; ' + escapar(labels[p.proximo_status] || p.proximo_status) + '</button> ';
                 }
-                html += '<button class="btn btn--gray btn--sm" data-status="' + p.id + '">Alterar</button> ';
-                html += '<button class="btn btn--gray btn--sm" data-editar="' + p.id + '">Corrigir</button>';
-                html += '</td>';
+
+                html += '<details class="uniformesActionMenu">'
+                      +   '<summary>Mais ações <span aria-hidden="true">&#8942;</span></summary>'
+                      +   '<div class="uniformesActionMenu__panel">';
+
+                // O pagamento é um estado à parte da produção: quem lançou o pedido sem o
+                // dinheiro marca aqui quando ele entra (e desfaz, se marcou errado).
+                if (!p.pago) {
+                    html += '<button class="uniformesActionMenu__item uniformesActionMenu__item--success" data-pagar="' + p.id + '">✓ Marcar como pago</button> ';
+                } else if (p.pode_desmarcar) {
+                    html += '<button class="uniformesActionMenu__item" data-despagar="' + p.id + '">Desmarcar pagamento</button> ';
+                }
+
+                html += '<button class="uniformesActionMenu__item" data-status="' + p.id + '">Alterar etapa</button> ';
+                html += '<button class="uniformesActionMenu__item" data-editar="' + p.id + '">Corrigir dados</button> ';
+                html += '<button class="uniformesActionMenu__item uniformesActionMenu__item--danger" data-excluir="' + p.id + '">Excluir pedido</button>';
+                html +=   '</div></details>';
+                html += '</div></td>';
             }
 
             html += '</tr>';
         });
 
         tbody.innerHTML = html;
+
+        // Um menu por vez deixa a tabela limpa mesmo ao trabalhar em várias linhas.
+        tbody.querySelectorAll('.uniformesActionMenu').forEach(function (menu) {
+            menu.addEventListener('toggle', function () {
+                if (!menu.open) return;
+                tbody.querySelectorAll('.uniformesActionMenu[open]').forEach(function (outro) {
+                    if (outro !== menu) outro.removeAttribute('open');
+                });
+            });
+        });
 
         tbody.querySelectorAll('[data-avancar]').forEach(function (btn) {
             btn.addEventListener('click', function () {
@@ -268,6 +356,25 @@
         tbody.querySelectorAll('[data-editar]').forEach(function (btn) {
             btn.addEventListener('click', function () {
                 abrirEdicao(acharPedido(btn.getAttribute('data-editar')));
+            });
+        });
+
+        tbody.querySelectorAll('[data-excluir]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                abrirExclusao(acharPedido(btn.getAttribute('data-excluir')));
+            });
+        });
+
+        tbody.querySelectorAll('[data-pagar]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                marcarPagamento(parseInt(btn.getAttribute('data-pagar'), 10), true, btn);
+            });
+        });
+
+        tbody.querySelectorAll('[data-despagar]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                if (!window.confirm('Voltar este pedido para NÃO pago? Ele sai do relatório de pagamentos.')) return;
+                marcarPagamento(parseInt(btn.getAttribute('data-despagar'), 10), false, btn);
             });
         });
     }
@@ -511,6 +618,112 @@
     document.getElementById('editarModalSalvar').addEventListener('click', salvarEdicao);
     editarModal.addEventListener('click', function (e) { if (e.target === this) fecharEdicao(); });
 
+    /** Marca (ou desmarca) o pagamento de um pedido lançado pelo admin. */
+    function marcarPagamento(pedidoId, pago, btn) {
+        btn.disabled = true;
+        btn.textContent = pago ? 'Marcando...' : 'Desfazendo...';
+
+        fetch(ADMIN_BASE_URL + '/services/marcar_pagamento_uniforme.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            credentials: 'same-origin',
+            body: new URLSearchParams({ pedido_id: pedidoId, pago: pago ? '1' : '0' }).toString()
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+            if (d.success) { carregar(); return; }
+            alert(d.message || 'Não foi possível mudar o pagamento.');
+            btn.disabled = false;
+        })
+        .catch(function () {
+            alert('Erro ao comunicar com o servidor.');
+            btn.disabled = false;
+        });
+    }
+
+    // ── Exclusão ────────────────────────────────────────────────────────────────
+    //
+    // Excluir não apaga a linha do banco: marca o pedido como cancelado. Ele some das telas
+    // e o número volta pro pool da turma, mas o registro fica — pedido que teve dinheiro
+    // envolvido não pode sumir sem rastro. A confirmação mostra o pedido inteiro, porque é
+    // fácil clicar na linha errada numa lista de dezenas.
+    var excluirModal = document.getElementById('excluirModal');
+    var excluirAtual = null;
+
+    function abrirExclusao(p) {
+        if (!p || !excluirModal) return;
+        excluirAtual = p;
+
+        var erro = document.getElementById('excluirErro');
+        erro.style.display = 'none';
+
+        document.getElementById('excluirModalInfo').innerHTML =
+            '<strong>' + escapar(p.aluno_nome) + '</strong> — ' + escapar(p.turma_nome)
+          + '<br>' + escapar(p.produto_completo || p.produto_nome)
+          + '<br>' + escapar(p.texto_camisa || p.nome_camisa)
+          + (p.numero !== null ? ' &middot; nº ' + p.numero : '')
+          + ' &middot; ' + escapar(p.tamanho_camisa)
+          + (p.tamanho_shorts ? ' / ' + escapar(p.tamanho_shorts) : '')
+          + '<br>' + moeda(p.valor) + ' &middot; pago em ' + escapar(p.pago_em_label);
+
+        // Pedido que já foi pra confecção pode já estar sendo costurado — quem exclui
+        // precisa saber disso antes, não depois.
+        var aviso = document.getElementById('excluirAviso');
+        if (p.status !== 'pendente') {
+            aviso.innerHTML = '&#9888; Este pedido já está em <strong>' + escapar(p.status_label)
+                            + '</strong>. Se a confecção começou, avise a fábrica.';
+            aviso.style.display = '';
+        } else {
+            aviso.style.display = 'none';
+        }
+
+        excluirModal.classList.add('confirmModal--open');
+    }
+
+    function fecharExclusao() {
+        if (excluirModal) excluirModal.classList.remove('confirmModal--open');
+        excluirAtual = null;
+    }
+
+    function confirmarExclusao() {
+        if (!excluirAtual) return;
+
+        var btn  = document.getElementById('excluirConfirmar');
+        var erro = document.getElementById('excluirErro');
+
+        btn.disabled = true;
+        btn.textContent = 'Excluindo...';
+
+        fetch(ADMIN_BASE_URL + '/services/excluir_pedido_uniforme.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            credentials: 'same-origin',
+            body: new URLSearchParams({ pedido_id: excluirAtual.id }).toString()
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+            btn.disabled = false;
+            btn.textContent = 'Sim, excluir';
+
+            if (d.success) { fecharExclusao(); carregar(); return; }
+
+            erro.textContent = d.message || 'Não foi possível excluir.';
+            erro.style.display = '';
+        })
+        .catch(function () {
+            btn.disabled = false;
+            btn.textContent = 'Sim, excluir';
+            erro.textContent = 'Erro de conexão.';
+            erro.style.display = '';
+        });
+    }
+
+    if (excluirModal) {
+        document.getElementById('excluirCancelar').addEventListener('click', fecharExclusao);
+        document.getElementById('excluirConfirmar').addEventListener('click', confirmarExclusao);
+        excluirModal.addEventListener('click', function (e) { if (e.target === this) fecharExclusao(); });
+    }
+
     function marcarVistos() {
         if (!pedidos.some(function (p) { return p.novo; })) return;
 
@@ -624,11 +837,15 @@
         var elTotal  = document.getElementById('printTotal');
         if (!elFiltro || !elTotal) return;
 
-        var lista = filtroAtivo === 'todos'
-            ? pedidos
-            : pedidos.filter(function (p) { return p.status === filtroAtivo; });
+        var lista = listaVisivel();
 
-        elFiltro.textContent = filtroAtivo === 'todos' ? 'Todos os status' : (labels[filtroAtivo] || filtroAtivo);
+        // No papel o fornecedor precisa saber que recorte é aquele — a aba não aparece
+        // na impressão.
+        var abaAtiva = document.querySelector('.uniformes__tab.is-active');
+        var nomeAba  = abaAtiva ? abaAtiva.childNodes[0].textContent.trim() : 'Todos';
+
+        elFiltro.textContent = nomeAba
+            + (filtroAtivo === 'todos' ? '' : ' · ' + (labels[filtroAtivo] || filtroAtivo));
 
         // O fornecedor precisa saber quantas peças de cada produto, não só o total de linhas.
         var contagem = contarPorProduto(lista);
@@ -646,6 +863,42 @@
             btn.classList.add('is-active');
             filtroAtivo = btn.getAttribute('data-filtro');
             render();
+        });
+    });
+
+    // ── Abas ────────────────────────────────────────────────────────────────────
+    //
+    // Trocar de aba zera o filtro de status: os chips da aba anterior não valem aqui, e
+    // manter "Entregue" selecionado ao voltar pra produção deixaria a lista vazia sem
+    // explicação nenhuma na tela.
+    function aplicarAba() {
+        filtros.forEach(function (chip) {
+            var grupoDoChip = chip.getAttribute('data-grupo');
+            var vale = !grupoDoChip || grupoAtivo === 'todos' || grupoDoChip === grupoAtivo;
+
+            chip.style.display = vale ? '' : 'none';
+            chip.classList.toggle('is-active', chip.getAttribute('data-filtro') === 'todos');
+        });
+
+        filtroAtivo = 'todos';
+
+        // O envio em massa age sobre pedidos PENDENTES: numa aba que não os mostra, o botão
+        // só convidaria ao clique errado.
+        if (btnEnviarTodos) {
+            var temPendentes = (statusDoGrupo[grupoAtivo] || []).indexOf('pendente') !== -1;
+            btnEnviarTodos.style.display = temPendentes ? '' : 'none';
+        }
+
+        renderStats(contagemStatus);
+        render();
+    }
+
+    abas.forEach(function (aba) {
+        aba.addEventListener('click', function () {
+            abas.forEach(function (a) { a.classList.remove('is-active'); });
+            aba.classList.add('is-active');
+            grupoAtivo = aba.getAttribute('data-grupo');
+            aplicarAba();
         });
     });
 

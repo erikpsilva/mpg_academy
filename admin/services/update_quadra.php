@@ -55,6 +55,7 @@ if ($diaPagamento < 1 || $diaPagamento > 31) {
 }
 
 require_once dirname(__FILE__, 3) . '/config/database.php';
+require_once dirname(__FILE__, 3) . '/config/mensalidades.php';   // ajustarDescontosDaPromo()
 $pdo = getDbConnection();
 
 try {
@@ -117,6 +118,10 @@ try {
     // ── 3. Sync de turmas — NUNCA deleta, apenas cria/atualiza ───────────────
     $updatedTurmaIds = [];
 
+    // Quantos descontos e faturas em aberto foram realinhados por mudança de preço — vira
+    // aviso na resposta, pra quem mexeu no valor saber que isso aconteceu.
+    $realinhados = ['descontos' => 0, 'faturas' => 0];
+
     foreach ($turmas as $t) {
         $turmaNome        = trim($t['nome'] ?? '');
         if (!$turmaNome) continue;
@@ -131,6 +136,11 @@ try {
         $maxAlunos        = isset($t['max_alunos'])  && $t['max_alunos']  !== null ? (int)$t['max_alunos'] : null;
 
         if ($dbTurmaId > 0) {
+            // Antes de gravar: como estava, pra saber se preço ou promoção mudaram.
+            $stAntes = $pdo->prepare("SELECT valor_mensalidade, promo_valor FROM turmas WHERE id = ? AND quadra_id = ?");
+            $stAntes->execute([$dbTurmaId, $id]);
+            $antes = $stAntes->fetch();
+
             // Turma existente → apenas atualiza dados, garante que está ativa
             $pdo->prepare("
                 UPDATE turmas
@@ -138,6 +148,18 @@ try {
                 WHERE id=? AND quadra_id=?
             ")->execute([$turmaNome, $genero, $nivel, $faixaEtaria, $valorMensalidade, $promoValor, $promoMeses, $maxAlunos, $dbTurmaId, $id]);
             $turmaId = $dbTurmaId;
+
+            // O desconto do aluno é gravado em REAIS (valor da turma − valor promocional) e
+            // fica congelado na matrícula. Então mexer no preço da turma aqui mudava, sem
+            // avisar, quanto cada aluno em promoção paga: baixar a mensalidade de 119,90 pra
+            // 109,90 transformou a promoção de 99,99 em 89,99 pra treze alunos.
+            //
+            // Quem está na promoção PADRÃO da turma é recalculado junto. Desconto negociado
+            // caso a caso (valor diferente do padrão) fica como está — é combinação com
+            // aquele aluno, não consequência do preço da turma.
+            $ajuste = ajustarDescontosDaPromo($pdo, $turmaId, $antes, $valorMensalidade, $promoValor);
+            $realinhados['descontos'] += $ajuste['descontos'];
+            $realinhados['faturas']   += $ajuste['faturas'];
         } else {
             // Turma nova → insere
             $s = $pdo->prepare("INSERT INTO turmas (quadra_id, nome, genero, nivel, faixa_etaria, valor_mensalidade, promo_valor, promo_meses, max_alunos) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
@@ -168,7 +190,23 @@ try {
     }
 
     $pdo->commit();
-    echo json_encode(['success' => true, 'message' => 'Quadra atualizada com sucesso!', 'id' => $id]);
+
+    // Mudar preço mexe no bolso de quem já está matriculado: a resposta diz o que foi
+    // realinhado, em vez de deixar a descoberta pro aluno na hora de pagar.
+    $mensagem = 'Quadra atualizada com sucesso!';
+    if ($realinhados['descontos'] || $realinhados['faturas']) {
+        $partes = [];
+        if ($realinhados['descontos']) $partes[] = $realinhados['descontos'] . ' desconto(s) de promoção';
+        if ($realinhados['faturas'])   $partes[] = $realinhados['faturas'] . ' fatura(s) em aberto';
+        $mensagem .= ' Ajustei ' . implode(' e ', $partes) . ' para o preço novo.';
+    }
+
+    echo json_encode([
+        'success'     => true,
+        'message'     => $mensagem,
+        'id'          => $id,
+        'realinhados' => $realinhados,
+    ]);
 
 } catch (Exception $e) {
     $pdo->rollBack();

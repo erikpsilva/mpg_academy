@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Busca de aluno pro formulário de pedido manual de uniforme (admin/pedirfuniforme).
+ * Busca de aluno pro formulário de pedido manual de uniforme (admin/pediruniforme).
  * Diferente de search_alunos_disponiveis.php (que busca quem NÃO está numa turma), aqui
  * é o contrário: só interessa aluno ativo COM turma, porque é a turma que define o balde
  * de numeração do uniforme.

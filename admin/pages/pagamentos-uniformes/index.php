@@ -31,6 +31,21 @@
                 </div>
             </div>
 
+            <nav class="uniformHubNav" aria-label="Navegação de uniformes">
+                <a class="uniformHubNav__link" href="<?= ADMIN_BASE_URL ?>/uniformes">
+                    <span class="uniformHubNav__icon">01</span>
+                    <span><strong>Pedidos</strong><small>Acompanhar produção</small></span>
+                </a>
+                <a class="uniformHubNav__link" href="<?= ADMIN_BASE_URL ?>/pediruniforme">
+                    <span class="uniformHubNav__icon">02</span>
+                    <span><strong>Novo pedido</strong><small>Aluno ou equipe</small></span>
+                </a>
+                <a class="uniformHubNav__link is-active" href="<?= ADMIN_BASE_URL ?>/pagamentos-uniformes">
+                    <span class="uniformHubNav__icon">03</span>
+                    <span><strong>Pagamentos</strong><small>Valores recebidos</small></span>
+                </a>
+            </nav>
+
             <div class="pagUniformes__totais">
                 <div class="pagUniformes__card">
                     <span class="pagUniformes__cardNum" id="totalQtd">—</span>

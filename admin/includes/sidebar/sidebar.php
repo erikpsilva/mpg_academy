@@ -183,6 +183,14 @@
                 </a>
             </li>
 
+            <?php // Disparo por WhatsApp — não confundir com "Avisos", que publica na área do aluno. ?>
+            <li class="sidebar__item">
+                <a href="<?= BASE_URL ?>/admin/avisoswhatsapp"
+                   class="sidebar__link <?= ($subRoute === 'avisoswhatsapp') ? 'sidebar__link--active' : '' ?>">
+                    Avisos por WhatsApp
+                </a>
+            </li>
+
             <li class="sidebar__item">
                 <a href="<?= BASE_URL ?>/admin/uniformes"
                    class="sidebar__link <?= ($subRoute === 'uniformes') ? 'sidebar__link--active' : '' ?>">
@@ -192,8 +200,8 @@
 
             <?php if (in_array($_SESSION['usuario']['nivel_acesso'] ?? '', ['admin', 'editor'], true)): ?>
             <li class="sidebar__item">
-                <a href="<?= BASE_URL ?>/admin/pedirfuniforme"
-                   class="sidebar__link <?= ($subRoute === 'pedirfuniforme') ? 'sidebar__link--active' : '' ?>">
+                <a href="<?= BASE_URL ?>/admin/pediruniforme"
+                   class="sidebar__link <?= ($subRoute === 'pediruniforme') ? 'sidebar__link--active' : '' ?>">
                     Pedir Uniforme
                 </a>
             </li>
