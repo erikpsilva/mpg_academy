@@ -301,24 +301,40 @@
 
             if (PODE_EDITAR) {
                 html += '<td class="uniformes__printExclude uniformes__actionCell"><div class="uniformes__actions">';
+
+                // Status e pagamento ficam sempre visíveis: são os dois controles usados no
+                // dia a dia e não devem ficar escondidos junto de correção/exclusão.
+                html += '<div class="uniformes__controlGroup">'
+                      +   '<span class="uniformes__controlLabel">Status da produção</span>';
                 if (p.proximo_status) {
                     html += '<button class="btn btn--primary btn--sm uniformes__nextAction" data-avancar="' + p.id + '">'
                           + '&rarr; ' + escapar(labels[p.proximo_status] || p.proximo_status) + '</button> ';
                 }
+                html += '<button class="uniformes__statusControl" data-status="' + p.id + '">Escolher outro status</button>'
+                      + '</div>';
+
+                html += '<div class="uniformes__controlGroup">'
+                      +   '<span class="uniformes__controlLabel">Pagamento</span>';
+
+                if (!p.pago) {
+                    html += '<button class="uniformes__paymentControl uniformes__paymentControl--pending" data-pagar="' + p.id + '">'
+                          +   '<span>Não pago</span><strong>Marcar como pago</strong>'
+                          + '</button>';
+                } else if (p.pode_desmarcar) {
+                    html += '<button class="uniformes__paymentControl uniformes__paymentControl--paid" data-despagar="' + p.id + '">'
+                          +   '<span>✓ Pago</span><strong>Desmarcar pagamento</strong>'
+                          + '</button>';
+                } else {
+                    html += '<div class="uniformes__paymentControl uniformes__paymentControl--paid is-static">'
+                          +   '<span>✓ Pago</span><strong>Pagamento confirmado</strong>'
+                          + '</div>';
+                }
+
+                html += '</div>';
 
                 html += '<details class="uniformesActionMenu">'
                       +   '<summary>Mais ações <span aria-hidden="true">&#8942;</span></summary>'
                       +   '<div class="uniformesActionMenu__panel">';
-
-                // O pagamento é um estado à parte da produção: quem lançou o pedido sem o
-                // dinheiro marca aqui quando ele entra (e desfaz, se marcou errado).
-                if (!p.pago) {
-                    html += '<button class="uniformesActionMenu__item uniformesActionMenu__item--success" data-pagar="' + p.id + '">✓ Marcar como pago</button> ';
-                } else if (p.pode_desmarcar) {
-                    html += '<button class="uniformesActionMenu__item" data-despagar="' + p.id + '">Desmarcar pagamento</button> ';
-                }
-
-                html += '<button class="uniformesActionMenu__item" data-status="' + p.id + '">Alterar etapa</button> ';
                 html += '<button class="uniformesActionMenu__item" data-editar="' + p.id + '">Corrigir dados</button> ';
                 html += '<button class="uniformesActionMenu__item uniformesActionMenu__item--danger" data-excluir="' + p.id + '">Excluir pedido</button>';
                 html +=   '</div></details>';

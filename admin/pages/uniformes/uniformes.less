@@ -271,8 +271,22 @@
 
     &__actions {
         display: grid;
-        gap: 7px;
+        gap: 10px;
         width: 100%;
+    }
+
+    &__controlGroup {
+        display: grid;
+        gap: 6px;
+        min-width: 0;
+    }
+
+    &__controlLabel {
+        color: rgba(255, 255, 255, .42);
+        font-size: 9px;
+        font-weight: @bold;
+        letter-spacing: .07em;
+        text-transform: uppercase;
     }
 
     &__nextAction {
@@ -281,6 +295,63 @@
         padding-left: 10px;
         padding-right: 10px;
         white-space: normal;
+    }
+
+    &__statusControl {
+        width: 100%;
+        min-height: 34px;
+        padding: 7px 9px;
+        border: 1px solid rgba(255, 255, 255, .16);
+        border-radius: 6px;
+        background: rgba(255, 255, 255, .035);
+        color: rgba(255, 255, 255, .72);
+        cursor: pointer;
+        font-family: @font;
+        font-size: 10px;
+        font-weight: @semiBold;
+
+        &:hover { border-color: rgba(255, 213, 0, .45); color: @alert; }
+    }
+
+    &__paymentControl {
+        display: grid;
+        gap: 2px;
+        width: 100%;
+        min-height: 46px;
+        padding: 8px 10px;
+        border: 1px solid;
+        border-radius: 7px;
+        cursor: pointer;
+        font-family: @font;
+        text-align: left;
+
+        span {
+            font-size: 11px;
+            font-weight: @bold;
+            text-transform: uppercase;
+        }
+
+        strong {
+            color: inherit;
+            font-size: 9px;
+            font-weight: @semiBold;
+            opacity: .72;
+        }
+
+        &--pending {
+            border-color: rgba(255, 157, 0, .45);
+            background: rgba(255, 157, 0, .09);
+            color: @orange;
+        }
+
+        &--paid {
+            border-color: rgba(86, 190, 110, .4);
+            background: rgba(86, 190, 110, .09);
+            color: #8ddd9a;
+        }
+
+        &:not(.is-static):hover { filter: brightness(1.18); }
+        &.is-static { cursor: default; }
     }
 
     &__sub {
@@ -560,6 +631,8 @@
         align-items: start;
         max-width: none;
     }
+
+    .uniformesActionMenu { grid-column: 1 / -1; }
 }
 
 @media @tabletSM {
