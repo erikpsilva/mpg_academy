@@ -262,7 +262,7 @@
             <li class="sidebar__item">
                 <a href="<?= BASE_URL ?>/admin/emailcadastro"
                    class="sidebar__link <?= ($subRoute === 'emailcadastro') ? 'sidebar__link--active' : '' ?>">
-                    Enviar Email de Cadastro
+                    Enviar Formulário de Cadastro
                 </a>
             </li>
 

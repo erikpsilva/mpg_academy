@@ -38,7 +38,7 @@ require_once dirname(__FILE__, 3) . '/config/mensalidades.php';
 $pdo = getDbConnection();
 
 $mens = $pdo->prepare("
-    SELECT m.id, m.referencia, m.valor, m.status AS status_atual, m.turma_id, m.tipo,
+    SELECT m.id, m.referencia, m.valor, m.matricula_valor, m.matricula_uniforme_valor, m.status AS status_atual, m.turma_id, m.tipo,
            a.nome AS aluno_nome, a.id AS aluno_id
     FROM mensalidades m
     JOIN alunos a ON a.id = m.aluno_id
@@ -72,13 +72,19 @@ try {
         $refLabel = ($meses[$refMes] ?? $refMes) . '/' . $refAno;
         $descricao = 'Mensalidade ' . $refLabel . ' — ' . $mens['aluno_nome'] . ' (baixa manual)';
 
+        $valorReceita = mensalidadeValorReceitaAcademia($pdo, $mens, (float) $mens['valor']);
         try {
             $pdo->prepare("
                 INSERT IGNORE INTO lancamentos_financeiros
                     (competencia, data, tipo, categoria, descricao, valor, origem, referencia_tipo, referencia_id)
                 VALUES (?, ?, 'receita', 'mensalidade', ?, ?, 'manual', 'mensalidade', ?)
-            ")->execute([$mens['referencia'], $dataSalvar, $descricao, $mens['valor'], $id]);
+            ")->execute([$mens['referencia'], $dataSalvar, $descricao, $valorReceita, $id]);
         } catch (PDOException $e) {}
+
+        if ((float) ($mens['matricula_uniforme_valor'] ?? 0) > 0) {
+            $pdo->prepare("UPDATE pedidos_uniforme SET status_pagamento = 'pago', pago_em = ?, reserva_expira_em = NULL WHERE mensalidade_id = ? AND origem_cobranca = 'matricula'")
+                ->execute([$dataSalvar . ' 00:00:00', $id]);
+        }
 
         // Baixa manual conta como pagamento — já gera a fatura do mês seguinte na hora
         // (mesmo gatilho da baixa automática via Mercado Pago, ver mpMarcarMensalidadePaga()).
@@ -101,6 +107,9 @@ try {
                 WHERE referencia_tipo = 'mensalidade' AND referencia_id = ? AND origem = 'manual'
             ")->execute([$id]);
         } catch (PDOException $e) {}
+
+        $pdo->prepare("UPDATE pedidos_uniforme SET status_pagamento = 'aguardando', pago_em = NULL WHERE mensalidade_id = ? AND origem_cobranca = 'matricula'")
+            ->execute([$id]);
     }
 
     $pdo->commit();

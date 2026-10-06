@@ -97,6 +97,15 @@ $generoPadrao = in_array($sexoAluno, UNIFORME_GENEROS, true) ? $sexoAluno : 'mas
                     <?php endif; ?>
                 </section>
 
+                <section class="uniformOrder__block uniformOrder__measureCallout">
+                    <div class="uniformOrder__measureCalloutText">
+                        <span>Antes de escolher</span>
+                        <h2>Tabela de medidas</h2>
+                        <p>Confira todas as grades de camisa, calção, bermuda e regata para escolher com segurança.</p>
+                    </div>
+                    <button type="button" class="uniformOrder__measureCalloutButton" data-medidas="todas">Ver todas as medidas</button>
+                </section>
+
                 <section class="uniformOrder__block">
                     <h2><span>2</span> O que você quer pedir</h2>
 

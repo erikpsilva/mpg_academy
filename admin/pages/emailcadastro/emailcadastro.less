@@ -67,6 +67,27 @@
             padding: 14px;
             resize: vertical;
         }
+
+        select.input {
+            color-scheme: dark;
+            cursor: pointer;
+            line-height: normal;
+
+            option {
+                background: #17191c;
+                color: #ffffff;
+                font-family: @font;
+                font-size: 14px;
+                padding: 8px 12px;
+            }
+        }
+    }
+
+    &__hint {
+        display: block;
+        margin-top: 7px;
+        color: rgba(255,255,255,.48);
+        font-size: 12px;
     }
 
     &__preview {
@@ -128,6 +149,27 @@
         }
     }
 
+    &__generated {
+        margin-top: 16px;
+        padding: 16px;
+        border: 1px solid rgba(255, 213, 0, .38);
+        border-radius: 8px;
+        background: rgba(255, 213, 0, .07);
+
+        &[hidden] { display: none; }
+        > label { display: block; margin-bottom: 8px; color: @alert; font-size: 12px; font-weight: @semiBold; text-transform: uppercase; }
+        > small { display: block; margin-top: 8px; color: rgba(255,255,255,.55); font-size: 12px; }
+    }
+
+    &__generatedRow {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 8px;
+
+        input { min-width: 0; height: 46px; padding: 0 12px; border: 1px solid @borderColor; border-radius: 7px; background: #090a0b; color: #fff; font-family: @font; }
+        button { min-width: 120px; padding: 0 16px; border: 0; border-radius: 7px; background: @alert; color: #050505; cursor: pointer; font-family: @font; font-weight: @bold; }
+    }
+
     &__note {
         color: rgba(255, 255, 255, 0.35);
         font-size: 12px;
@@ -145,6 +187,11 @@
 
         &__card {
             padding: 22px 18px;
+        }
+
+        &__generatedRow {
+            grid-template-columns: 1fr;
+            button { min-height: 46px; }
         }
     }
 }

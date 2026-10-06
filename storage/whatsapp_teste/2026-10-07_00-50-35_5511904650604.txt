@@ -1,0 +1,11 @@
+[Para: 5511904650604]
+
+Olá, ERik! 👋
+
+Sua vaga na turma *Turma Intermediário* da MPG Academy está pronta. Use o link individual abaixo para concluir seu cadastro e escolher o uniforme:
+
+http://localhost/mpg_academy/cadastro?convite=89a25c8b6996b549180c364076776d9fb2a683f520f318607ce93a0aa682a12a
+
+O link expira em 7 dias e pode ser usado uma vez.
+
+dasdsada

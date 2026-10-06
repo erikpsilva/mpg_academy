@@ -15,6 +15,7 @@ $seoTitles = [
     'cadastrobatebola' => 'Cadastro Bate Bola — MPG Academy',
     'batebolainicio' => 'Início Bate Bola — MPG Academy',
     'comunicados'  => 'Comunicados — MPG Academy',
+    'uniformematricula' => 'Uniforme da Matrícula — MPG Academy',
     'contato'      => 'Contato — MPG Academy | Escola de Vôlei SP',
 ];
 
@@ -40,7 +41,7 @@ $ogImage        = BASE_URL . '/images/logoComFundo.jpg';
 $seoKeywords = 'MPG Academy, volei, vôlei, jogar vôlei, escola de vôlei, vôlei zona norte, treino de vôlei, aula de vôlei, volei adulto, volei iniciante, volei intermediário, voleibol, São Paulo, Zona Norte São Paulo';
 
 // Páginas de login/privadas não devem ser indexadas
-$noIndexRoutes = ['areadoaluno', 'treinos', 'meuperfil', 'mensalidades', 'pagamento', 'termo', 'assinaturas', 'batebolainicio'];
+$noIndexRoutes = ['areadoaluno', 'treinos', 'meuperfil', 'mensalidades', 'pagamento', 'termo', 'assinaturas', 'batebolainicio', 'uniformematricula'];
 $robotsContent = in_array($currentRoute, $noIndexRoutes) ? 'noindex, nofollow' : 'index, follow';
 ?>
 

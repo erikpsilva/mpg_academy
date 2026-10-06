@@ -181,6 +181,61 @@
     }
 }
 
+.studentSignupTransitionOpen { overflow: hidden; }
+
+.studentSignupTransition {
+    position: fixed;
+    z-index: 9999;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    background: rgba(5, 6, 7, .96);
+    color: #fff;
+    text-align: center;
+
+    &__card {
+        width: min(480px, 100%);
+        padding: 34px 30px;
+        border: 1px solid rgba(255, 213, 0, .42);
+        border-radius: 18px;
+        background: #111315;
+        box-shadow: 0 24px 80px rgba(0, 0, 0, .5);
+
+        img { width: 105px; height: auto; margin-bottom: 20px; }
+        strong { display: block; margin-top: 14px; color: #ffd500; font-size: 14px; text-transform: uppercase; }
+        h2 { margin: 8px 0 10px; font-size: clamp(25px, 6vw, 36px); line-height: 1.1; }
+        p { margin: 0 auto; color: #c7c9cc; line-height: 1.55; }
+        small { display: block; margin-top: 12px; color: #ffd500; font-weight: 700; }
+    }
+
+    &__check {
+        display: grid;
+        place-items: center;
+        width: 48px;
+        height: 48px;
+        margin: 0 auto;
+        border-radius: 50%;
+        background: #ffd500;
+        color: #070707;
+        font-size: 28px;
+        font-weight: 900;
+    }
+
+    &__loader {
+        display: block;
+        width: 34px;
+        height: 34px;
+        margin: 22px auto 0;
+        border: 4px solid rgba(255, 255, 255, .14);
+        border-top-color: #ffd500;
+        border-radius: 50%;
+        animation: studentSignupLoading .75s linear infinite;
+    }
+}
+
+@keyframes studentSignupLoading { to { transform: rotate(360deg); } }
+
 .studentSignupForm__columns {
     display: grid;
     grid-template-columns: 1fr 1fr;

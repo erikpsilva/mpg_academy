@@ -1,3 +1,12 @@
+<?php
+$conviteToken = trim($_GET['convite'] ?? '');
+$convite = null;
+if ($conviteToken !== '') {
+    require_once ROOT . '/config/database.php';
+    require_once ROOT . '/config/convites_cadastro.php';
+    $convite = conviteBuscar(getDbConnection(), $conviteToken);
+}
+?>
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -38,6 +47,12 @@
     </section>
 
     <form class="studentSignupForm" id="studentSignupForm" action="<?= BASE_URL ?>/services/site/register_student.php" data-redirect="<?= BASE_URL ?>" method="post" enctype="multipart/form-data" novalidate>
+        <?php if ($convite): ?>
+            <input type="hidden" name="convite" value="<?= htmlspecialchars($conviteToken) ?>">
+            <p class="studentSignupNotice studentSignupNotice--success">Sua vaga está vinculada à turma <strong><?= htmlspecialchars($convite['turma_nome']) ?></strong>. Ao concluir, você entrará automaticamente nessa turma e poderá escolher o número do uniforme.</p>
+        <?php elseif ($conviteToken !== ''): ?>
+            <p class="studentSignupNotice">Este convite expirou ou já foi utilizado. Peça um novo link para a equipe MPG.</p>
+        <?php endif; ?>
         <section class="studentSignupBox studentSignupBox--full">
             <h2><i class="icon-areadoaluno" aria-hidden="true"></i> Dados pessoais</h2>
 
@@ -45,7 +60,7 @@
                 <label class="studentField studentField--full">
                     <span class="studentField__icon" aria-hidden="true"><i class="icon-user"></i></span>
                     <span class="studentField__label">Nome completo <b>*</b></span>
-                    <input type="text" name="nome" placeholder="Digite seu nome completo" required>
+                    <input type="text" name="nome" value="<?= htmlspecialchars($convite['nome'] ?? '') ?>" placeholder="Digite seu nome completo" required>
                 </label>
 
                 <label class="studentField">
@@ -120,7 +135,7 @@
                     <label class="studentField">
                         <span class="studentField__icon" aria-hidden="true"><i class="icon-celphone"></i></span>
                         <span class="studentField__label">Celular / WhatsApp (com DDD) <b>*</b></span>
-                        <input type="text" name="celular" class="studentPhone" placeholder="(11) 99999-9999" required>
+                        <input type="text" name="celular" class="studentPhone" value="<?= htmlspecialchars($convite['whatsapp'] ?? '') ?>" placeholder="(11) 99999-9999" required>
                     </label>
 
                     <label class="studentField">

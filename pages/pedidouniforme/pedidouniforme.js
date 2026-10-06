@@ -240,6 +240,27 @@
         measuresBody.innerHTML = html;
     }
 
+    function renderTodasMedidas() {
+        var ordem = [
+            ['masculino', 'camisa'], ['masculino', 'shorts'],
+            ['feminino', 'camisa'], ['feminino', 'shorts'],
+            ['infantil', 'camisa'], ['infantil', 'shorts'],
+            ['masculino', 'regata']
+        ];
+        if (measuresSub) measuresSub.textContent = 'Todas as medidas dos uniformes disponíveis na área do aluno.';
+        var html = '<div class="uniformMeasures__grid">';
+        ordem.forEach(function (item) {
+            var t = tabela(item[0], item[1]);
+            if (!t) return;
+            html += '<section class="uniformMeasures__table"><h3>' + escapar(t.label) + '</h3><div class="uniMedidas__scroll"><table><thead><tr>';
+            t.colunas.forEach(function (c) { html += '<th>' + escapar(c) + '</th>'; });
+            html += '</tr></thead><tbody>';
+            t.linhas.forEach(function (linha) { html += '<tr>'; linha.forEach(function (v, i) { html += (i === 0 ? '<th>' : '<td>') + escapar(v) + (i === 0 ? '</th>' : '</td>'); }); html += '</tr>'; });
+            html += '</tbody></table></div></section>';
+        });
+        measuresBody.innerHTML = html + '</div><p class="uniMedidas__aviso">' + escapar(UNIFORME_AVISO_MEDIDAS) + '</p>';
+    }
+
     // ── Resumo ──────────────────────────────────────────────────────────────────
     function atualizarResumo() {
         var ficha = fichaProduto();
@@ -386,7 +407,8 @@
     });
 
     function abrirMedidas(peca) {
-        renderMedidas(peca || 'camisa');
+        if (peca === 'todas') renderTodasMedidas();
+        else renderMedidas(peca || 'camisa');
         measuresModal.classList.add('is-open');
         measuresModal.setAttribute('aria-hidden', 'false');
         document.body.style.overflow = 'hidden';

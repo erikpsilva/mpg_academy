@@ -1,5 +1,21 @@
 <?php
 
+/** Parte da matrícula destinada ao uniforme e que não compõe a receita da academia. */
+function mensalidadeValorUniformeMatricula(PDO $pdo): float
+{
+    $st = $pdo->prepare("SELECT valor FROM configuracoes WHERE chave = 'matricula_uniforme_valor' LIMIT 1");
+    $st->execute();
+    $valor = $st->fetchColumn();
+    return $valor === false ? 115.0 : max(0.0, (float) $valor);
+}
+
+/** Valor que efetivamente entra no caixa da academia ao quitar a fatura. */
+function mensalidadeValorReceitaAcademia(PDO $pdo, array $mensalidade, float $valorCobrado): float
+{
+    $reservado = max(0.0, (float) ($mensalidade['matricula_uniforme_valor'] ?? 0));
+    return max(0.0, round($valorCobrado - $reservado, 2));
+}
+
 /**
  * Geração de mensalidades recorrentes — usada tanto pelo disparo imediato (assim que uma
  * mensalidade é paga, já gera a do mês seguinte) quanto pelo fallback diário que garante que

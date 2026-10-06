@@ -575,7 +575,7 @@ function mpExtrairTaxaELiquido(array $payment, float $valorBruto): array
  */
 function mpMarcarMensalidadePaga(PDO $pdo, int $mensalidadeId, string $mpPaymentId, ?array $payment = null, ?float $valorCobrado = null): bool
 {
-    $st = $pdo->prepare("SELECT id, valor, referencia, aluno_id, turma_id, tipo, status FROM mensalidades WHERE id = ?");
+    $st = $pdo->prepare("SELECT id, valor, matricula_valor, matricula_uniforme_valor, referencia, aluno_id, turma_id, tipo, status FROM mensalidades WHERE id = ?");
     $st->execute([$mensalidadeId]);
     $mens = $st->fetch();
     if (!$mens || $mens['status'] === 'pago') return false;
@@ -595,14 +595,21 @@ function mpMarcarMensalidadePaga(PDO $pdo, int $mensalidadeId, string $mpPayment
     $alunoNome = $stAluno->fetchColumn() ?: '';
 
     $competencia = $mens['referencia'];
+    require_once __DIR__ . '/mensalidades.php';
+    $valorReceita = mensalidadeValorReceitaAcademia($pdo, $mens, $valorBruto);
     $descLanc    = 'Mensalidade ' . $mens['referencia'] . ' — ' . $alunoNome . ' (via MP)';
     try {
         $pdo->prepare("
             INSERT IGNORE INTO lancamentos_financeiros
                 (competencia, data, tipo, categoria, descricao, valor, origem, referencia_tipo, referencia_id)
             VALUES (?, CURDATE(), 'receita', 'mensalidade', ?, ?, 'auto', 'mensalidade', ?)
-        ")->execute([$competencia, $descLanc, $valorBruto, $mensalidadeId]);
+        ")->execute([$competencia, $descLanc, $valorReceita, $mensalidadeId]);
     } catch (PDOException $e) {}
+
+    if ((float) ($mens['matricula_uniforme_valor'] ?? 0) > 0) {
+        $pdo->prepare("UPDATE pedidos_uniforme SET status_pagamento = 'pago', pago_em = NOW(), reserva_expira_em = NULL WHERE mensalidade_id = ? AND origem_cobranca = 'matricula'")
+            ->execute([$mensalidadeId]);
+    }
 
     // Taxa do MP lançada como despesa separada — receita continua bruta (correto pra
     // contabilidade/imposto), mas o Saldo em Caixa já reflete a realidade líquida.

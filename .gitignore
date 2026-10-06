@@ -50,6 +50,8 @@ Thumbs.db
 
 # Dumps locais de producao e artefato reservado do Windows.
 *.sql
+!database/
+!database/2026-10-06_matricula_uniforme.sql
 /nul
 
 

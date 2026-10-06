@@ -94,6 +94,22 @@ $(document).ready(() => {
             .remove();
     }
 
+    function levarAoErro(target) {
+        const elemento = $(target).first();
+        if (!elemento.length) return;
+        $('html, body').stop(true).animate({ scrollTop: Math.max(0, elemento.offset().top - 110) }, 350, function () {
+            const focusable = elemento.is('input, select, button') ? elemento : elemento.find('input, select, button').first();
+            if (focusable.length) focusable.trigger('focus');
+        });
+    }
+
+    function showSignupNotice(form, message) {
+        const notice = $(`<p class="studentSignupNotice studentSignupNotice--error" role="alert" tabindex="-1"></p>`).text(message);
+        form.prepend(notice);
+        levarAoErro(notice);
+        window.setTimeout(() => notice.trigger('focus'), 380);
+    }
+
     function validateInput(input) {
         const el = $(input);
         const name = el.attr('name');
@@ -351,7 +367,9 @@ $(document).ready(() => {
         if (!valido) {
             const primeiroErro = form.find('.studentField--error').first();
             if (primeiroErro.length) {
-                $('html, body').animate({ scrollTop: primeiroErro.offset().top - 80 }, 300);
+                levarAoErro(primeiroErro);
+            } else {
+                levarAoErro(form.find('.studentSignupTerms--error').first());
             }
             return;
         }
@@ -371,19 +389,28 @@ $(document).ready(() => {
             dataType: 'json',
         }).done((response) => {
             if (response.success) {
-                form.prepend(`<p class="studentSignupNotice studentSignupNotice--success">${response.message}</p>`);
-                form[0].reset();
-                $('.studentSignup__photoPreview').html('<i class="icon-areadoaluno" aria-hidden="true"></i>');
-                $('html, body').animate({ scrollTop: 0 }, 400);
+                $('body').addClass('studentSignupTransitionOpen').append(`
+                    <div class="studentSignupTransition" role="status" aria-live="polite" aria-label="Cadastro concluído. Carregando escolha do uniforme.">
+                        <div class="studentSignupTransition__card">
+                            <img src="${$('body').data('base-url')}/images/logo.png" alt="MPG Academy">
+                            <span class="studentSignupTransition__check" aria-hidden="true">✓</span>
+                            <strong>Cadastro concluído!</strong>
+                            <h2>Agora vamos escolher seu uniforme</h2>
+                            <p>Esta é a última etapa do cadastro. Aguarde enquanto preparamos as opções para você.</p>
+                            <span class="studentSignupTransition__loader" aria-hidden="true"></span>
+                            <small>Não feche esta página.</small>
+                        </div>
+                    </div>
+                `);
                 setTimeout(() => {
-                    window.location.href = form.data('redirect');
+                    window.location.href = response.redirect || form.data('redirect');
                 }, 2500);
                 return;
             }
-            form.prepend(`<p class="studentSignupNotice studentSignupNotice--error">${response.message || 'Não foi possível criar sua conta.'}</p>`);
+            showSignupNotice(form, response.message || 'Não foi possível criar sua conta.');
         }).fail((xhr) => {
             const response = xhr.responseJSON || {};
-            form.prepend(`<p class="studentSignupNotice studentSignupNotice--error">${response.message || 'Erro ao tentar criar sua conta. Tente novamente.'}</p>`);
+            showSignupNotice(form, response.message || 'Erro ao tentar criar sua conta. Tente novamente.');
         }).always(() => {
             submit.prop('disabled', false).html('Criar minha conta <i class="icon-go" aria-hidden="true"></i>');
         });

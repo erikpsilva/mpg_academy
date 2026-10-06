@@ -20,7 +20,7 @@ if ($mensalidadeId <= 0) {
 $pdo = getDbConnection();
 
 $stMens = $pdo->prepare("
-    SELECT m.id, m.referencia, m.tipo, m.descricao, m.valor, m.matricula_valor, m.proporcional_valor, m.desconto_aula_valor, m.vencimento, m.status,
+    SELECT m.id, m.referencia, m.tipo, m.descricao, m.valor, m.matricula_valor, m.matricula_uniforme_valor, m.proporcional_valor, m.desconto_aula_valor, m.vencimento, m.status,
            COALESCE(t.nome, '') AS turma_nome
     FROM mensalidades m
     LEFT JOIN turmas t ON t.id = m.turma_id
@@ -42,6 +42,7 @@ if (!$mens) {
 
 $valor             = (float) $mens['valor'];
 $matriculaValor    = (float) ($mens['matricula_valor'] ?? 0);
+$uniformeMatricula = min($matriculaValor, max(0.0, (float) ($mens['matricula_uniforme_valor'] ?? 0)));
 $proporcionalValor = (float) ($mens['proporcional_valor'] ?? 0);
 $descontoAulaValor = (float) ($mens['desconto_aula_valor'] ?? 0);
 $valorMensalidade  = $valor - $matriculaValor - $proporcionalValor + $descontoAulaValor; // valor da mensalidade do mês atual, sem matrícula/proporcional/desconto de aula cancelada
@@ -87,7 +88,12 @@ $modoTeste = mpModoTeste($pdo);
 .payCard__title { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
 .payCard__sub { color: #888; font-size: 14px; margin-bottom: 24px; }
 .payCard__summary { background: #1a1a1a; border-radius: 10px; padding: 16px 20px; margin-bottom: 24px; }
-.payCard__summaryRow { display: flex; justify-content: space-between; font-size: 13px; color: #aaa; padding: 4px 0; }
+.payCard__summaryRow { display: flex; justify-content: space-between; gap: 18px; font-size: 13px; color: #aaa; padding: 6px 0; }
+.payCard__summaryRow span:last-child { color: #fff; font-weight: 700; text-align: right; white-space: nowrap; }
+.payCard__summaryRow--included { margin: 2px -8px; padding: 8px; border-radius: 6px; background: rgba(229,194,0,.08); }
+.payCard__summaryRow--included span:first-child { color: #e5c200; }
+.payCard__summaryRow--included small { display: block; margin-top: 2px; color: #9d8e3a; font-size: 10px; font-weight: 600; }
+.payCard__summaryNote { display: block; margin: -1px 0 8px; color: #777; font-size: 11px; line-height: 1.45; }
 .payCard__summaryRow--total { font-size: 17px; font-weight: 700; color: #fff; border-top: 1px solid #2a2a2a; margin-top: 8px; padding-top: 12px; }
 .payCard__testBadge { background: #2a2a00; color: #cccc00; border: 1px solid #666600; border-radius: 6px; font-size: 11px; font-weight: 700; padding: 4px 10px; display: inline-block; margin-bottom: 16px; }
 /* Seletor de método */
@@ -147,7 +153,7 @@ $modoTeste = mpModoTeste($pdo);
             <div class="payCard__testBadge">MODO DE TESTE — nenhum valor real será cobrado</div>
             <?php endif; ?>
 
-            <h1 class="payCard__title"><?= $isAvulso ? 'Pagar Cobrança' : 'Pagar Mensalidade' ?></h1>
+            <h1 class="payCard__title">Fatura detalhada</h1>
             <p class="payCard__sub"><?= $isAvulso ? htmlspecialchars($mens['descricao'] ?? '') : htmlspecialchars($mens['turma_nome']) ?></p>
 
             <div class="payCard__summary">
@@ -157,22 +163,27 @@ $modoTeste = mpModoTeste($pdo);
                 <div class="payCard__summaryRow">
                     <span>Vencimento</span><span><?= $venc->format('d/m/Y') ?></span>
                 </div>
-                <?php if ($matriculaValor > 0 || $proporcionalValor > 0 || $descontoAulaValor > 0): ?>
+                <?php if (!$isAvulso && ($matriculaValor > 0 || $proporcionalValor > 0 || $descontoAulaValor > 0)): ?>
+                <?php if ($valorMensalidade > 0): ?>
                 <div class="payCard__summaryRow">
                     <span>Mensalidade</span>
                     <span>R$ <?= number_format($valorMensalidade, 2, ',', '.') ?></span>
                 </div>
+                <?php endif; ?>
                 <?php if ($proporcionalValor > 0): ?>
                 <div class="payCard__summaryRow">
-                    <span>Proporcional (mês anterior)</span>
+                    <span>Mensalidade proporcional</span>
                     <span>R$ <?= number_format($proporcionalValor, 2, ',', '.') ?></span>
                 </div>
                 <?php endif; ?>
                 <?php if ($matriculaValor > 0): ?>
-                <div class="payCard__summaryRow">
-                    <span>Taxa de matrícula</span>
+                <div class="payCard__summaryRow payCard__summaryRow--included">
+                    <span>Taxa de matrícula <small>(uniforme incluso)</small></span>
                     <span>R$ <?= number_format($matriculaValor, 2, ',', '.') ?></span>
                 </div>
+                <?php if ($uniformeMatricula > 0): ?>
+                <small class="payCard__summaryNote">O uniforme completo já está incluído neste valor, sem cobrança adicional.</small>
+                <?php endif; ?>
                 <?php endif; ?>
                 <?php if ($descontoAulaValor > 0): ?>
                 <div class="payCard__summaryRow">

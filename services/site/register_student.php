@@ -13,6 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 require_once dirname(__FILE__, 3) . '/config/database.php';
+require_once dirname(__FILE__, 3) . '/config/convites_cadastro.php';
 
 $required = ['nome', 'email', 'cpf', 'nascimento', 'sexo', 'celular', 'cep', 'rua', 'numero', 'bairro', 'cidade', 'estado', 'senha'];
 
@@ -43,6 +44,7 @@ $cidade    = trim($_POST['cidade']);
 $estado    = trim($_POST['estado']);
 $senha     = $_POST['senha'];
 $origem    = trim($_POST['origem'] ?? '');
+$conviteToken = trim($_POST['convite'] ?? '');
 
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     http_response_code(400);
@@ -97,6 +99,21 @@ if ($isMenor) {
 }
 
 $pdo = getDbConnection();
+$convite = $conviteToken !== '' ? conviteBuscar($pdo, $conviteToken) : null;
+if ($conviteToken !== '' && !$convite) {
+    http_response_code(410);
+    echo json_encode(['success'=>false,'message'=>'Este convite expirou ou já foi utilizado. Peça um novo link.']);
+    exit;
+}
+if ($convite) {
+    $foneCadastro = preg_replace('/\D/', '', $celular);
+    $foneConvite  = preg_replace('/\D/', '', $convite['whatsapp']);
+    if (substr($foneCadastro, -11) !== substr($foneConvite, -11)) {
+        http_response_code(400);
+        echo json_encode(['success'=>false,'message'=>'Use o mesmo WhatsApp que recebeu o convite.']);
+        exit;
+    }
+}
 
 // CPF é sempre único — é o que identifica a pessoa de verdade.
 $checkCpf = $pdo->prepare("SELECT id FROM alunos WHERE cpf = ? LIMIT 1");
@@ -163,6 +180,13 @@ $stmt = $pdo->prepare("
          ?, ?, ?, ?, ?, ?)
 ");
 
+try {
+if ($convite) {
+    $pdo->beginTransaction();
+    $convite = conviteBuscar($pdo, $conviteToken, true);
+    if (!$convite) throw new RuntimeException('Este convite não está mais disponível.');
+}
+
 $stmt->execute([
     $nome,
     $email,
@@ -189,8 +213,30 @@ $stmt->execute([
     $isMenor ? 'pendente' : 'nao_aplicavel',
 ]);
 
+$alunoId = (int) $pdo->lastInsertId();
+$mensalidadeConviteId = null;
+if ($convite) {
+    $mensalidadeConviteId = conviteMatricularAluno($pdo, $alunoId, (int)$convite['turma_id']);
+    $pdo->prepare("UPDATE cadastro_convites SET usado_em=NOW(),aluno_id=? WHERE id=?")->execute([$alunoId,(int)$convite['id']]);
+    $pdo->commit();
+}
+$refresh = $pdo->prepare("SELECT * FROM alunos WHERE id = ?");
+$refresh->execute([$alunoId]);
+$alunoSessao = $refresh->fetch(PDO::FETCH_ASSOC);
+unset($alunoSessao['senha']);
+if (session_status() === PHP_SESSION_NONE) session_start();
+session_regenerate_id(true);
+$_SESSION['aluno'] = $alunoSessao;
+
 http_response_code(201);
 echo json_encode([
     'success' => true,
-    'message' => 'Cadastro realizado com sucesso! Faça login para acessar sua área.',
+    'message' => 'Cadastro realizado! Agora escolha o uniforme incluído na matrícula.',
+    'redirect' => BASE_URL . '/uniformematricula',
 ]);
+} catch (Throwable $e) {
+    if ($pdo->inTransaction()) $pdo->rollBack();
+    error_log('[cadastro-convite] '.$e->getMessage());
+    http_response_code(409);
+    echo json_encode(['success'=>false,'message'=>$e instanceof RuntimeException ? $e->getMessage() : 'Não foi possível concluir o cadastro.']);
+}

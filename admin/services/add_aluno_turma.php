@@ -20,6 +20,7 @@ if (empty($_SESSION['usuario'])) {
 }
 
 require_once dirname(__FILE__, 3) . '/config/database.php';
+require_once dirname(__FILE__, 3) . '/config/mensalidades.php';
 
 $turmaId    = (int) ($_POST['turma_id'] ?? 0);
 $alunoId    = (int) ($_POST['aluno_id'] ?? 0);
@@ -213,6 +214,7 @@ if (!$aluno['matricula_cobrada'] && !$aluno['isento_matricula']) {
 if ($matriculaValor > 0 && !empty($mensalidadesParaGerar)) {
     $mensalidadesParaGerar[0]['valor']          = round($mensalidadesParaGerar[0]['valor'] + $matriculaValor, 2);
     $mensalidadesParaGerar[0]['matricula_valor'] = $matriculaValor;
+    $mensalidadesParaGerar[0]['matricula_uniforme_valor'] = min($matriculaValor, mensalidadeValorUniformeMatricula($pdo));
 }
 
 try {
@@ -242,12 +244,13 @@ try {
         // a fatura com a turma/valor errados. Por isso atualizamos a fatura existente pra turma
         // nova (exceto se ela já estiver paga — fatura paga nunca é alterada).
         $stmtMens = $pdo->prepare("
-            INSERT INTO mensalidades (aluno_id, turma_id, referencia, valor, matricula_valor, proporcional_valor, vencimento, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 'pendente')
+            INSERT INTO mensalidades (aluno_id, turma_id, referencia, valor, matricula_valor, matricula_uniforme_valor, proporcional_valor, vencimento, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pendente')
             ON DUPLICATE KEY UPDATE
                 turma_id           = IF(status = 'pago', turma_id, VALUES(turma_id)),
                 valor              = IF(status = 'pago', valor, VALUES(valor)),
                 matricula_valor    = IF(status = 'pago', matricula_valor, VALUES(matricula_valor)),
+                matricula_uniforme_valor = IF(status = 'pago', matricula_uniforme_valor, VALUES(matricula_uniforme_valor)),
                 proporcional_valor = IF(status = 'pago', proporcional_valor, VALUES(proporcional_valor)),
                 vencimento         = IF(status = 'pago', vencimento, VALUES(vencimento))
         ");
@@ -256,9 +259,26 @@ try {
                 $alunoId, $turmaId,
                 $m['referencia'], $m['valor'],
                 $m['matricula_valor'] ?? null,
+                $m['matricula_uniforme_valor'] ?? null,
                 $m['proporcional_valor'] ?? null,
                 $m['vencimento'],
             ]);
+        }
+
+        // O pedido escolhido logo após o cadastro nasce sem turma e sem cobrança própria.
+        // Ao matricular o aluno, liga o pedido à primeira fatura (matrícula + proporcional)
+        // e à turma; o número continua pendente para a equipe definir sem risco de duplicar.
+        if ($matriculaValor > 0) {
+            $primeiraRef = $mensalidadesParaGerar[0]['referencia'];
+            $stMensId = $pdo->prepare("SELECT id FROM mensalidades WHERE aluno_id = ? AND referencia = ? LIMIT 1");
+            $stMensId->execute([$alunoId, $primeiraRef]);
+            $mensalidadeMatriculaId = (int) $stMensId->fetchColumn();
+            if ($mensalidadeMatriculaId > 0) {
+                $pdo->prepare("UPDATE pedidos_uniforme
+                    SET turma_id = ?, mensalidade_id = ?
+                    WHERE aluno_id = ? AND origem_cobranca = 'matricula' AND mensalidade_id IS NULL")
+                    ->execute([$turmaId, $mensalidadeMatriculaId, $alunoId]);
+            }
         }
     }
 
