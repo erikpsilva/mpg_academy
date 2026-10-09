@@ -38,6 +38,7 @@
     });
 
     if (loginForm) {
+        if (loginForm.dataset.autoOpen === '1') openModal();
         loginForm.addEventListener('submit', function (event) {
             event.preventDefault();
             loginMessage.textContent = '';

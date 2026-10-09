@@ -271,7 +271,7 @@ function mpValidarAssinaturaWebhook(string $secret, string $xSignature, string $
  * Cria um pagamento via Mercado Pago API v1/payments.
  * Retorna ['http_code' => int, 'body' => array].
  */
-function mpCriarPagamento(string $accessToken, array $dados): array
+function mpCriarPagamento(string $accessToken, array $dados, ?string $idempotencyKey = null): array
 {
     // Endereço do webhook vai em TODA cobrança. Sem ele, o aviso de "pago" só chega se o
     // webhook estiver cadastrado no painel do MP da conta certa — e depois da troca pra conta
@@ -289,7 +289,7 @@ function mpCriarPagamento(string $accessToken, array $dados): array
         CURLOPT_HTTPHEADER     => [
             'Content-Type: application/json',
             'Authorization: Bearer ' . $accessToken,
-            'X-Idempotency-Key: mpg-' . uniqid('', true),
+            'X-Idempotency-Key: ' . ($idempotencyKey ?? ('mpg-' . uniqid('', true))),
         ],
         // Em produção, SSL é sempre verificado.
         // Em local (XAMPP/Windows) pode falhar sem CA bundle — desativa verificação.

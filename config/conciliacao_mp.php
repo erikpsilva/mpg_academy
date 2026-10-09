@@ -26,6 +26,7 @@
 require_once __DIR__ . '/app.php';
 require_once __DIR__ . '/mercadopago.php';
 require_once __DIR__ . '/batebola.php';
+require_once __DIR__ . '/batebola_checkout.php';
 require_once __DIR__ . '/uniformes.php';
 
 /** Intervalo mínimo (s) entre duas rodadas de cada tipo, pra não martelar a API do MP. */
@@ -51,7 +52,7 @@ function mpConciliarPendentes(PDO $pdo, array $tipos = ['batebola', 'uniforme', 
     $resultado = ['batebola' => [], 'uniforme' => [], 'mensalidade' => []];
 
     // Em modo teste o token é o de sandbox — as cobranças reais não aparecem nele.
-    if (mpModoTeste($pdo)) return $resultado;
+    if (APP_IS_LOCAL || mpModoTeste($pdo)) return $resultado;
 
     // Uma rodada por vez: duas abas abrindo a página ao mesmo tempo não disparam duas buscas.
     $lock = (int) $pdo->query("SELECT GET_LOCK('mpg_conciliacao_mp', 0)")->fetchColumn();
@@ -93,13 +94,22 @@ function mpConciliarPendentes(PDO $pdo, array $tipos = ['batebola', 'uniforme', 
 /** Bate Bola: inscrições pendentes do domingo atual/próximo e da última semana. */
 function mpConciliarBatebola(PDO $pdo, string $token, float $limite): array
 {
+    $pedidosConfirmados=[];
+    if(bbCheckoutDisponivel($pdo)) {
+        $pedidos=$pdo->query("SELECT id,mp_payment_id FROM batebola_pedidos WHERE status='pendente' ORDER BY id LIMIT 30")->fetchAll(PDO::FETCH_ASSOC);
+        foreach($pedidos as $pedido) {
+            if(microtime(true)>=$limite)break;
+            $pag=mpBuscarAprovado($token,['bb-pedido-'.$pedido['id']],$pedido['mp_payment_id']);
+            if($pag && bbConfirmarPedido($pdo,(int)$pedido['id'],$pag))$pedidosConfirmados[]='pedido-'.$pedido['id'];
+        }
+    }
     $pendentes = $pdo->query("
         SELECT id, mp_payment_id FROM batebola_inscricoes
         WHERE status = 'pendente' AND data_evento >= CURDATE() - INTERVAL 7 DAY
         ORDER BY id
     ")->fetchAll(PDO::FETCH_ASSOC);
 
-    $confirmados = [];
+    $confirmados = $pedidosConfirmados;
     foreach ($pendentes as $p) {
         if (microtime(true) >= $limite) break;
         $pag = mpBuscarAprovado($token, ['batebola-' . $p['id']], $p['mp_payment_id']);

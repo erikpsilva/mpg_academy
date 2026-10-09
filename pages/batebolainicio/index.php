@@ -97,50 +97,11 @@ $dataFmtExtenso = $dtEvento->format('d') . ' de ' . $meses[(int) $dtEvento->form
             </nav>
         </div>
 
-        <?php include ROOT . '/includes/batebola_janela.php'; ?>
-        <?php include ROOT . '/includes/batebola_avisos.php'; ?>
-
-        <!-- ── Participar do próximo domingo ─────────────────────────────── -->
-        <?php if ($statusInscricao === 'pago'): ?>
-        <section class="bateBolaInicio__cta bateBolaInicio__cta--ok">
-            <div>
-                <span class="bateBolaInicio__ctaTag">✅ Vaga garantida</span>
-                <h2>Você tá dentro do Bate Bola de <?= $dataFmtExtenso ?>!</h2>
-                <p>Te esperamos domingo, das <?= batebolaHorarioTexto($dataEvento) ?>, na <?= BATEBOLA_LOCAL_NOME ?> — <?= BATEBOLA_LOCAL_ENDERECO ?>.<?= $especial ? ' Nessa edição jogamos uma hora a mais — vai até as ' . BATEBOLA_ESPECIAL_FIM . '!' : '' ?></p>
-            </div>
-        </section>
-        <?php elseif ($vagasEsgotadas): ?>
-        <section class="bateBolaInicio__cta bateBolaInicio__cta--full">
-            <div>
-                <span class="bateBolaInicio__ctaTag">🚫 Vagas esgotadas</span>
-                <h2>As vagas do Bate Bola de <?= $dataFmtExtenso ?> já acabaram.</h2>
-                <p>Fica ligado pro próximo domingo — as vagas são limitadas e vão rápido.</p>
-            </div>
-        </section>
-        <?php elseif ($inscricoesFechadas): ?>
-        <section class="bateBolaInicio__cta bateBolaInicio__cta--closed">
-            <div>
-                <span class="bateBolaInicio__ctaTag">🗓️ Lista fechada</span>
-                <h2>As inscrições pro Bate Bola de <?= $dataFmtExtenso ?> estão fechadas agora.</h2>
-                <p>A lista reabre na segunda-feira às 06h e fecha no sábado às 18h.</p>
-            </div>
-        </section>
-        <?php else: ?>
-        <section class="bateBolaInicio__cta">
-            <div>
-                <span class="bateBolaInicio__ctaTag"><?php if ($statusInscricao === 'pendente'): ?>⏳ Pagamento pendente<?php elseif ($especial): ?>🏐 Edição especial — 1h a mais<?php else: ?>🏐 Bate Bola de domingo<?php endif; ?></span>
-                <h2>Domingo, <?= $dataFmtExtenso ?> — garanta sua vaga!</h2>
-                <p><?= $vagasConfirmadas ?>/<?= BATEBOLA_MAX_VAGAS ?> vagas confirmadas · R$ <?= number_format($valor, 2, ',', '.') ?> via PIX<?= $especial ? ' · jogo até as ' . BATEBOLA_ESPECIAL_FIM : '' ?></p>
-            </div>
-            <a class="bateBolaButton bateBolaButton--primary" href="<?= BASE_URL ?>/batebolapagamento">
-                <?= $statusInscricao === 'pendente' ? 'Concluir pagamento' : 'Quero participar' ?> <i class="icon-go" aria-hidden="true"></i>
-            </a>
-        </section>
-        <?php endif; ?>
+        <?php include ROOT . '/includes/batebola_home_eventos.php'; ?>
 
         <div class="bateBolaInicio__grid">
             <aside class="bateBolaSchedule">
-                <h2>Bate Bola MPG</h2>
+                <h2>Informações do domingo tradicional</h2>
                 <dl>
                     <div><dt><i class="icon-calendar" aria-hidden="true"></i> Quando</dt><dd>Domingos</dd></div>
                     <div><dt><i class="icon-timescompetitivos" aria-hidden="true"></i> Horário</dt><dd>Das <?= batebolaHorarioTexto($dataEvento) ?><?= $especial ? ' (1h a mais nessa edição)' : '' ?></dd></div>
@@ -153,7 +114,7 @@ $dataFmtExtenso = $dtEvento->format('d') . ' de ' . $meses[(int) $dtEvento->form
             </aside>
 
             <aside class="bateBolaSchedule bateBolaInicio__confirmadosCard">
-                <h2><?= count($confirmados) ?>/<?= BATEBOLA_MAX_VAGAS ?> já garantiram vaga</h2>
+                <h2>Domingo: <?= count($confirmados) ?>/<?= BATEBOLA_MAX_VAGAS ?> confirmados</h2>
                 <?php if (empty($confirmados)): ?>
                     <p>Ninguém confirmou ainda — seja o primeiro a garantir sua vaga!</p>
                 <?php else: ?>

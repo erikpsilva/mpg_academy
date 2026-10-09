@@ -1,4 +1,5 @@
 <?php
+if(!isset($_GET['legado'])) { header('Location: '.BASE_URL.'/batebolaselecao'); exit; }
 if (empty($_SESSION['jogador'])) {
     header('Location: ' . BASE_URL . '/batebola');
     exit;

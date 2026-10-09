@@ -52,6 +52,12 @@ $valor      = batebolaValorEvento($pdo, $dataEvento);
 $stExist = $pdo->prepare("SELECT id, status, pix_qr_code, pix_qr_code_base64 FROM batebola_inscricoes WHERE jogador_id = ? AND data_evento = ?");
 $stExist->execute([$jogadorId, $dataEvento]);
 $existente = $stExist->fetch();
+require_once dirname(__FILE__, 3) . '/config/batebola_checkout.php';
+if(bbCheckoutDisponivel($pdo) && (!$existente || ($existente['status']!=='pago' && empty($existente['pix_qr_code'])))) {
+    http_response_code(409);
+    echo json_encode(['success'=>false,'message'=>'Escolha os eventos na nova tela de seleção para gerar seu PIX.','redirect'=>BASE_URL.'/batebolaselecao']);
+    exit;
+}
 
 if ($existente && $existente['status'] === 'pago') {
     echo json_encode(['success' => true, 'status' => 'pago', 'data_evento' => $dataEvento]);

@@ -37,6 +37,7 @@ if (($_SESSION['usuario']['nivel_acesso'] ?? '') !== 'admin') {
 
 require_once dirname(__FILE__, 3) . '/config/database.php';
 require_once dirname(__FILE__, 3) . '/config/batebola.php';
+require_once dirname(__FILE__, 3) . '/config/batebola_checkout.php';
 
 $pdo        = getDbConnection();
 $jogadorId  = (int) ($_POST['jogador_id'] ?? 0);
@@ -70,6 +71,12 @@ if (!$jogador) {
 $valor = batebolaValorEvento($pdo, $dataEvento);
 
 try {
+    if(bbCheckoutDisponivel($pdo)) {
+        if((int)$pdo->query("SELECT GET_LOCK('mpg_bb_reservas',10)")->fetchColumn()!==1)throw new RuntimeException('Tente novamente em instantes.');
+        $stCombo=$pdo->prepare("SELECT p.id FROM batebola_pedidos p JOIN batebola_pedido_itens i ON i.pedido_id=p.id WHERE p.jogador_id=? AND p.status IN ('reservado','pendente') AND i.evento_chave=? LIMIT 1");
+        $stCombo->execute([$jogadorId,'domingo:'.$dataEvento]);
+        if($stCombo->fetchColumn())throw new RuntimeException('Este jogador tem um pagamento conjunto em andamento. Confira esse pagamento antes de incluir manualmente.');
+    }
     $pdo->beginTransaction();
 
     // Trava a contagem de vagas junto com a leitura: sem isso, dois admins incluindo ao mesmo
@@ -87,7 +94,7 @@ try {
 
     $stVagas = $pdo->prepare("SELECT COUNT(*) FROM batebola_inscricoes WHERE data_evento = ? AND status = 'pago'");
     $stVagas->execute([$dataEvento]);
-    $confirmados = (int) $stVagas->fetchColumn();
+    $confirmados = (int) $stVagas->fetchColumn() + bbReservas($pdo,'domingo:'.$dataEvento);
 
     if ($confirmados >= BATEBOLA_MAX_VAGAS) {
         $pdo->rollBack();

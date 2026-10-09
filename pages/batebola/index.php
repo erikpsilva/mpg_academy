@@ -1,4 +1,10 @@
 <?php
+$especialLogin=max(0,(int)($_GET['especial_login']??0));
+$loginDestino=BASE_URL.'/batebolainicio';
+if(($especialLogin || isset($_GET['selecionar'])) && !empty($_SESSION['jogador']['id'])) {
+    header('Location: '.$loginDestino);
+    exit;
+}
 // Necessário pro aviso da janela de inscrição (includes/batebola_janela.php) e pros avisos
 // de horário novo / plano mensal (includes/batebola_avisos.php), que dependem de saber
 // qual é o próximo domingo.
@@ -18,6 +24,7 @@ $dataEvento = batebolaProximoDomingo($pdo);
 <?php include ROOT . '/includes/header/header.php'; ?>
 
 <main class="bateBola">
+    <div class="container"><?php include ROOT . '/includes/batebola_especiais.php'; ?></div>
     <section class="bateBolaHero">
         <div class="container">
             <div class="bateBolaHero__grid">
@@ -105,7 +112,7 @@ $dataEvento = batebolaProximoDomingo($pdo);
             <img src="<?= BASE_URL ?>/images/logo.png" alt="MPG Academy">
             <h2 id="bateBolaLoginTitle">Faça <span>login</span> na sua conta</h2>
             <p>Bem-vindo de volta ao Bate Bola!</p>
-            <form action="<?= BASE_URL ?>/services/site/jogador_login.php" method="post" class="bateBolaLogin__form" id="bateBolaLoginForm" data-redirect="<?= BASE_URL ?>/batebolainicio">
+            <form action="<?= BASE_URL ?>/services/site/jogador_login.php" method="post" class="bateBolaLogin__form" id="bateBolaLoginForm" data-redirect="<?= htmlspecialchars($loginDestino, ENT_QUOTES, 'UTF-8') ?>" data-auto-open="<?= $especialLogin || isset($_GET['selecionar'])?'1':'0' ?>">
                 <div class="bateBolaLogin__field">
                     <i class="icon-user" aria-hidden="true"></i>
                     <input type="email" id="bateBolaEmail" name="email" placeholder="E-mail" autocomplete="email" aria-label="E-mail" required>

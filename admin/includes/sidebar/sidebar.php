@@ -51,6 +51,7 @@
         <?php elseif (($_SESSION['usuario']['nivel_acesso'] ?? '') === 'batebola'): ?>
             <!-- Menu exclusivo do perfil Bate Bola -->
             <li class="sidebar__section">Bate Bola</li>
+            <li class="sidebar__item"><a href="<?= BASE_URL ?>/admin/batebolaespecial" class="sidebar__link <?= ($subRoute === 'batebolaespecial') ? 'sidebar__link--active' : '' ?>">Bate-bola especial</a></li>
 
             <li class="sidebar__item">
                 <a href="<?= BASE_URL ?>/admin/batebola"
@@ -268,6 +269,7 @@
 
             <li class="sidebar__divider" aria-hidden="true"></li>
             <li class="sidebar__section">Bate Bola</li>
+            <li class="sidebar__item"><a href="<?= BASE_URL ?>/admin/batebolaespecial" class="sidebar__link <?= ($subRoute === 'batebolaespecial') ? 'sidebar__link--active' : '' ?>">Bate-bola especial</a></li>
 
             <li class="sidebar__item">
                 <a href="<?= BASE_URL ?>/admin/batebola"

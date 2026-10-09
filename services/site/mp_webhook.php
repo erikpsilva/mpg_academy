@@ -14,6 +14,8 @@ header('Content-Type: application/json');
 require_once dirname(__FILE__, 3) . '/config/database.php';
 require_once dirname(__FILE__, 3) . '/config/mercadopago.php';
 require_once dirname(__FILE__, 3) . '/config/batebola.php';
+require_once dirname(__FILE__, 3) . '/config/batebola_especial.php';
+require_once dirname(__FILE__, 3) . '/config/batebola_checkout.php';
 require_once dirname(__FILE__, 3) . '/config/uniformes.php';
 require_once dirname(__FILE__, 3) . '/config/app.php';
 
@@ -52,8 +54,14 @@ try {
                 $mensalidadeId = (int) ($payment['metadata']['mensalidade_id'] ?? 0);
                 $inscricaoId   = (int) ($payment['metadata']['batebola_inscricao_id'] ?? 0);
                 $pedidoUniforme = (int) ($payment['metadata']['pedido_uniforme_id'] ?? 0);
+                $especialId = (int) ($payment['metadata']['batebola_especial_inscricao_id'] ?? 0);
+                $pedidoBatebola = (int) ($payment['metadata']['batebola_pedido_id'] ?? 0);
 
-                if ($mensalidadeId > 0) {
+                if ($pedidoBatebola > 0) {
+                    bbConfirmarPedido($pdo, $pedidoBatebola, $payment);
+                } elseif ($especialId > 0) {
+                    especialConfirmar($pdo, $especialId, $payment);
+                } elseif ($mensalidadeId > 0) {
                     mpMarcarMensalidadePaga($pdo, $mensalidadeId, (string) $payment['id'], $payment);
                 } elseif ($inscricaoId > 0) {
                     batebolaConfirmarInscricao($pdo, $inscricaoId, (string) $payment['id'], $payment);
